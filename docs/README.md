@@ -1,0 +1,17 @@
+# ドキュメントガイド
+
+ORTEAF に関するドキュメントの索引です。目的に応じて以下から参照してください。
+
+## 利用者向け
+- プロジェクト概要: `../README.md`
+- API レイヤ概要: `developer/design.md#user-層`
+
+## 拡張開発者向け
+- コアデザイン: [docs/developer/design.md](developer/design.md)
+- 拡張ガイド: [docs/developer/extension-guide.md](developer/extension-guide.md)
+
+## プロジェクト運営
+- 開発ロードマップ (下書き): [docs/roadmap.md](roadmap.md)
+- チャレンジログ テンプレート: [docs/challenge-log.md](challenge-log.md)
+
+> ドキュメントが増えた場合は、この索引を更新して導線を維持してください。

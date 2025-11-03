@@ -21,10 +21,9 @@ This framework serves as the backbone for the research and engineering required 
   Designed for high-speed inference and learning on resource-constrained devices.
 - **PyTorch-like API:**  
   Easy to learn and use; familiar structure for PyTorch users.
-- **Modular & Extensible:**  
-  Clean dependency graph and loosely coupled modules make contribution easy.
+- **Core Component & Extensible:**  
+  Clean dependency graph and loosely coupled core components make contribution easy.
 
-貢献ルールはcontributing.mdを見てください。
 
 ## ⚙️ Installation
 
@@ -47,10 +46,16 @@ cmake -G Ninja .. -DENABLE_CUDA=ON -DENABLE_MPS=OFF
 
 | Option | Description | Default |
 |---------|-------------|----------|
-| `ENABLE_CUDA` | Enable CUDA backend | ON |
-| `ENABLE_MPS` | Enable Metal (MPS) backend | ON |
+| `ENABLE_CUDA` | Enable CUDA backend | OFF |
+| `ENABLE_MPS` | Enable Metal (MPS) backend | OFF |
 
 If both are disabled, the build will default to the CPU runtime.
+
+## 🗂 Documentation
+
+- Core architecture and access boundaries: [docs/developer/design.md](docs/developer/design.md)
+- Extension entry points (`Kernel`, `Ops`, `TensorImpl`): [docs/developer/extension-guide.md](docs/developer/extension-guide.md)
+- Roadmap / challenge log templates: see [docs/README.md](docs/README.md)
 
 ## 📜 License
 ORTEAF is licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
