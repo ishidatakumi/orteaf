@@ -62,6 +62,7 @@ If both are disabled, the build will default to the CPU runtime.
 - Override runtime statistics levels: `-DORTEAF_RUNTIME_STATS_LEVEL=1` (`0`=off, `1`=basic, `2`=extended)
 - Per-component overrides inherit from the global level unless specified:  
   `-DORTEAF_CPU_STATS_LEVEL=AUTO`, `-DORTEAF_MPS_STATS_LEVEL=2`, `-DORTEAF_ALLOCATOR_STATS_LEVEL=1`
+- Unified build environment (Docker): see [docs/developer/environment.md](docs/developer/environment.md)
 
 ## 📜 License
 ORTEAF is licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
