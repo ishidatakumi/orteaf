@@ -37,9 +37,16 @@
 *.out
 *.app
 
+# Generated documentation
+docs/api-developer/
+docs/api-user/
+docs/api-tests/
+
 # debug information files
 *.dwo
 
 # cursor indexing ignore
 .cursorindexingignore
 .specstory/
+
+build/

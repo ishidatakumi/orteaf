@@ -19,7 +19,7 @@ orteaf/
 ├── include/orteaf/
 │   ├── user/          # ユーザーが触れるラッパー層
 │   ├── extension/     # 拡張ポイント（Kernel, Ops, TensorImpl など）
-│   └── internal/      # 実行基盤（SystemManager, Dispatcher 等）
+│   └── internal/      # 実行基盤（SystemManager, Diagnostics 等）
 └── src/
     ├── user/
     ├── extension/
@@ -44,7 +44,7 @@ orteaf/
 - `Allocator` / `MemSafe`：メモリ確保と安全管理。
 - `Dispatcher` / `KernelRegister`：OPS と Kernel の橋渡し。
 - `Runtimes`：CPU / CUDA / MPS を抽象化したバックエンド。
-- `Error`：共通の例外ラッパーとエラー分類。内部で統一的に throw / catch を扱い、必要に応じてログや統計を追加する。
+- `Diagnostics`（`error/`, `log/`）：共通のエラー情報 (`OrteafError`)、致命的エラー (`fatal_error`) と例外ラッパーを提供し、統一的に throw / ログ / 統計連携を扱う。
 
 ## ビルド時オプション
 
@@ -56,6 +56,15 @@ orteaf/
 | `ORTEAF_CPU_STATS_LEVEL` / `ORTEAF_CUDA_STATS_LEVEL` / `ORTEAF_MPS_STATS_LEVEL` / `ORTEAF_ALLOCATOR_STATS_LEVEL` | 個別上書き（`AUTO` でグローバル設定を継承）。|
 
 コード側では `ORTEAF_*_STATS_LEVEL` マクロを参照し `0/1/2` に応じたメンバを有効にする。
+
+ログ制御の CMake 変数も用意している。
+
+| 変数 | 説明 |
+| --- | --- |
+| `ORTEAF_LOG_LEVEL` | ログの既定レベル（`TRACE`/`DEBUG`/`INFO`/`WARN`/`ERROR`/`CRITICAL`/`OFF`）。|
+| `ORTEAF_LOG_LEVEL_CORE` / `TENSOR` / `CUDA` / `MPS` / `IO` | カテゴリごとの上書き。`AUTO` で既定値を継承。|
+
+`ORTEAF_LOG_LEVEL_*` マクロを参照して `ORTEAF_LOG_TRACE` などのマクロがコンパイル時に無効化される。`OFF` に設定すればゼロコストでログが除去される。
 
 ## データフローと依存関係
 

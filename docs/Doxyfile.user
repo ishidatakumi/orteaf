@@ -1,0 +1,36 @@
+# Doxygen configuration for ORTEAF user documentation.
+
+PROJECT_NAME           = "ORTEAF User"
+PROJECT_BRIEF          = "Public API documentation"
+
+OUTPUT_DIRECTORY       = docs/api-user
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+INPUT                  = ../orteaf/include/orteaf/user
+FILE_PATTERNS          = *.h \
+                         *.hpp \
+                         *.hh \
+                         *.md
+RECURSIVE              = YES
+
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+EXTRACT_LOCAL_METHODS  = NO
+EXTRACT_ALL            = NO
+
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = NO
+PREDEFINED             =
+
+GENERATE_TREEVIEW      = YES
+FULL_PATH_NAMES        = NO
+JAVADOC_AUTOBRIEF      = YES
+MARKDOWN_SUPPORT       = YES
+INLINE_SOURCES         = NO
+
+WARN_IF_UNDOCUMENTED   = NO
+QUIET                  = NO
+WARNINGS               = YES
+SEARCHENGINE           = NO
