@@ -23,4 +23,7 @@ ORTEAF に関するドキュメントの索引です。目的に応じて以下�
 - 開発者向け Doxygen: `docs/Doxyfile.developer`
 - テスト専用 Doxygen: `docs/Doxyfile.tests`
 
+## CI
+- GitHub Actions ワークフロー: `.github/workflows/ci.yml`
+
 > ドキュメントが増えた場合は、この索引を更新して導線を維持してください。
