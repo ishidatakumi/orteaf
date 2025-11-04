@@ -4,14 +4,19 @@ set(ORTEAF_INCLUDE_ROOT ${ORTEAF_SOURCE_ROOT}/include/orteaf)
 set(ORTEAF_USER_INCLUDE_DIR ${ORTEAF_INCLUDE_ROOT}/user)
 set(ORTEAF_EXTENSION_INCLUDE_DIR ${ORTEAF_INCLUDE_ROOT}/extension)
 set(ORTEAF_INTERNAL_INCLUDE_DIR ${ORTEAF_INCLUDE_ROOT}/internal)
+set(ORTEAF_VERSION_INCLUDE_DIR ${ORTEAF_GENERATED_INCLUDE_DIR}/orteaf/version)
 
 add_library(orteaf_user INTERFACE)
-target_include_directories(orteaf_user INTERFACE ${ORTEAF_USER_INCLUDE_DIR})
+target_include_directories(orteaf_user INTERFACE
+    ${ORTEAF_USER_INCLUDE_DIR}
+    ${ORTEAF_GENERATED_INCLUDE_DIR}
+)
 
 add_library(orteaf_extension INTERFACE)
 target_include_directories(orteaf_extension INTERFACE
     ${ORTEAF_EXTENSION_INCLUDE_DIR}
     ${ORTEAF_USER_INCLUDE_DIR}
+    ${ORTEAF_GENERATED_INCLUDE_DIR}
 )
 target_link_libraries(orteaf_extension INTERFACE orteaf_user)
 target_compile_definitions(orteaf_extension INTERFACE
@@ -50,6 +55,7 @@ target_include_directories(orteaf
     PRIVATE
         ${ORTEAF_INCLUDE_ROOT}
         ${ORTEAF_SOURCE_ROOT}/include
+        ${ORTEAF_GENERATED_INCLUDE_DIR}
 )
 target_compile_definitions(orteaf
     PUBLIC

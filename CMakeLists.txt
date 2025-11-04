@@ -4,6 +4,15 @@ project(orteaf VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/orteaf/include/orteaf/version/version.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/orteaf/version/version.h
+    @ONLY
+)
+
+# Propagate generated include directory so both library and tests can pick it up.
+set(ORTEAF_GENERATED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated CACHE INTERNAL "")
+
 # Runtime enable flags
 option(ENABLE_CPU "Enable CPU runtime" ON)
 option(ENABLE_CUDA "Enable CUDA runtime" OFF)

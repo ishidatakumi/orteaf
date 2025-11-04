@@ -1,0 +1,13 @@
+#pragma once
+
+namespace orteaf::version {
+
+inline constexpr int major() noexcept { return @orteaf_VERSION_MAJOR@; }
+inline constexpr int minor() noexcept { return @orteaf_VERSION_MINOR@; }
+inline constexpr int patch() noexcept { return @orteaf_VERSION_PATCH@; }
+
+inline constexpr const char* string() noexcept {
+    return "@orteaf_VERSION@";
+}
+
+}  // namespace orteaf::version

@@ -38,6 +38,7 @@ if(ORTEAF_TEST_SOURCES)
     target_include_directories(orteaf_tests
         PRIVATE
             ${PROJECT_SOURCE_DIR}/orteaf/include
+            ${ORTEAF_GENERATED_INCLUDE_DIR}
     )
     target_compile_features(orteaf_tests PRIVATE cxx_std_20)
 
