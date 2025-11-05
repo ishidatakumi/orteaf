@@ -31,11 +31,11 @@ EXTRACT_ALL            = NO
 ENABLE_PREPROCESSING   = YES
 MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = NO
-PREDEFINED             = ORTEAF_RUNTIME_STATS_LEVEL=0 \
-                         ORTEAF_CPU_STATS_LEVEL=0 \
-                         ORTEAF_CUDA_STATS_LEVEL=0 \
-                         ORTEAF_MPS_STATS_LEVEL=0 \
-                         ORTEAF_ALLOCATOR_STATS_LEVEL=0
+PREDEFINED             = ORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 \
+                         ORTEAF_STATS_LEVEL_CPU_VALUE=8 \
+                         ORTEAF_STATS_LEVEL_CUDA_VALUE=8 \
+                         ORTEAF_STATS_LEVEL_MPS_VALUE=8 \
+                         ORTEAF_STATS_LEVEL_CORE_VALUE=8
 
 GENERATE_TREEVIEW      = YES
 FULL_PATH_NAMES        = NO

@@ -7,8 +7,9 @@ This document gives AI/automation agents a quick reference for working in this r
 - **Targets:** `orteaf` static library plus helper interface targets `orteaf_user` and `orteaf_extension`.
 - **Key Options (root CMakeLists):**
   - `ENABLE_CPU` (default `ON`), `ENABLE_CUDA`, `ENABLE_MPS` toggle runtimes.
-  - `ORTEAF_RUNTIME_STATS_LEVEL` (`0/1/2`) with per-component overrides (`ORTEAF_CPU_STATS_LEVEL`, etc., `AUTO` inherits).
-  - These values propagate to both the library and tests via `ORTEAF_ENABLE_*` and `ORTEAF_*_STATS_LEVEL` macros.
+  - `ORTEAF_STATS_LEVEL` (`STATS_BASIC`, `STATS_EXTENDED`, `OFF`) with per-component overrides (`ORTEAF_STATS_LEVEL_CPU`, etc., `AUTO` inherits).
+  - `ORTEAF_LOG_LEVEL` (`TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `CRITICAL`, `OFF`) with per-category overrides (`ORTEAF_LOG_LEVEL_CORE`, etc., `AUTO` inherits).
+  - These values propagate to both the library and tests via `ORTEAF_ENABLE_*`, `ORTEAF_STATS_LEVEL_*_VALUE`, and `ORTEAF_LOG_LEVEL_*_VALUE` macros.
 
 ## Repository Layout
 ```
@@ -33,7 +34,7 @@ scripts/setup-mps.sh   # Placeholder for macOS Metal setup
 
 ## Build & Test Workflow
 1. Configure from the project root:  
-   `cmake -S . -B build -DENABLE_CUDA=ON -DORTEAF_RUNTIME_STATS_LEVEL=1`
+   `cmake -S . -B build -DENABLE_CUDA=ON -DORTEAF_STATS_LEVEL=STATS_BASIC`
 2. Build: `cmake --build build`
 3. To generate docs (requires Doxygen):  
    `doxygen docs/Doxyfile` → output under `docs/api/html/`.
