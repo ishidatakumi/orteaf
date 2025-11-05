@@ -1,3 +1,11 @@
+/**
+ * @file cuda_context.cu
+ * @brief Implementation of CUDA context helpers (retain/create/set/release).
+ *
+ * These functions wrap CUDA Driver API calls and surface errors through
+ * `OrteafErrc` as `std::system_error` via `CU_CHECK`. When CUDA is disabled,
+ * implementations are effectively no-ops and return nullptr where applicable.
+ */
 #include "orteaf/internal/backend/cuda/cuda_context.h"
 #include "orteaf/internal/backend/cuda/cuda_device.h"
 #include "orteaf/internal/backend/cuda/cuda_objc_bridge.h"
@@ -9,6 +17,9 @@
 
 namespace orteaf::internal::backend::cuda {
 
+/**
+ * @copydoc orteaf::internal::backend::cuda::get_primary_context
+ */
 CUcontext_t get_primary_context(CUdevice_t device) {
 #ifdef ORTEAF_ENABLE_CUDA
     CUdevice objc_device = cu_device_from_opaque(device);
@@ -21,6 +32,9 @@ CUcontext_t get_primary_context(CUdevice_t device) {
 #endif
 }
 
+/**
+ * @copydoc orteaf::internal::backend::cuda::create_context
+ */
 CUcontext_t create_context(CUdevice_t device) {
 #ifdef ORTEAF_ENABLE_CUDA
     CUdevice objc_device = cu_device_from_opaque(device);
@@ -33,6 +47,9 @@ CUcontext_t create_context(CUdevice_t device) {
 #endif
 }
 
+/**
+ * @copydoc orteaf::internal::backend::cuda::set_context
+ */
 void set_context(CUcontext_t context) {
 #ifdef ORTEAF_ENABLE_CUDA
     CUcontext objc_context = objc_from_opaque_noown<CUcontext>(context);
@@ -42,6 +59,9 @@ void set_context(CUcontext_t context) {
 #endif
 }
 
+/**
+ * @copydoc orteaf::internal::backend::cuda::release_primary_context
+ */
 void release_primary_context(CUdevice_t device) {
 #ifdef ORTEAF_ENABLE_CUDA
     CUdevice objc_device = cu_device_from_opaque(device);
@@ -51,6 +71,9 @@ void release_primary_context(CUdevice_t device) {
 #endif
 }
 
+/**
+ * @copydoc orteaf::internal::backend::cuda::release_context
+ */
 void release_context(CUcontext_t context) {
 #ifdef ORTEAF_ENABLE_CUDA
     CUcontext objc_context = objc_from_opaque_noown<CUcontext>(context);
