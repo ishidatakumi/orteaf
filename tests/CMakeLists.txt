@@ -24,9 +24,17 @@ endif()
 
 enable_testing()
 
-file(GLOB_RECURSE ORTEAF_TEST_SOURCES CONFIGURE_DEPENDS
+# Collect C++ test sources
+file(GLOB_RECURSE ORTEAF_TEST_SOURCES_CPP CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_SOURCE_DIR}/*.cpp
 )
+
+# Collect Objective-C++ test sources (for MPS tests)
+file(GLOB_RECURSE ORTEAF_TEST_SOURCES_MM CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/*.mm
+)
+
+set(ORTEAF_TEST_SOURCES ${ORTEAF_TEST_SOURCES_CPP} ${ORTEAF_TEST_SOURCES_MM})
 
 if(ORTEAF_TEST_SOURCES)
     add_executable(orteaf_tests ${ORTEAF_TEST_SOURCES})
@@ -41,6 +49,15 @@ if(ORTEAF_TEST_SOURCES)
             ${ORTEAF_GENERATED_INCLUDE_DIR}
     )
     target_compile_features(orteaf_tests PRIVATE cxx_std_20)
+    
+    # Link Metal/MPS frameworks on macOS when MPS tests are present
+    if(APPLE AND ORTEAF_TEST_SOURCES_MM)
+        target_link_libraries(orteaf_tests
+            PRIVATE
+                "-framework" "Metal"
+                "-framework" "MetalPerformanceShaders"
+        )
+    endif()
 
     include(GoogleTest)
     gtest_discover_tests(orteaf_tests)
