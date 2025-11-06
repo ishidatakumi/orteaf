@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <new>
 #include <cstdint>
+#include <cstddef>
 
 namespace orteaf::internal::backend::cpu {
 
