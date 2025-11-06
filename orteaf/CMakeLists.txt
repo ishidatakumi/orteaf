@@ -38,6 +38,7 @@ target_compile_definitions(orteaf_extension INTERFACE
 
 file(GLOB_RECURSE ORTEAF_SOURCES CONFIGURE_DEPENDS
     ${ORTEAF_SOURCE_ROOT}/src/*.cpp
+    ${ORTEAF_SOURCE_ROOT}/src/*.mm
 )
 
 if(ORTEAF_SOURCES)
@@ -50,6 +51,15 @@ target_link_libraries(orteaf
     PUBLIC
         orteaf_extension
 )
+
+# Link Metal/MPS frameworks on macOS when MPS is enabled
+if(APPLE AND ORTEAF_ENABLE_MPS_INT)
+    target_link_libraries(orteaf
+        PUBLIC
+            "-framework" "Metal"
+            "-framework" "MetalPerformanceShaders"
+    )
+endif()
 
 target_include_directories(orteaf
     PRIVATE
