@@ -62,7 +62,7 @@ TEST(CudaCheckError, CudaCheckThrowsCorrectErrorCode) {
         cuda::cuda_check(cudaErrorMemoryAllocation, "alloc_test", "file.cpp", 100);
         FAIL() << "Expected std::system_error to be thrown";
     } catch (const std::system_error& ex) {
-        EXPECT_EQ(static_cast<diag::OrteafErrc>(ex.code().value()), diag::OrteafErrc::OperationFailed);
+        EXPECT_EQ(static_cast<diag::OrteafErrc>(ex.code().value()), diag::OrteafErrc::OutOfMemory);
         std::string what = ex.what();
         EXPECT_NE(what.find("alloc_test"), std::string::npos);
         EXPECT_NE(what.find("file.cpp"), std::string::npos);

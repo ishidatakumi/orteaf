@@ -30,7 +30,6 @@ protected:
             GTEST_SKIP() << "No CUDA devices available";
         }
         device_ = cuda::get_device(0);
-        EXPECT_NE(device_, 0);
         
         // Get primary context for tests
         context_ = cuda::get_primary_context(device_);

@@ -55,15 +55,11 @@ TEST_F(CudaAllocCopyTest, AllocDeviceMemorySucceeds) {
 }
 
 /**
- * @brief Test that allocating zero bytes returns valid pointer.
+ * @brief Test that allocating zero bytes fails (CUDA does not allow zero-size allocation).
  */
-TEST_F(CudaAllocCopyTest, AllocZeroBytesSucceeds) {
-    cuda::CUdeviceptr_t ptr = cuda::alloc(0);
-    // CUDA may return 0 or a valid pointer for zero-size allocation
-    // Both behaviors are acceptable
-    if (ptr != 0) {
-        cuda::free(ptr, 0);
-    }
+TEST_F(CudaAllocCopyTest, AllocZeroBytesFails) {
+    // CUDA's cuMemAlloc does not allow zero-size allocation
+    EXPECT_THROW(cuda::alloc(0), std::system_error);
 }
 
 /**
