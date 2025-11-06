@@ -229,8 +229,15 @@ TEST_F(MpsCommandQueueBufferTest, EncodeWaitSucceeds) {
     mps::MPSEvent_t event = mps::create_event(device_);
     ASSERT_NE(event, nullptr);
     
-    // First, signal the event
-    mps::write_event(queue, event, 1);
+    // First, signal the event using explicit command buffer
+    {
+        mps::MPSCommandBuffer_t buffer_signal = mps::create_command_buffer(queue);
+        ASSERT_NE(buffer_signal, nullptr);
+        mps::record_event(event, buffer_signal, 1);
+        mps::commit(buffer_signal);
+        mps::wait_until_completed(buffer_signal);
+        mps::destroy_command_buffer(buffer_signal);
+    }
     
     // Then create a buffer that waits for it
     mps::MPSCommandBuffer_t buffer = mps::create_command_buffer(queue);

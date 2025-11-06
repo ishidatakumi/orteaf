@@ -27,15 +27,8 @@ void record_event(MPSEvent_t event, MPSCommandBuffer_t command_buffer, uint64_t 
 bool query_event(MPSEvent_t event, uint64_t expected_value = 1);
 /** Get current signaledValue for the event. */
 uint64_t event_value(MPSEvent_t event);
-/** Convenience: create CB on queue, signal event, submit, destroy CB. */
-void write_event(MPSCommandQueue_t command_queue, MPSEvent_t event, uint64_t value = 1);
 /** Encode wait in a command buffer until event reaches value. */
 void wait_event(MPSCommandBuffer_t command_buffer, MPSEvent_t event, uint64_t value = 1);
-/** Convenience: create CB on queue, wait event, submit, destroy CB. */
-void write_event_queue(MPSCommandQueue_t command_queue, MPSEvent_t event, uint64_t value = 1);
-/** Convenience: create CB on queue, wait event, submit, destroy CB. */
-void wait_event_queue(MPSCommandQueue_t command_queue, MPSEvent_t event, uint64_t value = 1);
-
 
 } // namespace orteaf::internal::backend::mps
 

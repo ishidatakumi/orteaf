@@ -289,6 +289,7 @@ TEST_F(MpsStatsTest, MpsStatsReturnsSameInstance) {
 /**
  * @brief Test that statistics are thread-safe.
  */
+#if ORTEAF_STATS_LEVEL_MPS_VALUE <= 2
 TEST_F(MpsStatsTest, StatisticsAreThreadSafe) {
     auto& stats = mps::stats_instance();
     constexpr int num_threads = 4;
@@ -314,6 +315,7 @@ TEST_F(MpsStatsTest, StatisticsAreThreadSafe) {
     EXPECT_EQ(stats.total_allocations(), num_threads * ops_per_thread);
     EXPECT_EQ(stats.total_deallocations(), num_threads * ops_per_thread);
 }
+#endif  // ORTEAF_STATS_LEVEL_MPS_VALUE <= 2
 
 #else  // !ORTEAF_ENABLE_MPS || !ORTEAF_STATS_LEVEL_MPS_VALUE
 

@@ -99,40 +99,6 @@ uint64_t event_value(MPSEvent_t event) {
 }
 
 /**
- * @copydoc orteaf::internal::backend::mps::write_event
- */
-void write_event(MPSCommandQueue_t command_queue, MPSEvent_t event, uint64_t value) {
-#if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
-    if (!command_queue || !event) return;
-    MPSCommandBuffer_t command_buffer = create_command_buffer(command_queue);
-    if (!command_buffer) return;
-    record_event(event, command_buffer, value);
-    commit(command_buffer);
-    destroy_command_buffer(command_buffer);
-#else
-    (void)command_queue;
-    (void)event;
-    (void)value;
-#endif
-}
-
-/**
- * @copydoc orteaf::internal::backend::mps::write_event_queue
- */
-void write_event_queue(MPSCommandQueue_t command_queue, MPSEvent_t event, uint64_t value) {
-#if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
-    MPSCommandBuffer_t command_buffer = create_command_buffer(command_queue);
-    record_event(event, command_buffer, value);
-    commit(command_buffer);
-    destroy_command_buffer(command_buffer);
-#else
-    (void)command_queue;
-    (void)event;
-    (void)value;
-#endif
-}
-
-/**
  * @copydoc orteaf::internal::backend::mps::wait_event
  */
 void wait_event(MPSCommandBuffer_t command_buffer, MPSEvent_t event, uint64_t value) {
@@ -143,22 +109,6 @@ void wait_event(MPSCommandBuffer_t command_buffer, MPSEvent_t event, uint64_t va
     [objc_command_buffer encodeWaitForEvent:objc_event value:value];
 #else
     (void)command_buffer;
-    (void)event;
-    (void)value;
-#endif
-}
-
-/**
- * @copydoc orteaf::internal::backend::mps::wait_event_queue
- */
-void wait_event_queue(MPSCommandQueue_t command_queue, MPSEvent_t event, uint64_t value) {
-#if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
-    MPSCommandBuffer_t command_buffer = create_command_buffer(command_queue);
-    wait_event(command_buffer, event, value);
-    commit(command_buffer);
-    destroy_command_buffer(command_buffer);
-#else
-    (void)command_queue;
     (void)event;
     (void)value;
 #endif

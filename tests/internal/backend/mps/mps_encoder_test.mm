@@ -12,6 +12,12 @@
 #include "orteaf/internal/backend/mps/mps_buffer.h"
 #include "orteaf/internal/backend/mps/mps_compute_command_encorder.h"
 #include "orteaf/internal/backend/mps/mps_size.h"
+#include "orteaf/internal/backend/mps/mps_library.h"
+#include "orteaf/internal/backend/mps/mps_function.h"
+#include "orteaf/internal/backend/mps/mps_pipeline_state.h"
+#include "orteaf/internal/backend/mps/mps_string.h"
+#include "orteaf/internal/backend/mps/mps_compile_options.h"
+#include "orteaf/internal/backend/mps/mps_error.h"
 
 #include <gtest/gtest.h>
 
@@ -109,12 +115,27 @@ TEST_F(MpsEncoderTest, SetPipelineStateSucceeds) {
     mps::MPSComputeCommandEncoder_t encoder = mps::create_compute_command_encoder(buffer);
     ASSERT_NE(encoder, nullptr);
     
-    // Even with nullptr pipeline state, should not crash
-    EXPECT_NO_THROW(mps::set_pipeline_state(encoder, nullptr));
-    
+    // Create minimal compute pipeline and bind it
+    mps::MPSError_t error = nullptr;
+    mps::MPSString_t source = mps::to_ns_string(std::string_view("kernel void test() {}"));
+    mps::MPSCompileOptions_t options = mps::create_compile_options();
+    mps::MPSLibrary_t library = mps::create_library_with_source(device_, source, options, &error);
+    ASSERT_NE(library, nullptr);
+    mps::MPSFunction_t function = mps::create_function(library, "test");
+    ASSERT_NE(function, nullptr);
+    mps::MPSPipelineState_t pipeline = mps::create_pipeline_state(device_, function, &error);
+    ASSERT_NE(pipeline, nullptr);
+
+    EXPECT_NO_THROW(mps::set_pipeline_state(encoder, pipeline));
+
     mps::end_encoding(encoder);
     mps::destroy_compute_command_encoder(encoder);
     mps::destroy_command_buffer(buffer);
+
+    mps::destroy_pipeline_state(pipeline);
+    mps::destroy_function(function);
+    mps::destroy_library(library);
+    mps::destroy_compile_options(options);
 }
 
 /**
@@ -166,6 +187,19 @@ TEST_F(MpsEncoderTest, SetThreadgroupsSucceeds) {
     mps::MPSComputeCommandEncoder_t encoder = mps::create_compute_command_encoder(buffer);
     ASSERT_NE(encoder, nullptr);
     
+    // Create minimal compute pipeline and bind it
+    mps::MPSError_t error = nullptr;
+    mps::MPSString_t source = mps::to_ns_string(std::string_view("kernel void test() {}"));
+    mps::MPSCompileOptions_t options = mps::create_compile_options();
+    mps::MPSLibrary_t library = mps::create_library_with_source(device_, source, options, &error);
+    ASSERT_NE(library, nullptr);
+    mps::MPSFunction_t function = mps::create_function(library, "test");
+    ASSERT_NE(function, nullptr);
+    mps::MPSPipelineState_t pipeline = mps::create_pipeline_state(device_, function, &error);
+    ASSERT_NE(pipeline, nullptr);
+
+    EXPECT_NO_THROW(mps::set_pipeline_state(encoder, pipeline));
+
     mps::MPSSize_t threadgroups = mps::make_size(1, 1, 1);
     mps::MPSSize_t threads_per_threadgroup = mps::make_size(1, 1, 1);
     
@@ -174,6 +208,11 @@ TEST_F(MpsEncoderTest, SetThreadgroupsSucceeds) {
     mps::end_encoding(encoder);
     mps::destroy_compute_command_encoder(encoder);
     mps::destroy_command_buffer(buffer);
+
+    mps::destroy_pipeline_state(pipeline);
+    mps::destroy_function(function);
+    mps::destroy_library(library);
+    mps::destroy_compile_options(options);
 }
 
 /**

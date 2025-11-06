@@ -17,6 +17,11 @@ namespace orteaf::internal::backend::mps {
  */
 MPSPipelineState_t create_pipeline_state(MPSDevice_t device, MPSFunction_t function, MPSError_t* error) {
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
+    if (!device || !function) {
+        // Respect API contract: return nullptr on invalid input without touching Metal API
+        (void)error;
+        return nullptr;
+    }
     id<MTLDevice> objc_device = objc_from_opaque_noown<id<MTLDevice>>(device);
     id<MTLFunction> objc_function = objc_from_opaque_noown<id<MTLFunction>>(function);
     NSError** objc_error = error ? (NSError**)error : nullptr;

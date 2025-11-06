@@ -116,7 +116,6 @@ TEST_F(MpsEventTest, RecordEventSucceeds) {
     ASSERT_NE(buffer, nullptr);
     
     EXPECT_NO_THROW(mps::record_event(event, buffer, 1));
-    
     mps::commit(buffer);
     mps::wait_until_completed(buffer);
     
@@ -128,21 +127,7 @@ TEST_F(MpsEventTest, RecordEventSucceeds) {
     mps::destroy_event(event);
 }
 
-/**
- * @brief Test that write_event convenience function works.
- */
-TEST_F(MpsEventTest, WriteEventConvenienceWorks) {
-    mps::MPSEvent_t event = mps::create_event(device_);
-    ASSERT_NE(event, nullptr);
-    
-    EXPECT_NO_THROW(mps::write_event(queue_, event, 1));
-    
-    // Event value should be 1 now
-    EXPECT_EQ(mps::event_value(event), 1);
-    EXPECT_TRUE(mps::query_event(event, 1));
-    
-    mps::destroy_event(event);
-}
+// Removed: write_event convenience function no longer exists
 
 /**
  * @brief Test that wait_event works.
@@ -151,8 +136,15 @@ TEST_F(MpsEventTest, WaitEventSucceeds) {
     mps::MPSEvent_t event = mps::create_event(device_);
     ASSERT_NE(event, nullptr);
     
-    // First signal the event
-    mps::write_event(queue_, event, 1);
+    // First signal the event using explicit command buffer
+    {
+        mps::MPSCommandBuffer_t buffer_signal = mps::create_command_buffer(queue_);
+        ASSERT_NE(buffer_signal, nullptr);
+        mps::record_event(event, buffer_signal, 1);
+        mps::commit(buffer_signal);
+        mps::wait_until_completed(buffer_signal);
+        mps::destroy_command_buffer(buffer_signal);
+    }
     
     // Then create a buffer that waits for it
     mps::MPSCommandBuffer_t buffer = mps::create_command_buffer(queue_);
@@ -167,35 +159,9 @@ TEST_F(MpsEventTest, WaitEventSucceeds) {
     mps::destroy_event(event);
 }
 
-/**
- * @brief Test that wait_event_queue convenience function works.
- */
-TEST_F(MpsEventTest, WaitEventQueueConvenienceWorks) {
-    mps::MPSEvent_t event = mps::create_event(device_);
-    ASSERT_NE(event, nullptr);
-    
-    // First signal the event
-    mps::write_event(queue_, event, 1);
-    
-    EXPECT_NO_THROW(mps::wait_event_queue(queue_, event, 1));
-    
-    mps::destroy_event(event);
-}
+// Removed: wait_event_queue convenience function no longer exists
 
-/**
- * @brief Test that write_event_queue convenience function works.
- */
-TEST_F(MpsEventTest, WriteEventQueueConvenienceWorks) {
-    mps::MPSEvent_t event = mps::create_event(device_);
-    ASSERT_NE(event, nullptr);
-    
-    EXPECT_NO_THROW(mps::write_event_queue(queue_, event, 1));
-    
-    // Event value should be 1 now
-    EXPECT_EQ(mps::event_value(event), 1);
-    
-    mps::destroy_event(event);
-}
+// Removed: write_event_queue convenience function no longer exists
 
 /**
  * @brief Test that event values can be incremented.
@@ -204,13 +170,34 @@ TEST_F(MpsEventTest, EventValuesCanBeIncremented) {
     mps::MPSEvent_t event = mps::create_event(device_);
     ASSERT_NE(event, nullptr);
     
-    mps::write_event(queue_, event, 1);
+    {
+        mps::MPSCommandBuffer_t buffer = mps::create_command_buffer(queue_);
+        ASSERT_NE(buffer, nullptr);
+        mps::record_event(event, buffer, 1);
+        mps::commit(buffer);
+        mps::wait_until_completed(buffer);
+        mps::destroy_command_buffer(buffer);
+    }
     EXPECT_EQ(mps::event_value(event), 1);
     
-    mps::write_event(queue_, event, 2);
+    {
+        mps::MPSCommandBuffer_t buffer = mps::create_command_buffer(queue_);
+        ASSERT_NE(buffer, nullptr);
+        mps::record_event(event, buffer, 2);
+        mps::commit(buffer);
+        mps::wait_until_completed(buffer);
+        mps::destroy_command_buffer(buffer);
+    }
     EXPECT_EQ(mps::event_value(event), 2);
     
-    mps::write_event(queue_, event, 3);
+    {
+        mps::MPSCommandBuffer_t buffer = mps::create_command_buffer(queue_);
+        ASSERT_NE(buffer, nullptr);
+        mps::record_event(event, buffer, 3);
+        mps::commit(buffer);
+        mps::wait_until_completed(buffer);
+        mps::destroy_command_buffer(buffer);
+    }
     EXPECT_EQ(mps::event_value(event), 3);
     
     mps::destroy_event(event);
@@ -225,11 +212,25 @@ TEST_F(MpsEventTest, QueryEventChecksCorrectly) {
     
     EXPECT_FALSE(mps::query_event(event, 1));
     
-    mps::write_event(queue_, event, 1);
+    {
+        mps::MPSCommandBuffer_t buffer = mps::create_command_buffer(queue_);
+        ASSERT_NE(buffer, nullptr);
+        mps::record_event(event, buffer, 1);
+        mps::commit(buffer);
+        mps::wait_until_completed(buffer);
+        mps::destroy_command_buffer(buffer);
+    }
     EXPECT_TRUE(mps::query_event(event, 1));
     EXPECT_FALSE(mps::query_event(event, 2));
     
-    mps::write_event(queue_, event, 3);
+    {
+        mps::MPSCommandBuffer_t buffer = mps::create_command_buffer(queue_);
+        ASSERT_NE(buffer, nullptr);
+        mps::record_event(event, buffer, 3);
+        mps::commit(buffer);
+        mps::wait_until_completed(buffer);
+        mps::destroy_command_buffer(buffer);
+    }
     EXPECT_TRUE(mps::query_event(event, 1));
     EXPECT_TRUE(mps::query_event(event, 2));
     EXPECT_TRUE(mps::query_event(event, 3));
