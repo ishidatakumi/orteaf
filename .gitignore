@@ -50,3 +50,6 @@ docs/api-tests/
 .specstory/
 
 build/
+
+.gemini/
+gha-creds-*.json

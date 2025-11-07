@@ -12,7 +12,7 @@
 #include "orteaf/internal/backend/mps/mps_command_buffer.h"
 #include "orteaf/internal/backend/mps/mps_stats.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"
-#include "orteaf/internal/diagnostics/error/error_impl.h"
+#include "orteaf/internal/diagnostics/error/error.h"
 
 namespace orteaf::internal::backend::mps {
 
@@ -21,10 +21,6 @@ namespace orteaf::internal::backend::mps {
  */
 MPSEvent_t create_event(MPSDevice_t device) {
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
-    if (device == nullptr) {
-        using namespace orteaf::internal::diagnostics::error;
-        throw_error(OrteafErrc::NullPointer, "create_event: device cannot be nullptr");
-    }
     orteaf::internal::backend::mps::AutoreleasePool pool{};
     id<MTLDevice> objc_device = objc_from_opaque_noown<id<MTLDevice>>(device);
     id<MTLSharedEvent> objc_event = [objc_device newSharedEvent];
@@ -60,10 +56,7 @@ void destroy_event(MPSEvent_t event) {
  */
 void record_event(MPSEvent_t event, MPSCommandBuffer_t command_buffer, uint64_t value) {
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
-    if (event == nullptr) {
-        using namespace orteaf::internal::diagnostics::error;
-        throw_error(OrteafErrc::NullPointer, "record_event: event cannot be nullptr");
-    }
+    if (!event) return;
     id<MTLSharedEvent> objc_event = objc_from_opaque_noown<id<MTLSharedEvent>>(event);
     if (command_buffer) {
         id<MTLCommandBuffer> objc_command_buffer = objc_from_opaque_noown<id<MTLCommandBuffer>>(command_buffer);
@@ -111,14 +104,7 @@ uint64_t event_value(MPSEvent_t event) {
  */
 void wait_event(MPSCommandBuffer_t command_buffer, MPSEvent_t event, uint64_t value) {
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
-    if (command_buffer == nullptr) {
-        using namespace orteaf::internal::diagnostics::error;
-        throw_error(OrteafErrc::NullPointer, "wait_event: command_buffer cannot be nullptr");
-    }
-    if (event == nullptr) {
-        using namespace orteaf::internal::diagnostics::error;
-        throw_error(OrteafErrc::NullPointer, "wait_event: event cannot be nullptr");
-    }
+    if (!command_buffer || !event) return;
     id<MTLCommandBuffer> objc_command_buffer = objc_from_opaque_noown<id<MTLCommandBuffer>>(command_buffer);
     id<MTLSharedEvent> objc_event = objc_from_opaque_noown<id<MTLSharedEvent>>(event);
     [objc_command_buffer encodeWaitForEvent:objc_event value:value];

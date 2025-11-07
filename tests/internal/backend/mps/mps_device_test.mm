@@ -76,7 +76,7 @@ TEST_F(MpsDeviceTest, GetDeviceByIndexSucceeds) {
 }
 
 /**
- * @brief Test that get_device with invalid index returns nullptr.
+ * @brief Test that get_device with invalid index throws NSRangeException.
  */
 TEST_F(MpsDeviceTest, GetDeviceInvalidIndexReturnsNullptr) {
     int count = mps::get_device_count();
@@ -84,11 +84,21 @@ TEST_F(MpsDeviceTest, GetDeviceInvalidIndexReturnsNullptr) {
         GTEST_SKIP() << "No Metal devices available";
     }
     
-    mps::MPSDevice_t device = mps::get_device(count);  // Out of range
-    EXPECT_EQ(device, nullptr);
+    // Out of range - should throw NSRangeException
+    @try {
+        mps::MPSDevice_t device = mps::get_device(count);
+        FAIL() << "Expected NSRangeException for out of range device_id";
+    } @catch (NSException* exception) {
+        EXPECT_TRUE([exception.name isEqualToString:NSRangeException]);
+    }
     
-    device = mps::get_device(-1);  // Negative index
-    EXPECT_EQ(device, nullptr);
+    // Negative index - should throw NSRangeException
+    @try {
+        mps::MPSDevice_t device = mps::get_device(-1);
+        FAIL() << "Expected NSRangeException for negative device_id";
+    } @catch (NSException* exception) {
+        EXPECT_TRUE([exception.name isEqualToString:NSRangeException]);
+    }
 }
 
 /**

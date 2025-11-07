@@ -9,7 +9,7 @@
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
-#include "orteaf/internal/diagnostics/error/error_impl.h"
+#include "orteaf/internal/diagnostics/error/error.h"
 #endif
 
 namespace orteaf::internal::backend::mps {

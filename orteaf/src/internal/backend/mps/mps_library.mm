@@ -10,7 +10,7 @@
 #import <Foundation/Foundation.h>
 #import <objc/message.h>
 #import <dispatch/dispatch.h>
-#include "orteaf/internal/diagnostics/error/error_impl.h"
+#include "orteaf/internal/diagnostics/error/error.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
