@@ -40,7 +40,16 @@ CUcontext_t create_context(CUdevice_t device) {
 #ifdef ORTEAF_ENABLE_CUDA
     CUdevice objc_device = cu_device_from_opaque(device);
     CUcontext context = nullptr;
+#if defined(CUDA_VERSION) && CUDA_VERSION >= 13000
+    // CUDA 13 switched cuCtxCreate -> cuCtxCreate_v4 with an extra params struct.
+    CUctxCreateParams ctx_params{};
+    ctx_params.execAffinityParams = nullptr;
+    ctx_params.numExecAffinityParams = 0;
+    ctx_params.cigParams = nullptr;
+    CU_CHECK(cuCtxCreate(&context, &ctx_params, 0, objc_device));
+#else
     CU_CHECK(cuCtxCreate(&context, 0, objc_device));
+#endif
     return opaque_from_objc_noown<CUcontext_t, CUcontext>(context);
 #else
     (void)device;

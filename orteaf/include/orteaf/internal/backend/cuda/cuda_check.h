@@ -58,8 +58,12 @@ inline orteaf::internal::diagnostics::error::OrteafErrc map_runtime_errc(cudaErr
         case cudaErrorInvalidFilterSetting:
         case cudaErrorInvalidNormSetting:
         case cudaErrorInvalidAddressSpace:
+#if defined(cudaErrorInvalidHandle)
         case cudaErrorInvalidHandle:
+#endif
+#if defined(cudaErrorNotFound)
         case cudaErrorNotFound:
+#endif
         case cudaErrorFileNotFound:
         case cudaErrorIllegalAddress:        // Invalid address reference from kernel
             return OrteafErrc::InvalidParameter;
@@ -73,7 +77,9 @@ inline orteaf::internal::diagnostics::error::OrteafErrc map_runtime_errc(cudaErr
         case cudaErrorDeviceUninitialized:
         case cudaErrorPeerAccessAlreadyEnabled:
         case cudaErrorPeerAccessNotEnabled:
+#if defined(cudaErrorPrimaryContextActive)
         case cudaErrorPrimaryContextActive:
+#endif
         case cudaErrorContextIsDestroyed:
             return OrteafErrc::InvalidState;
         
@@ -82,7 +88,9 @@ inline orteaf::internal::diagnostics::error::OrteafErrc map_runtime_errc(cudaErr
         case cudaErrorNoDevice:
         case cudaErrorInsufficientDriver:
         case cudaErrorStartupFailure:
+#if defined(cudaErrorDeviceUnavailable)
         case cudaErrorDeviceUnavailable:
+#endif
             return OrteafErrc::BackendUnavailable;
         
         // Asynchronous operation not yet completed (not a failure, but "not ready yet")
@@ -94,7 +102,9 @@ inline orteaf::internal::diagnostics::error::OrteafErrc map_runtime_errc(cudaErr
             return OrteafErrc::Timeout;
         
         // Device lost / hardware failure
+#if defined(cudaErrorDeviceLost)
         case cudaErrorDeviceLost:
+#endif
         case cudaErrorHardwareStackError:
             return OrteafErrc::DeviceLost;
         
@@ -271,7 +281,9 @@ inline orteaf::internal::diagnostics::error::OrteafErrc map_driver_errc(CUresult
             return OrteafErrc::Timeout;
         
         // Device lost / hardware failure
+#if defined(CUDA_ERROR_DEVICE_LOST)
         case CUDA_ERROR_DEVICE_LOST:
+#endif
             return OrteafErrc::DeviceLost;
         
         // Resource contention / busy

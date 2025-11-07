@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.4
-FROM nvidia/cuda:12.2.0-devel-ubuntu22.04
+FROM nvidia/cuda:13.0.0-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     TZ=Etc/UTC

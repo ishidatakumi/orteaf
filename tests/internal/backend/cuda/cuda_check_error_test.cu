@@ -17,24 +17,24 @@ namespace diag = orteaf::internal::diagnostics::error;
  * @brief Test that map_runtime_errc maps CUDA errors correctly.
  */
 TEST(CudaCheckError, MapRuntimeErrcMapsCorrectly) {
-    EXPECT_EQ(cuda::map_runtime_errc(cudaSuccess), diag::OrteafErrc::OperationFailed);
+    EXPECT_EQ(cuda::map_runtime_errc(cudaSuccess), diag::OrteafErrc::Success);
     EXPECT_EQ(cuda::map_runtime_errc(cudaErrorMemoryAllocation), diag::OrteafErrc::OutOfMemory);
     EXPECT_EQ(cuda::map_runtime_errc(cudaErrorInvalidValue), diag::OrteafErrc::InvalidParameter);
     EXPECT_EQ(cuda::map_runtime_errc(cudaErrorInitializationError), diag::OrteafErrc::BackendUnavailable);
     EXPECT_EQ(cuda::map_runtime_errc(cudaErrorInitializationError), diag::OrteafErrc::BackendUnavailable);
-    EXPECT_EQ(cuda::map_runtime_errc(cudaErrorUnknown), diag::OrteafErrc::OperationFailed);
+    EXPECT_EQ(cuda::map_runtime_errc(cudaErrorUnknown), diag::OrteafErrc::Unknown);
 }
 
 /**
  * @brief Test that map_driver_errc maps CUDA Driver errors correctly.
  */
 TEST(CudaCheckError, MapDriverErrcMapsCorrectly) {
-    EXPECT_EQ(cuda::map_driver_errc(CUDA_SUCCESS), diag::OrteafErrc::OperationFailed);
+    EXPECT_EQ(cuda::map_driver_errc(CUDA_SUCCESS), diag::OrteafErrc::Success);
     EXPECT_EQ(cuda::map_driver_errc(CUDA_ERROR_DEINITIALIZED), diag::OrteafErrc::BackendUnavailable);
     EXPECT_EQ(cuda::map_driver_errc(CUDA_ERROR_NOT_INITIALIZED), diag::OrteafErrc::BackendUnavailable);
     EXPECT_EQ(cuda::map_driver_errc(CUDA_ERROR_OUT_OF_MEMORY), diag::OrteafErrc::OutOfMemory);
     EXPECT_EQ(cuda::map_driver_errc(CUDA_ERROR_INVALID_VALUE), diag::OrteafErrc::InvalidParameter);
-    EXPECT_EQ(cuda::map_driver_errc(CUDA_ERROR_INVALID_CONTEXT), diag::OrteafErrc::OperationFailed);
+    EXPECT_EQ(cuda::map_driver_errc(CUDA_ERROR_INVALID_CONTEXT), diag::OrteafErrc::InvalidState);
 }
 
 /**

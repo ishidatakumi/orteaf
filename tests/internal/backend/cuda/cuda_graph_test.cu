@@ -186,6 +186,15 @@ TEST_F(CudaGraphTest, EndGraphCaptureNullptrStreamThrows) {
 }
 
 /**
+ * @brief Test that end_graph_capture with nullptr graph throws.
+ */
+TEST_F(CudaGraphTest, EndGraphCaptureNullptrGraphThrows) {
+    cuda::CUstream_t stream = cuda::get_stream();
+    EXPECT_THROW(cuda::end_graph_capture(stream, nullptr), std::system_error);
+    cuda::release_stream(stream);
+}
+
+/**
  * @brief Test that instantiate_graph succeeds.
  */
 TEST_F(CudaGraphTest, InstantiateGraphSucceeds) {

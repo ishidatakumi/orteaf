@@ -111,6 +111,35 @@ TEST_F(CudaStatsTest, UpdateDeviceSwitchIncrements) {
     EXPECT_EQ(stats.device_switches(), initial + 2);
 }
 
+/**
+ * @brief Test that statistics are thread-safe.
+ */
+TEST_F(CudaStatsTest, StatisticsAreThreadSafe) {
+    auto& stats = cuda::stats_instance();
+    constexpr int num_threads = 4;
+    constexpr int ops_per_thread = 100;
+    
+    std::vector<std::thread> threads;
+    
+    for (int i = 0; i < num_threads; ++i) {
+        threads.emplace_back([&stats]() {
+            for (int j = 0; j < ops_per_thread; ++j) {
+                cuda::update_alloc(1024);
+                cuda::update_dealloc(1024);
+            }
+        });
+    }
+    
+    for (auto& t : threads) {
+        t.join();
+    }
+    
+    // All allocations should be deallocated
+    EXPECT_EQ(stats.active_allocations(), 0);
+    EXPECT_EQ(stats.total_allocations(), num_threads * ops_per_thread);
+    EXPECT_EQ(stats.total_deallocations(), num_threads * ops_per_thread);
+}
+
 #endif  // ORTEAF_STATS_LEVEL_CUDA_VALUE <= 2
 
 #if ORTEAF_STATS_LEVEL_CUDA_VALUE <= 4
@@ -326,35 +355,6 @@ TEST_F(CudaStatsTest, CudaStatsReturnsSameInstance) {
     cuda::CudaStats& stats2 = cuda::cuda_stats();
     
     EXPECT_EQ(&stats1, &stats2);
-}
-
-/**
- * @brief Test that statistics are thread-safe.
- */
-TEST_F(CudaStatsTest, StatisticsAreThreadSafe) {
-    auto& stats = cuda::stats_instance();
-    constexpr int num_threads = 4;
-    constexpr int ops_per_thread = 100;
-    
-    std::vector<std::thread> threads;
-    
-    for (int i = 0; i < num_threads; ++i) {
-        threads.emplace_back([&stats]() {
-            for (int j = 0; j < ops_per_thread; ++j) {
-                cuda::update_alloc(1024);
-                cuda::update_dealloc(1024);
-            }
-        });
-    }
-    
-    for (auto& t : threads) {
-        t.join();
-    }
-    
-    // All allocations should be deallocated
-    EXPECT_EQ(stats.active_allocations(), 0);
-    EXPECT_EQ(stats.total_allocations(), num_threads * ops_per_thread);
-    EXPECT_EQ(stats.total_deallocations(), num_threads * ops_per_thread);
 }
 
 #else  // !ORTEAF_ENABLE_CUDA || !ORTEAF_STATS_LEVEL_CUDA_VALUE

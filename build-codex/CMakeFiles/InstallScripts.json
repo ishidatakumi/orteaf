@@ -1,0 +1,9 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/ware10sai/dev/orteaf/build-codex/cmake_install.cmake",
+		"/home/ware10sai/dev/orteaf/build-codex/orteaf/cmake_install.cmake",
+		"/home/ware10sai/dev/orteaf/build-codex/tests/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -1,0 +1,146 @@
+[
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/orteaf",
+  "command": "/usr/bin/c++ -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf -I/home/ware10sai/dev/orteaf/orteaf/include -I/home/ware10sai/dev/orteaf/build-codex/generated -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/extension -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/user -isystem /usr/local/cuda/targets/x86_64-linux/include -std=gnu++20 -o CMakeFiles/orteaf.dir/src/internal/diagnostics/log/log.cpp.o -c /home/ware10sai/dev/orteaf/orteaf/src/internal/diagnostics/log/log.cpp",
+  "file": "/home/ware10sai/dev/orteaf/orteaf/src/internal/diagnostics/log/log.cpp",
+  "output": "orteaf/CMakeFiles/orteaf.dir/src/internal/diagnostics/log/log.cpp.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/orteaf",
+  "command": "/usr/bin/c++ -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf -I/home/ware10sai/dev/orteaf/orteaf/include -I/home/ware10sai/dev/orteaf/build-codex/generated -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/extension -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/user -isystem /usr/local/cuda/targets/x86_64-linux/include -std=gnu++20 -o CMakeFiles/orteaf.dir/src/internal/placeholder.cpp.o -c /home/ware10sai/dev/orteaf/orteaf/src/internal/placeholder.cpp",
+  "file": "/home/ware10sai/dev/orteaf/orteaf/src/internal/placeholder.cpp",
+  "output": "orteaf/CMakeFiles/orteaf.dir/src/internal/placeholder.cpp.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/orteaf",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -x cu -c /home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_alloc.cu -o CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_alloc.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_alloc.cu",
+  "output": "orteaf/CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_alloc.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/orteaf",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -x cu -c /home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_context.cu -o CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_context.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_context.cu",
+  "output": "orteaf/CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_context.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/orteaf",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -x cu -c /home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_device.cu -o CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_device.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_device.cu",
+  "output": "orteaf/CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_device.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/orteaf",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -x cu -c /home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_dim.cu -o CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_dim.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_dim.cu",
+  "output": "orteaf/CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_dim.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/orteaf",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -x cu -c /home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_event.cu -o CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_event.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_event.cu",
+  "output": "orteaf/CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_event.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/orteaf",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -x cu -c /home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_graph.cu -o CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_graph.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_graph.cu",
+  "output": "orteaf/CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_graph.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/orteaf",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -x cu -c /home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_init.cu -o CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_init.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_init.cu",
+  "output": "orteaf/CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_init.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/orteaf",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -x cu -c /home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_module.cu -o CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_module.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_module.cu",
+  "output": "orteaf/CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_module.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/orteaf",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -x cu -c /home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_stream.cu -o CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_stream.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/orteaf/src/internal/backend/cuda/cuda_stream.cu",
+  "output": "orteaf/CMakeFiles/orteaf.dir/src/internal/backend/cuda/cuda_stream.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/bin/c++ -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 -I/home/ware10sai/dev/orteaf/orteaf/include -I/home/ware10sai/dev/orteaf/build-codex/generated -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/extension -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/user -isystem /usr/local/cuda/targets/x86_64-linux/include -std=gnu++20 -DGTEST_HAS_PTHREAD=1 -o CMakeFiles/orteaf_tests.dir/internal/backend/cpu/cpu_alloc_test.cpp.o -c /home/ware10sai/dev/orteaf/tests/internal/backend/cpu/cpu_alloc_test.cpp",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/backend/cpu/cpu_alloc_test.cpp",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/backend/cpu/cpu_alloc_test.cpp.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/bin/c++ -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 -I/home/ware10sai/dev/orteaf/orteaf/include -I/home/ware10sai/dev/orteaf/build-codex/generated -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/extension -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/user -isystem /usr/local/cuda/targets/x86_64-linux/include -std=gnu++20 -DGTEST_HAS_PTHREAD=1 -o CMakeFiles/orteaf_tests.dir/internal/backend/cpu/cpu_stats_test.cpp.o -c /home/ware10sai/dev/orteaf/tests/internal/backend/cpu/cpu_stats_test.cpp",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/backend/cpu/cpu_stats_test.cpp",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/backend/cpu/cpu_stats_test.cpp.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/bin/c++ -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 -I/home/ware10sai/dev/orteaf/orteaf/include -I/home/ware10sai/dev/orteaf/build-codex/generated -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/extension -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/user -isystem /usr/local/cuda/targets/x86_64-linux/include -std=gnu++20 -DGTEST_HAS_PTHREAD=1 -o CMakeFiles/orteaf_tests.dir/internal/diagnostics/error/error_result_test.cpp.o -c /home/ware10sai/dev/orteaf/tests/internal/diagnostics/error/error_result_test.cpp",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/diagnostics/error/error_result_test.cpp",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/diagnostics/error/error_result_test.cpp.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/bin/c++ -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 -I/home/ware10sai/dev/orteaf/orteaf/include -I/home/ware10sai/dev/orteaf/build-codex/generated -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/extension -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/user -isystem /usr/local/cuda/targets/x86_64-linux/include -std=gnu++20 -DGTEST_HAS_PTHREAD=1 -o CMakeFiles/orteaf_tests.dir/internal/diagnostics/log/log_test.cpp.o -c /home/ware10sai/dev/orteaf/tests/internal/diagnostics/log/log_test.cpp",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/diagnostics/log/log_test.cpp",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/diagnostics/log/log_test.cpp.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/bin/c++ -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 -I/home/ware10sai/dev/orteaf/orteaf/include -I/home/ware10sai/dev/orteaf/build-codex/generated -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/extension -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/user -isystem /usr/local/cuda/targets/x86_64-linux/include -std=gnu++20 -DGTEST_HAS_PTHREAD=1 -o CMakeFiles/orteaf_tests.dir/internal/version/version_test.cpp.o -c /home/ware10sai/dev/orteaf/tests/internal/version/version_test.cpp",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/version/version_test.cpp",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/version/version_test.cpp.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf_tests.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -DGTEST_HAS_PTHREAD=1 -x cu -c /home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_alloc_copy_test.cu -o CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_alloc_copy_test.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_alloc_copy_test.cu",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_alloc_copy_test.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf_tests.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -DGTEST_HAS_PTHREAD=1 -x cu -c /home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_check_error_test.cu -o CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_check_error_test.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_check_error_test.cu",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_check_error_test.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf_tests.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -DGTEST_HAS_PTHREAD=1 -x cu -c /home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_context_stream_event_test.cu -o CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_context_stream_event_test.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_context_stream_event_test.cu",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_context_stream_event_test.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf_tests.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -DGTEST_HAS_PTHREAD=1 -x cu -c /home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_device_test.cu -o CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_device_test.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_device_test.cu",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_device_test.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf_tests.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -DGTEST_HAS_PTHREAD=1 -x cu -c /home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_graph_test.cu -o CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_graph_test.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_graph_test.cu",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_graph_test.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf_tests.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -DGTEST_HAS_PTHREAD=1 -x cu -c /home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_init_test.cu -o CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_init_test.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_init_test.cu",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_init_test.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf_tests.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -DGTEST_HAS_PTHREAD=1 -x cu -c /home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_module_function_test.cu -o CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_module_function_test.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_module_function_test.cu",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_module_function_test.cu.o"
+},
+{
+  "directory": "/home/ware10sai/dev/orteaf/build-codex/tests",
+  "command": "/usr/local/cuda/bin/nvcc -forward-unknown-to-host-compiler -DORTEAF_ENABLE_CPU=1 -DORTEAF_ENABLE_CUDA=1 -DORTEAF_ENABLE_MPS=0 -DORTEAF_LOG_LEVEL_CORE_VALUE=2 -DORTEAF_LOG_LEVEL_CUDA_VALUE=2 -DORTEAF_LOG_LEVEL_GLOBAL_VALUE=2 -DORTEAF_LOG_LEVEL_IO_VALUE=2 -DORTEAF_LOG_LEVEL_MPS_VALUE=2 -DORTEAF_LOG_LEVEL_TENSOR_VALUE=2 -DORTEAF_STATS_LEVEL_CORE_VALUE=8 -DORTEAF_STATS_LEVEL_CPU_VALUE=8 -DORTEAF_STATS_LEVEL_CUDA_VALUE=8 -DORTEAF_STATS_LEVEL_GLOBAL_VALUE=8 -DORTEAF_STATS_LEVEL_MPS_VALUE=8 --options-file CMakeFiles/orteaf_tests.dir/includes_CUDA.rsp -std=c++20 \"--generate-code=arch=compute_70,code=[sm_70]\" \"--generate-code=arch=compute_75,code=[sm_75]\" \"--generate-code=arch=compute_80,code=[sm_80]\" \"--generate-code=arch=compute_86,code=[sm_86]\" -DGTEST_HAS_PTHREAD=1 -x cu -c /home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_stats_test.cu -o CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_stats_test.cu.o",
+  "file": "/home/ware10sai/dev/orteaf/tests/internal/backend/cuda/cuda_stats_test.cu",
+  "output": "tests/CMakeFiles/orteaf_tests.dir/internal/backend/cuda/cuda_stats_test.cu.o"
+}
+]

@@ -160,6 +160,23 @@ TEST_F(MpsEncoderTest, SetBufferSucceeds) {
 }
 
 /**
+ * @brief Test that set_buffer with nullptr buffer throws.
+ */
+TEST_F(MpsEncoderTest, SetBufferNullptrThrows) {
+    mps::MPSCommandBuffer_t buffer = mps::create_command_buffer(queue_);
+    ASSERT_NE(buffer, nullptr);
+    
+    mps::MPSComputeCommandEncoder_t encoder = mps::create_compute_command_encoder(buffer);
+    ASSERT_NE(encoder, nullptr);
+    
+    EXPECT_THROW(mps::set_buffer(encoder, nullptr, 0, 0), std::system_error);
+    
+    mps::end_encoding(encoder);
+    mps::destroy_compute_command_encoder(encoder);
+    mps::destroy_command_buffer(buffer);
+}
+
+/**
  * @brief Test that set_bytes works.
  */
 TEST_F(MpsEncoderTest, SetBytesSucceeds) {

@@ -67,6 +67,11 @@ if(ORTEAF_TEST_SOURCES)
     )
     target_compile_features(orteaf_tests PRIVATE cxx_std_20)
     
+    # Set CUDA architectures for test target if CUDA is enabled
+    if(ORTEAF_ENABLE_CUDA_INT AND CMAKE_CUDA_ARCHITECTURES)
+        set_property(TARGET orteaf_tests PROPERTY CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
+    endif()
+    
     # Propagate compile definitions from main CMakeLists.txt
     target_compile_definitions(orteaf_tests
         PRIVATE

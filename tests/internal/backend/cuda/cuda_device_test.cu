@@ -37,7 +37,9 @@ TEST_F(CudaDeviceTest, GetDeviceForValidIndex) {
     int count = cuda::get_device_count();
     if (count > 0) {
         cuda::CUdevice_t device = cuda::get_device(0);
-        EXPECT_NE(device, 0);  // Should return a valid handle
+        // CUdevice is an integer type, and device 0 can legitimately be 0
+        // Verify the device is valid by querying its compute capability
+        EXPECT_NO_THROW(cuda::get_compute_capability(device));
     } else {
         GTEST_SKIP() << "No CUDA devices available";
     }
@@ -141,7 +143,8 @@ TEST_F(CudaDeviceTest, EnumerateMultipleDevices) {
         std::vector<cuda::CUdevice_t> devices;
         for (int i = 0; i < count; ++i) {
             cuda::CUdevice_t device = cuda::get_device(static_cast<uint32_t>(i));
-            EXPECT_NE(device, 0);
+            // CUdevice is an integer type, and device 0 can legitimately be 0
+            // We verify device validity by querying compute capability below
             devices.push_back(device);
         }
         

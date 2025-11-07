@@ -92,17 +92,16 @@ TEST_F(MpsLibraryFunctionPipelineTest, CreateLibraryWithDataInvalidData) {
 }
 
 /**
- * @brief Test that create_function with nullptr library returns nullptr.
+ * @brief Test that create_function with nullptr library throws.
  */
-TEST_F(MpsLibraryFunctionPipelineTest, CreateFunctionNullptrLibrary) {
-    mps::MPSFunction_t function = mps::create_function(nullptr, "kernel_name");
-    EXPECT_EQ(function, nullptr);
+TEST_F(MpsLibraryFunctionPipelineTest, CreateFunctionNullptrLibraryThrows) {
+    EXPECT_THROW(mps::create_function(nullptr, "kernel_name"), std::system_error);
 }
 
 /**
- * @brief Test that create_function with empty name returns nullptr.
+ * @brief Test that create_function with empty name throws.
  */
-TEST_F(MpsLibraryFunctionPipelineTest, CreateFunctionEmptyName) {
+TEST_F(MpsLibraryFunctionPipelineTest, CreateFunctionEmptyNameThrows) {
     // Try to create a minimal valid library first
     mps::MPSError_t error = nullptr;
     mps::MPSString_t source = mps::to_ns_string(std::string_view("kernel void test() {}"));
@@ -110,8 +109,7 @@ TEST_F(MpsLibraryFunctionPipelineTest, CreateFunctionEmptyName) {
     mps::MPSLibrary_t library = mps::create_library_with_source(device_, source, options, &error);
     
     if (library != nullptr) {
-        mps::MPSFunction_t function = mps::create_function(library, "");
-        EXPECT_EQ(function, nullptr);
+        EXPECT_THROW(mps::create_function(library, ""), std::system_error);
         mps::destroy_library(library);
     }
     
@@ -166,6 +164,27 @@ TEST_F(MpsLibraryFunctionPipelineTest, ConfigureCompileOptions) {
 }
 
 /**
+ * @brief Test that set_compile_options_math_mode with nullptr throws.
+ */
+TEST_F(MpsLibraryFunctionPipelineTest, SetCompileOptionsMathModeNullptrThrows) {
+    EXPECT_THROW(mps::set_compile_options_math_mode(nullptr, true), std::system_error);
+}
+
+/**
+ * @brief Test that set_compile_options_preserve_invariance with nullptr throws.
+ */
+TEST_F(MpsLibraryFunctionPipelineTest, SetCompileOptionsPreserveInvarianceNullptrThrows) {
+    EXPECT_THROW(mps::set_compile_options_preserve_invariance(nullptr, true), std::system_error);
+}
+
+/**
+ * @brief Test that set_compile_options_preprocessor_macros with nullptr throws.
+ */
+TEST_F(MpsLibraryFunctionPipelineTest, SetCompileOptionsPreprocessorMacrosNullptrThrows) {
+    EXPECT_THROW(mps::set_compile_options_preprocessor_macros(nullptr, nullptr), std::system_error);
+}
+
+/**
  * @brief Test that string conversion works.
  */
 TEST_F(MpsLibraryFunctionPipelineTest, StringConversionWorks) {
@@ -178,12 +197,60 @@ TEST_F(MpsLibraryFunctionPipelineTest, StringConversionWorks) {
 }
 
 /**
- * @brief Test that library creation with nullptr device returns nullptr.
+ * @brief Test that library creation with nullptr device throws.
  */
-TEST_F(MpsLibraryFunctionPipelineTest, CreateLibraryNullptrDevice) {
+TEST_F(MpsLibraryFunctionPipelineTest, CreateLibraryNullptrDeviceThrows) {
     mps::MPSString_t name = mps::to_ns_string(std::string_view("default"));
-    mps::MPSLibrary_t library = mps::create_library(nullptr, name);
-    EXPECT_EQ(library, nullptr);
+    EXPECT_THROW(mps::create_library(nullptr, name), std::system_error);
+}
+
+/**
+ * @brief Test that library creation with nullptr name throws.
+ */
+TEST_F(MpsLibraryFunctionPipelineTest, CreateLibraryNullptrNameThrows) {
+    EXPECT_THROW(mps::create_library(device_, nullptr), std::system_error);
+}
+
+/**
+ * @brief Test that library creation with empty name throws.
+ */
+TEST_F(MpsLibraryFunctionPipelineTest, CreateLibraryEmptyNameThrows) {
+    mps::MPSString_t empty_name = mps::to_ns_string(std::string_view(""));
+    EXPECT_THROW(mps::create_library(device_, empty_name), std::system_error);
+}
+
+/**
+ * @brief Test that create_library_with_source with nullptr source throws.
+ */
+TEST_F(MpsLibraryFunctionPipelineTest, CreateLibraryWithSourceNullptrSourceThrows) {
+    mps::MPSCompileOptions_t options = mps::create_compile_options();
+    EXPECT_THROW(mps::create_library_with_source(device_, nullptr, options, nullptr), std::system_error);
+    mps::destroy_compile_options(options);
+}
+
+/**
+ * @brief Test that create_library_with_source with empty source throws.
+ */
+TEST_F(MpsLibraryFunctionPipelineTest, CreateLibraryWithSourceEmptySourceThrows) {
+    mps::MPSString_t empty_source = mps::to_ns_string(std::string_view(""));
+    mps::MPSCompileOptions_t options = mps::create_compile_options();
+    EXPECT_THROW(mps::create_library_with_source(device_, empty_source, options, nullptr), std::system_error);
+    mps::destroy_compile_options(options);
+}
+
+/**
+ * @brief Test that create_library_with_data with nullptr data throws.
+ */
+TEST_F(MpsLibraryFunctionPipelineTest, CreateLibraryWithDataNullptrDataThrows) {
+    EXPECT_THROW(mps::create_library_with_data(device_, nullptr, 100, nullptr), std::system_error);
+}
+
+/**
+ * @brief Test that create_library_with_data with zero size throws.
+ */
+TEST_F(MpsLibraryFunctionPipelineTest, CreateLibraryWithDataZeroSizeThrows) {
+    const char data[] = "test data";
+    EXPECT_THROW(mps::create_library_with_data(device_, data, 0, nullptr), std::system_error);
 }
 
 #else  // !ORTEAF_ENABLE_MPS

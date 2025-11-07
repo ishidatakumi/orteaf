@@ -9,6 +9,17 @@ option(ENABLE_MPS "Enable Metal (MPS) runtime" OFF)
 set(LANGUAGES CXX)
 if(ENABLE_CUDA)
     list(APPEND LANGUAGES CUDA)
+    # Respect user-provided -DCMAKE_CUDA_ARCHITECTURES, otherwise give CMake's modern
+    # auto-selection so the list tracks the installed toolkit/GPU support.
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES OR CMAKE_CUDA_ARCHITECTURES STREQUAL "")
+        if(CMAKE_VERSION VERSION_LESS "3.24")
+            # Older CMake (e.g., 3.22 in the base container) does not support "all-major".
+            set(_orteaf_default_cuda_archs "75;80;86;89;90")
+        else()
+            set(_orteaf_default_cuda_archs "all-major")
+        endif()
+        set(CMAKE_CUDA_ARCHITECTURES "${_orteaf_default_cuda_archs}" CACHE STRING "CUDA architectures to build for" FORCE)
+    endif()
 endif()
 
 project(orteaf VERSION 0.1.0 LANGUAGES ${LANGUAGES})

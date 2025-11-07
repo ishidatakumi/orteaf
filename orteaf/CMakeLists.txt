@@ -79,6 +79,18 @@ target_link_libraries(orteaf
 # Link CUDA Runtime when CUDA is enabled
 if(ORTEAF_ENABLE_CUDA_INT)
     find_package(CUDAToolkit REQUIRED)
+    
+    # Ensure the target inherits whatever CUDA architectures the parent configured.
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES OR CMAKE_CUDA_ARCHITECTURES STREQUAL "")
+        if(CMAKE_VERSION VERSION_LESS "3.24")
+            set(_orteaf_default_cuda_archs "75;80;86;89;90")
+        else()
+            set(_orteaf_default_cuda_archs "all-major")
+        endif()
+        set(CMAKE_CUDA_ARCHITECTURES "${_orteaf_default_cuda_archs}" CACHE STRING "CUDA architectures to build for" FORCE)
+    endif()
+    set_property(TARGET orteaf PROPERTY CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}")
+    
     target_link_libraries(orteaf PUBLIC CUDA::cudart CUDA::cuda_driver)
 endif()
 

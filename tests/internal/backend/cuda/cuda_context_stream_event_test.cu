@@ -235,6 +235,54 @@ TEST_F(CudaContextStreamEventTest, WriteStreamSucceeds) {
 }
 
 /**
+ * @brief Test that wait_stream with nullptr stream throws.
+ */
+TEST_F(CudaContextStreamEventTest, WaitStreamNullptrThrows) {
+    constexpr size_t size = sizeof(uint32_t);
+    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    EXPECT_NE(dev_ptr, 0);
+    
+    EXPECT_THROW(cuda::wait_stream(nullptr, dev_ptr, 42), std::system_error);
+    
+    cuda::free(dev_ptr, size);
+}
+
+/**
+ * @brief Test that wait_stream with zero address throws.
+ */
+TEST_F(CudaContextStreamEventTest, WaitStreamZeroAddrThrows) {
+    cuda::CUstream_t stream = cuda::get_stream();
+    
+    EXPECT_THROW(cuda::wait_stream(stream, 0, 42), std::system_error);
+    
+    cuda::release_stream(stream);
+}
+
+/**
+ * @brief Test that write_stream with nullptr stream throws.
+ */
+TEST_F(CudaContextStreamEventTest, WriteStreamNullptrThrows) {
+    constexpr size_t size = sizeof(uint32_t);
+    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    EXPECT_NE(dev_ptr, 0);
+    
+    EXPECT_THROW(cuda::write_stream(nullptr, dev_ptr, 123), std::system_error);
+    
+    cuda::free(dev_ptr, size);
+}
+
+/**
+ * @brief Test that write_stream with zero address throws.
+ */
+TEST_F(CudaContextStreamEventTest, WriteStreamZeroAddrThrows) {
+    cuda::CUstream_t stream = cuda::get_stream();
+    
+    EXPECT_THROW(cuda::write_stream(stream, 0, 123), std::system_error);
+    
+    cuda::release_stream(stream);
+}
+
+/**
  * @brief Test that event creation succeeds.
  */
 TEST_F(CudaContextStreamEventTest, CreateEventSucceeds) {
@@ -287,18 +335,25 @@ TEST_F(CudaContextStreamEventTest, RecordEventSucceeds) {
 }
 
 /**
- * @brief Test that record_event with nullptr is ignored.
+ * @brief Test that record_event with nullptr event throws.
  */
-TEST_F(CudaContextStreamEventTest, RecordEventNullptrNoOp) {
+TEST_F(CudaContextStreamEventTest, RecordEventNullptrEventThrows) {
     cuda::CUstream_t stream = cuda::get_stream();
+    
+    EXPECT_THROW(cuda::record_event(nullptr, stream), std::system_error);
+    
+    cuda::release_stream(stream);
+}
+
+/**
+ * @brief Test that record_event with nullptr stream throws.
+ */
+TEST_F(CudaContextStreamEventTest, RecordEventNullptrStreamThrows) {
     cuda::CUevent_t event = cuda::create_event();
     
-    EXPECT_NO_THROW(cuda::record_event(nullptr, stream));
-    EXPECT_NO_THROW(cuda::record_event(event, nullptr));
-    EXPECT_NO_THROW(cuda::record_event(nullptr, nullptr));
+    EXPECT_THROW(cuda::record_event(event, nullptr), std::system_error);
     
     cuda::destroy_event(event);
-    cuda::release_stream(stream);
 }
 
 /**
@@ -355,17 +410,24 @@ TEST_F(CudaContextStreamEventTest, WaitEventSucceeds) {
 }
 
 /**
- * @brief Test that wait_event with nullptr is ignored.
+ * @brief Test that wait_event with nullptr stream throws.
  */
-TEST_F(CudaContextStreamEventTest, WaitEventNullptrNoOp) {
-    cuda::CUstream_t stream = cuda::get_stream();
+TEST_F(CudaContextStreamEventTest, WaitEventNullptrStreamThrows) {
     cuda::CUevent_t event = cuda::create_event();
     
-    EXPECT_NO_THROW(cuda::wait_event(nullptr, event));
-    EXPECT_NO_THROW(cuda::wait_event(stream, nullptr));
-    EXPECT_NO_THROW(cuda::wait_event(nullptr, nullptr));
+    EXPECT_THROW(cuda::wait_event(nullptr, event), std::system_error);
     
     cuda::destroy_event(event);
+}
+
+/**
+ * @brief Test that wait_event with nullptr event throws.
+ */
+TEST_F(CudaContextStreamEventTest, WaitEventNullptrEventThrows) {
+    cuda::CUstream_t stream = cuda::get_stream();
+    
+    EXPECT_THROW(cuda::wait_event(stream, nullptr), std::system_error);
+    
     cuda::release_stream(stream);
 }
 

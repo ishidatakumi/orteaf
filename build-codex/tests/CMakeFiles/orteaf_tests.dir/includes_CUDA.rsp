@@ -1,0 +1,1 @@
+-I/home/ware10sai/dev/orteaf/orteaf/include -I"/home/ware10sai/dev/orteaf/build-codex/generated" -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/extension -I/home/ware10sai/dev/orteaf/orteaf/include/orteaf/user -isystem "/usr/local/cuda/targets/x86_64-linux/include"

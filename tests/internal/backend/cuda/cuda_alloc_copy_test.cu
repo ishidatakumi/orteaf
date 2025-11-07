@@ -130,7 +130,16 @@ TEST_F(CudaAllocCopyTest, AllocStreamSucceeds) {
  */
 TEST_F(CudaAllocCopyTest, AllocStreamNullptrThrows) {
     constexpr size_t size = 1024;
-    EXPECT_THROW(cuda::alloc_stream(size, nullptr), std::runtime_error);
+    EXPECT_THROW(cuda::alloc_stream(size, nullptr), std::system_error);
+}
+
+/**
+ * @brief Test that alloc_stream with zero size throws.
+ */
+TEST_F(CudaAllocCopyTest, AllocStreamZeroBytesFails) {
+    cuda::CUstream_t stream = cuda::get_stream();
+    EXPECT_THROW(cuda::alloc_stream(0, stream), std::system_error);
+    cuda::release_stream(stream);
 }
 
 /**
@@ -154,7 +163,7 @@ TEST_F(CudaAllocCopyTest, FreeStreamSucceeds) {
 TEST_F(CudaAllocCopyTest, FreeStreamNullptrThrows) {
     constexpr size_t size = 1024;
     cuda::CUdeviceptr_t ptr = cuda::alloc(size);
-    EXPECT_THROW(cuda::free_stream(ptr, size, nullptr), std::runtime_error);
+    EXPECT_THROW(cuda::free_stream(ptr, size, nullptr), std::system_error);
     cuda::free(ptr, size);
 }
 
@@ -167,6 +176,13 @@ TEST_F(CudaAllocCopyTest, AllocHostSucceeds) {
     EXPECT_NE(ptr, nullptr);
     
     cuda::free_host(ptr, size);
+}
+
+/**
+ * @brief Test that allocating zero bytes for host memory throws.
+ */
+TEST_F(CudaAllocCopyTest, AllocHostZeroBytesFails) {
+    EXPECT_THROW(cuda::alloc_host(0), std::system_error);
 }
 
 /**
@@ -193,6 +209,14 @@ TEST_F(CudaAllocCopyTest, FreeHostSucceeds) {
     EXPECT_NE(ptr, nullptr);
     
     EXPECT_NO_THROW(cuda::free_host(ptr, size));
+}
+
+/**
+ * @brief Test that free_host with nullptr throws.
+ */
+TEST_F(CudaAllocCopyTest, FreeHostNullptrThrows) {
+    constexpr size_t size = 1024;
+    EXPECT_THROW(cuda::free_host(nullptr, size), std::system_error);
 }
 
 /**
@@ -268,6 +292,28 @@ TEST_F(CudaAllocCopyTest, CopyToHostInvalidPointerThrows) {
 }
 
 /**
+ * @brief Test that copy_to_host with zero device pointer throws.
+ */
+TEST_F(CudaAllocCopyTest, CopyToHostZeroPtrThrows) {
+    constexpr size_t size = sizeof(int);
+    int host_value = 0;
+    EXPECT_THROW(cuda::copy_to_host(0, &host_value, size), std::system_error);
+}
+
+/**
+ * @brief Test that copy_to_host with nullptr host pointer throws.
+ */
+TEST_F(CudaAllocCopyTest, CopyToHostNullptrHostPtrThrows) {
+    constexpr size_t size = sizeof(int);
+    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    EXPECT_NE(dev_ptr, 0);
+    
+    EXPECT_THROW(cuda::copy_to_host(dev_ptr, nullptr, size), std::system_error);
+    
+    cuda::free(dev_ptr, size);
+}
+
+/**
  * @brief Test that copy_to_device with invalid pointer throws.
  */
 TEST_F(CudaAllocCopyTest, CopyToDeviceInvalidPointerThrows) {
@@ -276,6 +322,28 @@ TEST_F(CudaAllocCopyTest, CopyToDeviceInvalidPointerThrows) {
     cuda::CUdeviceptr_t invalid_ptr = static_cast<cuda::CUdeviceptr_t>(-1);
     
     EXPECT_THROW(cuda::copy_to_device(&host_value, invalid_ptr, size), std::system_error);
+}
+
+/**
+ * @brief Test that copy_to_device with zero device pointer throws.
+ */
+TEST_F(CudaAllocCopyTest, CopyToDeviceZeroPtrThrows) {
+    constexpr size_t size = sizeof(int);
+    int host_value = 42;
+    EXPECT_THROW(cuda::copy_to_device(&host_value, 0, size), std::system_error);
+}
+
+/**
+ * @brief Test that copy_to_device with nullptr host pointer throws.
+ */
+TEST_F(CudaAllocCopyTest, CopyToDeviceNullptrHostPtrThrows) {
+    constexpr size_t size = sizeof(int);
+    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    EXPECT_NE(dev_ptr, 0);
+    
+    EXPECT_THROW(cuda::copy_to_device(nullptr, dev_ptr, size), std::system_error);
+    
+    cuda::free(dev_ptr, size);
 }
 
 /**

@@ -1,0 +1,11 @@
+/home/ware10sai/dev/orteaf/build-codex/CMakeFiles/test.dir
+/home/ware10sai/dev/orteaf/build-codex/CMakeFiles/edit_cache.dir
+/home/ware10sai/dev/orteaf/build-codex/CMakeFiles/rebuild_cache.dir
+/home/ware10sai/dev/orteaf/build-codex/orteaf/CMakeFiles/orteaf.dir
+/home/ware10sai/dev/orteaf/build-codex/orteaf/CMakeFiles/test.dir
+/home/ware10sai/dev/orteaf/build-codex/orteaf/CMakeFiles/edit_cache.dir
+/home/ware10sai/dev/orteaf/build-codex/orteaf/CMakeFiles/rebuild_cache.dir
+/home/ware10sai/dev/orteaf/build-codex/tests/CMakeFiles/orteaf_tests.dir
+/home/ware10sai/dev/orteaf/build-codex/tests/CMakeFiles/test.dir
+/home/ware10sai/dev/orteaf/build-codex/tests/CMakeFiles/edit_cache.dir
+/home/ware10sai/dev/orteaf/build-codex/tests/CMakeFiles/rebuild_cache.dir

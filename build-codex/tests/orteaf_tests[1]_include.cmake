@@ -1,0 +1,5 @@
+if(EXISTS "/home/ware10sai/dev/orteaf/build-codex/tests/orteaf_tests[1]_tests.cmake")
+  include("/home/ware10sai/dev/orteaf/build-codex/tests/orteaf_tests[1]_tests.cmake")
+else()
+  add_test(orteaf_tests_NOT_BUILT orteaf_tests_NOT_BUILT)
+endif()
