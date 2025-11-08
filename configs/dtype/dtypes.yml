@@ -1,0 +1,147 @@
+schema_version: "1.0"
+dtypes:
+  - id: "Bool"
+    cpp_type: "bool"
+    display_name: "bool"
+    category: "boolean"
+    promotion_priority: 10
+    compute_dtype: "Bool"
+    implicit_cast_to: ["I8", "U8"]
+    explicit_cast_to: ["I16", "I32", "I64", "F16", "F32", "F64"]
+    metadata:
+      description: "Boolean value"
+      tags: ["native"]
+  - id: "I8"
+    cpp_type: "std::int8_t"
+    display_name: "int8"
+    category: "signed_integer"
+    promotion_priority: 100
+    compute_dtype: "I32"
+    implicit_cast_to: ["I16", "I32", "F16", "F32"]
+    explicit_cast_to: ["I64", "F64", "Bool"]
+    metadata:
+      description: "8-bit signed integer"
+      tags: ["native"]
+  - id: "I16"
+    cpp_type: "std::int16_t"
+    display_name: "int16"
+    category: "signed_integer"
+    promotion_priority: 200
+    compute_dtype: "I32"
+    implicit_cast_to: ["I32", "F16", "F32"]
+    explicit_cast_to: ["I8", "I64", "F64", "Bool"]
+    metadata:
+      description: "16-bit signed integer"
+      tags: ["native"]
+  - id: "I32"
+    cpp_type: "std::int32_t"
+    display_name: "int32"
+    category: "signed_integer"
+    promotion_priority: 300
+    compute_dtype: "I32"
+    implicit_cast_to: ["I64", "F32", "F64"]
+    explicit_cast_to: ["I8", "I16", "Bool", "F16"]
+    metadata:
+      description: "32-bit signed integer"
+      tags: ["native"]
+  - id: "I64"
+    cpp_type: "std::int64_t"
+    display_name: "int64"
+    category: "signed_integer"
+    promotion_priority: 400
+    compute_dtype: "I64"
+    implicit_cast_to: ["F32", "F64"]
+    explicit_cast_to: ["I8", "I16", "I32", "Bool", "F16"]
+    metadata:
+      description: "64-bit signed integer"
+      tags: ["native"]
+  - id: "U8"
+    cpp_type: "std::uint8_t"
+    display_name: "uint8"
+    category: "unsigned_integer"
+    promotion_priority: 110
+    compute_dtype: "I32"
+    implicit_cast_to: ["U16", "U32", "I16", "I32", "F16", "F32"]
+    explicit_cast_to: ["I8", "U64", "I64", "F64", "Bool"]
+    metadata:
+      description: "8-bit unsigned integer"
+      tags: ["native"]
+  - id: "U16"
+    cpp_type: "std::uint16_t"
+    display_name: "uint16"
+    category: "unsigned_integer"
+    promotion_priority: 210
+    compute_dtype: "I32"
+    implicit_cast_to: ["U32", "I32", "F16", "F32"]
+    explicit_cast_to: ["U8", "U64", "I64", "F64", "Bool"]
+    metadata:
+      description: "16-bit unsigned integer"
+      tags: ["native"]
+  - id: "U32"
+    cpp_type: "std::uint32_t"
+    display_name: "uint32"
+    category: "unsigned_integer"
+    promotion_priority: 310
+    compute_dtype: "I32"
+    implicit_cast_to: ["U64", "I64", "F32", "F64"]
+    explicit_cast_to: ["U8", "U16", "I32", "Bool", "F16"]
+    metadata:
+      description: "32-bit unsigned integer"
+      tags: ["native"]
+  - id: "U64"
+    cpp_type: "std::uint64_t"
+    display_name: "uint64"
+    category: "unsigned_integer"
+    promotion_priority: 410
+    compute_dtype: "I64"
+    implicit_cast_to: ["F32", "F64"]
+    explicit_cast_to: ["U8", "U16", "U32", "I64", "Bool", "F16"]
+    metadata:
+      description: "64-bit unsigned integer"
+      tags: ["native"]
+  - id: "F16"
+    cpp_type: "_Float16"
+    display_name: "float16"
+    category: "floating_point"
+    promotion_priority: 500
+    compute_dtype: "F32"
+    implicit_cast_to: ["F32", "F64"]
+    explicit_cast_to: ["I16", "I32", "I64", "U16", "U32", "U64", "Bool"]
+    metadata:
+      description: "16-bit IEEE float"
+      tags: ["native", "compute-promote"]
+  - id: "F32"
+    cpp_type: "float"
+    display_name: "float32"
+    category: "floating_point"
+    promotion_priority: 600
+    compute_dtype: "F32"
+    implicit_cast_to: ["F64"]
+    explicit_cast_to: ["F16", "I32", "I64", "U32", "U64", "Bool"]
+    metadata:
+      description: "32-bit IEEE float"
+      tags: ["native"]
+  - id: "F64"
+    cpp_type: "double"
+    display_name: "float64"
+    category: "floating_point"
+    promotion_priority: 700
+    compute_dtype: "F64"
+    implicit_cast_to: []
+    explicit_cast_to: ["F32", "F16", "I32", "I64", "U64", "Bool"]
+    metadata:
+      description: "64-bit IEEE float"
+      tags: ["native"]
+promotion_overrides:
+  - lhs: "Bool"
+    rhs: "Bool"
+    result: "Bool"
+  - lhs: "Bool"
+    rhs: "F16"
+    result: "F16"
+  - lhs: "Bool"
+    rhs: "F32"
+    result: "F32"
+  - lhs: "Bool"
+    rhs: "F64"
+    result: "F64"
