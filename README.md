@@ -52,6 +52,11 @@ cmake -G Ninja .. -DENABLE_CUDA=ON -DENABLE_MPS=OFF
 
 If both are disabled, the build will default to the CPU runtime.
 
+### Embedding CUDA / Metal Kernels
+
+- Place CUDA kernels under `orteaf/src/extension/kernel/cuda/impl/`. Use `-DENABLE_CUDA=ON` and control emitted binary formats via `-DORTEAF_CUDA_KERNEL_FORMATS=fatbin;cubin;ptx` (semicolon-separated; defaults to `fatbin` only).
+- Place Metal kernels under `orteaf/src/extension/kernel/mps/impl/` when building on macOS with `-DENABLE_MPS=ON`. The build will invoke `xcrun metal`/`metallib` automatically and expose the blobs through the Metal kernel embed API.
+
 ## 🗂 Documentation
 
 - Core architecture and access boundaries: [docs/developer/design.md](docs/developer/design.md)

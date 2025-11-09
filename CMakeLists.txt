@@ -24,6 +24,11 @@ endif()
 
 project(orteaf VERSION 0.1.0 LANGUAGES ${LANGUAGES})
 
+set(ORTEAF_SOURCE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/orteaf CACHE INTERNAL "")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+include(OrteafCudaKernels)
+include(OrteafMetalKernels)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 configure_file(
@@ -39,6 +44,9 @@ set(OPS_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated/orteaf/ops CACHE INTERNAL 
 set(BACKEND_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated/orteaf/backend CACHE INTERNAL "")
 set(ARCHITECTURE_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated/orteaf/architecture CACHE INTERNAL "")
 set(DEVICE_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated/orteaf/device CACHE INTERNAL "")
+
+orteaf_add_cuda_kernel_binaries()
+orteaf_add_metal_kernel_binaries()
 
 add_subdirectory(tools/codegen)
 
@@ -260,6 +268,57 @@ orteaf_bool_to_int(ORTEAF_ENABLE_MPS_INT ENABLE_MPS)
 
 add_subdirectory(orteaf)
 add_dependencies(orteaf generate_backends generate_ops generate_dtypes generate_architectures generate_devices)
+
+if(TARGET orteaf)
+    if(ORTEAF_CUDA_EMBED_SOURCE)
+        set_source_files_properties(${ORTEAF_CUDA_EMBED_SOURCE} PROPERTIES GENERATED TRUE)
+        target_sources(orteaf PRIVATE ${ORTEAF_CUDA_EMBED_SOURCE})
+        if(ORTEAF_CUDA_EMBED_OBJECTS)
+            foreach(obj ${ORTEAF_CUDA_EMBED_OBJECTS})
+                set_source_files_properties(${obj}
+                    PROPERTIES
+                        GENERATED TRUE
+                        EXTERNAL_OBJECT TRUE
+                )
+            endforeach()
+            target_sources(orteaf PRIVATE ${ORTEAF_CUDA_EMBED_OBJECTS})
+        endif()
+        if(TARGET orteaf_cuda_kernel_binaries)
+            add_dependencies(orteaf orteaf_cuda_kernel_binaries)
+        endif()
+        target_compile_definitions(orteaf PUBLIC
+            ORTEAF_EMBED_HAS_FATBIN=${ORTEAF_CUDA_EMBED_HAS_FATBIN}
+            ORTEAF_EMBED_HAS_CUBIN=${ORTEAF_CUDA_EMBED_HAS_CUBIN}
+            ORTEAF_EMBED_HAS_PTX=${ORTEAF_CUDA_EMBED_HAS_PTX}
+        )
+        if(TARGET orteaf_extension)
+            target_compile_definitions(orteaf_extension INTERFACE
+                ORTEAF_EMBED_HAS_FATBIN=${ORTEAF_CUDA_EMBED_HAS_FATBIN}
+                ORTEAF_EMBED_HAS_CUBIN=${ORTEAF_CUDA_EMBED_HAS_CUBIN}
+                ORTEAF_EMBED_HAS_PTX=${ORTEAF_CUDA_EMBED_HAS_PTX}
+            )
+        endif()
+    endif()
+
+    if(ORTEAF_METAL_EMBED_SOURCE)
+        set_source_files_properties(${ORTEAF_METAL_EMBED_SOURCE} PROPERTIES GENERATED TRUE)
+        target_sources(orteaf PRIVATE ${ORTEAF_METAL_EMBED_SOURCE})
+        if(ORTEAF_METAL_EMBED_OBJECTS)
+            foreach(obj ${ORTEAF_METAL_EMBED_OBJECTS})
+                set_source_files_properties(${obj}
+                    PROPERTIES
+                        GENERATED TRUE
+                        EXTERNAL_OBJECT TRUE
+                )
+            endforeach()
+            target_sources(orteaf PRIVATE ${ORTEAF_METAL_EMBED_OBJECTS})
+        endif()
+        if(TARGET orteaf_metal_kernel_binaries)
+            add_dependencies(orteaf orteaf_metal_kernel_binaries)
+        endif()
+    endif()
+endif()
+
 add_subdirectory(tests)
 if(TARGET orteaf_tests)
     add_dependencies(orteaf_tests generate_backends generate_ops generate_dtypes generate_architectures generate_devices)

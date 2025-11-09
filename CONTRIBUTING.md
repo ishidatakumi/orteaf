@@ -19,6 +19,7 @@ ninja
 ### Directory structure
 - `orteaf/include/orteaf/user`: User-facing wrapper API (`Tensor`, `Model`, etc.)
 - `orteaf/include/orteaf/extension`: Extension points (`Kernel`, `Ops`, `TensorImpl`)
+- `orteaf/src/extension/kernel/<backend>`: Backend-specific CUDA/MPS kernels that get embedded via CMake.
 - `orteaf/include/orteaf/internal`: Runtime implementation (do not edit unless necessary)
 - `orteaf/src/...`: Implementation mirrored to the include layout
 - `tests/`: Unit and integration tests
