@@ -29,7 +29,7 @@ This framework serves as the backbone for the research and engineering required 
 
 ### Using CMake with Ninja
 ```bash
-git clone https://github.com/yourname/orteaf.git
+git clone https://github.com/WARE10sai/orteaf.git
 cd orteaf
 mkdir build && cd build
 cmake -G Ninja ..

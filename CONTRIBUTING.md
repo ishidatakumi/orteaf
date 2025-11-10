@@ -9,7 +9,7 @@ This document describes the contribution workflow, coding style, and review proc
 To build ORTEAF locally:
 
 ```bash
-git clone https://github.com/yourname/orteaf.git
+git clone https://github.com/WARE10sai/orteaf.git
 cd orteaf
 mkdir build && cd build
 cmake -G Ninja ..
