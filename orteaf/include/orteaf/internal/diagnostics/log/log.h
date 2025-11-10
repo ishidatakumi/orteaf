@@ -150,7 +150,7 @@ constexpr int categoryThreshold();
  * @return Core category log level threshold.
  */
 template <>
-constexpr int category_threshold<LogCategory::Core>() {
+constexpr int categoryThreshold<LogCategory::Core>() {
     return detail::kLogLevelCore;
 }
 
@@ -159,7 +159,7 @@ constexpr int category_threshold<LogCategory::Core>() {
  * @return Tensor category log level threshold.
  */
 template <>
-constexpr int category_threshold<LogCategory::Tensor>() {
+constexpr int categoryThreshold<LogCategory::Tensor>() {
     return detail::kLogLevelTensor;
 }
 
@@ -168,7 +168,7 @@ constexpr int category_threshold<LogCategory::Tensor>() {
  * @return CUDA category log level threshold.
  */
 template <>
-constexpr int category_threshold<LogCategory::Cuda>() {
+constexpr int categoryThreshold<LogCategory::Cuda>() {
     return detail::kLogLevelCuda;
 }
 
@@ -177,7 +177,7 @@ constexpr int category_threshold<LogCategory::Cuda>() {
  * @return MPS category log level threshold.
  */
 template <>
-constexpr int category_threshold<LogCategory::Mps>() {
+constexpr int categoryThreshold<LogCategory::Mps>() {
     return detail::kLogLevelMps;
 }
 
@@ -186,7 +186,7 @@ constexpr int category_threshold<LogCategory::Mps>() {
  * @return I/O category log level threshold.
  */
 template <>
-constexpr int category_threshold<LogCategory::Io>() {
+constexpr int categoryThreshold<LogCategory::Io>() {
     return detail::kLogLevelIo;
 }
 
@@ -253,7 +253,7 @@ void logMessage(LogCategory category, LogLevel level, std::string message);
  */
 template <LogCategory Category, LogLevel Level, typename MessageBuilder>
 inline void logLazy(MessageBuilder&& builder) {
-    if constexpr (levelToInt(Level) >= category_threshold<Category>()) {
+    if constexpr (levelToInt(Level) >= categoryThreshold<Category>()) {
         logMessage(Category, Level, std::forward<MessageBuilder>(builder)());
     }
 }
@@ -274,7 +274,7 @@ inline void logLazy(MessageBuilder&& builder) {
  */
 template <LogCategory Category, LogLevel Level, typename ConditionBuilder, typename MessageBuilder>
 inline void logLazyIf(ConditionBuilder&& condition_builder, MessageBuilder&& message_builder) {
-    if constexpr (levelToInt(Level) >= category_threshold<Category>()) {
+    if constexpr (levelToInt(Level) >= categoryThreshold<Category>()) {
         if (std::forward<ConditionBuilder>(condition_builder)()) {
             logMessage(Category, Level, std::forward<MessageBuilder>(message_builder)());
         }

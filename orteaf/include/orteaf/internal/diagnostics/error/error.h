@@ -39,6 +39,26 @@ enum class OrteafErrc {
     CompilationFailed = 17,    ///< コンパイル/ロード失敗
 };
 
+/// @brief std::error_code に適合する make_error_code 実装（前方宣言）。
+std::error_code make_error_code(OrteafErrc errc);
+
+/// @brief エラーコードを生成するヘルパ（前方宣言）。
+std::error_code makeErrorCode(OrteafErrc errc);
+
+}  // namespace orteaf::internal::diagnostics::error
+
+namespace std {
+
+// OrteafErrc を std::error_code として扱えるようにする。
+template <>
+struct is_error_code_enum<orteaf::internal::diagnostics::error::OrteafErrc> : true_type {};
+
+error_code make_error_code(orteaf::internal::diagnostics::error::OrteafErrc errc);
+
+}  // namespace std
+
+namespace orteaf::internal::diagnostics::error {
+
 /**
  * @brief ORTEAF 用の error_category。
  */
@@ -237,12 +257,13 @@ OrteafResult<void> captureResult(void (*fn)());
 
 }  // namespace orteaf::internal::diagnostics::error
 
+#include "error_impl.h"
+
 namespace std {
 
-// OrteafErrc を std::error_code として扱えるようにする。
-template <>
-struct is_error_code_enum<orteaf::internal::diagnostics::error::OrteafErrc> : true_type {};
+/// @brief std::error_code のコンストラクタで使用される make_error_code のオーバーロード。
+inline error_code make_error_code(orteaf::internal::diagnostics::error::OrteafErrc errc) {
+    return orteaf::internal::diagnostics::error::make_error_code(errc);
+}
 
 }  // namespace std
-
-#include "error_impl.h"

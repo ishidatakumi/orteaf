@@ -20,7 +20,7 @@ TEST(MpsDetect, ManualEnvironmentCheck) {
         device_index = static_cast<std::uint32_t>(std::strtoul(index_env, nullptr, 10));
     }
 
-    const auto arch = architecture::detectMpsArchitecture_for_device_index(device_index);
+    const auto arch = architecture::detectMpsArchitectureForDeviceIndex(device_index);
     ASSERT_NE(arch, architecture::Architecture::mps_generic)
         << "Generic fallback indicates Metal backend disabled or no device at index "
         << device_index;
@@ -39,6 +39,6 @@ TEST(MpsDetect, FallsBackToGenericWhenUnknown) {
 }
 
 TEST(MpsDetect, DeviceIndexOutOfRangeFallsBackToGeneric) {
-    const auto arch = architecture::detectMpsArchitecture_for_device_index(std::numeric_limits<std::uint32_t>::max());
+    const auto arch = architecture::detectMpsArchitectureForDeviceIndex(std::numeric_limits<std::uint32_t>::max());
     EXPECT_EQ(arch, architecture::Architecture::mps_generic);
 }

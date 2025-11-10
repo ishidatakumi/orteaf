@@ -28,7 +28,7 @@ protected:
  * @brief Test that default device can be obtained.
  */
 TEST_F(MpsDeviceTest, GetDeviceReturnsValidDevice) {
-    mps::MPSDevice_t device = mps::get_device();
+    mps::MPSDevice_t device = mps::getDevice();
     
     if (device == nullptr) {
         GTEST_SKIP() << "No Metal devices available (unlikely on Mac)";
@@ -41,14 +41,14 @@ TEST_F(MpsDeviceTest, GetDeviceReturnsValidDevice) {
     EXPECT_NE(objc_device, nil);
     EXPECT_NE([objc_device name], nil);
     
-    mps::device_release(device);
+    mps::deviceRelease(device);
 }
 
 /**
  * @brief Test that device count is correct.
  */
 TEST_F(MpsDeviceTest, GetDeviceCountReturnsValidCount) {
-    int count = mps::get_device_count();
+    int count = mps::getDeviceCount();
     EXPECT_GE(count, 0);
     
     // On Mac, there should be at least one device
@@ -61,32 +61,32 @@ TEST_F(MpsDeviceTest, GetDeviceCountReturnsValidCount) {
  * @brief Test that get_device with index works.
  */
 TEST_F(MpsDeviceTest, GetDeviceByIndexSucceeds) {
-    int count = mps::get_device_count();
+    int count = mps::getDeviceCount();
     if (count == 0) {
         GTEST_SKIP() << "No Metal devices available";
     }
     
-    mps::MPSDevice_t device = mps::get_device(0);
+    mps::MPSDevice_t device = mps::getDevice(0);
     EXPECT_NE(device, nullptr);
     
     id<MTLDevice> objc_device = (__bridge id<MTLDevice>)device;
     EXPECT_NE(objc_device, nil);
     
-    mps::device_release(device);
+    mps::deviceRelease(device);
 }
 
 /**
  * @brief Test that get_device with invalid index throws NSRangeException.
  */
 TEST_F(MpsDeviceTest, GetDeviceInvalidIndexReturnsNullptr) {
-    int count = mps::get_device_count();
+    int count = mps::getDeviceCount();
     if (count == 0) {
         GTEST_SKIP() << "No Metal devices available";
     }
     
     // Out of range - should throw NSRangeException
     @try {
-        mps::MPSDevice_t device = mps::get_device(count);
+        mps::MPSDevice_t device = mps::getDevice(count);
         FAIL() << "Expected NSRangeException for out of range device_id";
     } @catch (NSException* exception) {
         EXPECT_TRUE([exception.name isEqualToString:NSRangeException]);
@@ -94,7 +94,7 @@ TEST_F(MpsDeviceTest, GetDeviceInvalidIndexReturnsNullptr) {
     
     // Negative index - should throw NSRangeException
     @try {
-        mps::MPSDevice_t device = mps::get_device(-1);
+        mps::MPSDevice_t device = mps::getDevice(-1);
         FAIL() << "Expected NSRangeException for negative device_id";
     } @catch (NSException* exception) {
         EXPECT_TRUE([exception.name isEqualToString:NSRangeException]);
@@ -105,57 +105,57 @@ TEST_F(MpsDeviceTest, GetDeviceInvalidIndexReturnsNullptr) {
  * @brief Test that device_retain works.
  */
 TEST_F(MpsDeviceTest, DeviceRetainWorks) {
-    mps::MPSDevice_t device = mps::get_device();
+    mps::MPSDevice_t device = mps::getDevice();
     if (device == nullptr) {
         GTEST_SKIP() << "No Metal devices available";
     }
     
     // Retain should work without throwing
-    EXPECT_NO_THROW(mps::device_retain(device));
+    EXPECT_NO_THROW(mps::deviceRetain(device));
     
     // Release twice (once for retain, once for original)
-    mps::device_release(device);
-    mps::device_release(device);
+    mps::deviceRelease(device);
+    mps::deviceRelease(device);
 }
 
 /**
  * @brief Test that device_retain with nullptr is ignored.
  */
 TEST_F(MpsDeviceTest, DeviceRetainNullptrIsIgnored) {
-    EXPECT_NO_THROW(mps::device_retain(nullptr));
+    EXPECT_NO_THROW(mps::deviceRetain(nullptr));
 }
 
 /**
  * @brief Test that device_release works.
  */
 TEST_F(MpsDeviceTest, DeviceReleaseWorks) {
-    mps::MPSDevice_t device = mps::get_device();
+    mps::MPSDevice_t device = mps::getDevice();
     if (device == nullptr) {
         GTEST_SKIP() << "No Metal devices available";
     }
     
-    EXPECT_NO_THROW(mps::device_release(device));
+    EXPECT_NO_THROW(mps::deviceRelease(device));
 }
 
 /**
  * @brief Test that device_release with nullptr is ignored.
  */
 TEST_F(MpsDeviceTest, DeviceReleaseNullptrIsIgnored) {
-    EXPECT_NO_THROW(mps::device_release(nullptr));
+    EXPECT_NO_THROW(mps::deviceRelease(nullptr));
 }
 
 /**
  * @brief Test that multiple devices can be enumerated.
  */
 TEST_F(MpsDeviceTest, EnumerateMultipleDevices) {
-    int count = mps::get_device_count();
+    int count = mps::getDeviceCount();
     if (count == 0) {
         GTEST_SKIP() << "No Metal devices available";
     }
     
     std::vector<mps::MPSDevice_t> devices;
     for (int i = 0; i < count; ++i) {
-        mps::MPSDevice_t device = mps::get_device(i);
+        mps::MPSDevice_t device = mps::getDevice(i);
         EXPECT_NE(device, nullptr);
         devices.push_back(device);
     }
@@ -164,7 +164,7 @@ TEST_F(MpsDeviceTest, EnumerateMultipleDevices) {
     for (auto device : devices) {
         id<MTLDevice> objc_device = (__bridge id<MTLDevice>)device;
         EXPECT_NE(objc_device, nil);
-        mps::device_release(device);
+        mps::deviceRelease(device);
     }
 }
 
@@ -172,7 +172,7 @@ TEST_F(MpsDeviceTest, EnumerateMultipleDevices) {
  * @brief Test that get_device_array returns valid array.
  */
 TEST_F(MpsDeviceTest, GetDeviceArrayReturnsValidArray) {
-    mps::MPSDeviceArray_t array = mps::get_device_array();
+    mps::MPSDeviceArray_t array = mps::getDeviceArray();
     
     if (array == nullptr) {
         GTEST_SKIP() << "No Metal devices available";
@@ -189,7 +189,7 @@ TEST_F(MpsDeviceTest, GetDeviceArrayReturnsValidArray) {
  * @brief Test that device properties can be queried.
  */
 TEST_F(MpsDeviceTest, DevicePropertiesAreAccessible) {
-    mps::MPSDevice_t device = mps::get_device();
+    mps::MPSDevice_t device = mps::getDevice();
     if (device == nullptr) {
         GTEST_SKIP() << "No Metal devices available";
     }
@@ -211,19 +211,19 @@ TEST_F(MpsDeviceTest, DevicePropertiesAreAccessible) {
                 [objc_device supportsFamily:MTLGPUFamilyApple7] ||
                 [objc_device supportsFamily:MTLGPUFamilyApple8]);
     
-    mps::device_release(device);
+    mps::deviceRelease(device);
 }
 
 /**
  * @brief Test that default device matches first device in array.
  */
 TEST_F(MpsDeviceTest, DefaultDeviceMatchesFirstInArray) {
-    mps::MPSDevice_t default_device = mps::get_device();
+    mps::MPSDevice_t default_device = mps::getDevice();
     if (default_device == nullptr) {
         GTEST_SKIP() << "No Metal devices available";
     }
     
-    mps::MPSDevice_t first_device = mps::get_device(0);
+    mps::MPSDevice_t first_device = mps::getDevice(0);
     EXPECT_NE(first_device, nullptr);
     
     id<MTLDevice> default_objc = (__bridge id<MTLDevice>)default_device;
@@ -232,8 +232,8 @@ TEST_F(MpsDeviceTest, DefaultDeviceMatchesFirstInArray) {
     // They should be the same device
     EXPECT_EQ([default_objc registryID], [first_objc registryID]);
     
-    mps::device_release(default_device);
-    mps::device_release(first_device);
+    mps::deviceRelease(default_device);
+    mps::deviceRelease(first_device);
 }
 
 #else  // !ORTEAF_ENABLE_MPS
@@ -242,13 +242,13 @@ TEST_F(MpsDeviceTest, DefaultDeviceMatchesFirstInArray) {
  * @brief Test that device functions return nullptr when MPS is disabled.
  */
 TEST(MpsDevice, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(mps::get_device(), nullptr);
-    EXPECT_EQ(mps::get_device(0), nullptr);
-    EXPECT_EQ(mps::get_device_count(), 0);
-    EXPECT_EQ(mps::get_device_array(), nullptr);
+    EXPECT_EQ(mps::getDevice(), nullptr);
+    EXPECT_EQ(mps::getDevice(0), nullptr);
+    EXPECT_EQ(mps::getDeviceCount(), 0);
+    EXPECT_EQ(mps::getDeviceArray(), nullptr);
     
-    EXPECT_NO_THROW(mps::device_retain(nullptr));
-    EXPECT_NO_THROW(mps::device_release(nullptr));
+    EXPECT_NO_THROW(mps::deviceRetain(nullptr));
+    EXPECT_NO_THROW(mps::deviceRelease(nullptr));
 }
 
 #endif  // ORTEAF_ENABLE_MPS

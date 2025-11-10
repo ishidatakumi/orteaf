@@ -26,7 +26,7 @@ protected:
  * @brief Test that device count query succeeds.
  */
 TEST_F(CudaDeviceTest, GetDeviceCountSucceeds) {
-    int count = cuda::get_device_count();
+    int count = cuda::getDeviceCount();
     EXPECT_GE(count, 0);  // At least 0 devices (could be 0 on systems without CUDA)
 }
 
@@ -34,7 +34,7 @@ TEST_F(CudaDeviceTest, GetDeviceCountSucceeds) {
  * @brief Test that we can get device handles for valid indices.
  */
 TEST_F(CudaDeviceTest, GetDeviceForValidIndex) {
-    int count = cuda::get_device_count();
+    int count = cuda::getDeviceCount();
     if (count > 0) {
         cuda::CUdevice_t device = cuda::get_device(0);
         // CUdevice is an integer type, and device 0 can legitimately be 0
@@ -49,7 +49,7 @@ TEST_F(CudaDeviceTest, GetDeviceForValidIndex) {
  * @brief Test that getting device 0 works.
  */
 TEST_F(CudaDeviceTest, GetDeviceZero) {
-    int count = cuda::get_device_count();
+    int count = cuda::getDeviceCount();
     if (count > 0) {
         EXPECT_NO_THROW(cuda::get_device(0));
     } else {
@@ -61,7 +61,7 @@ TEST_F(CudaDeviceTest, GetDeviceZero) {
  * @brief Test that getting device with invalid index throws.
  */
 TEST_F(CudaDeviceTest, GetDeviceInvalidIndexThrows) {
-    int count = cuda::get_device_count();
+    int count = cuda::getDeviceCount();
     if (count > 0) {
         // Try to get a device beyond the available count
         EXPECT_THROW(cuda::get_device(static_cast<uint32_t>(count)), std::system_error);
@@ -75,7 +75,7 @@ TEST_F(CudaDeviceTest, GetDeviceInvalidIndexThrows) {
  * @brief Test that compute capability query works.
  */
 TEST_F(CudaDeviceTest, GetComputeCapabilitySucceeds) {
-    int count = cuda::get_device_count();
+    int count = cuda::getDeviceCount();
     if (count > 0) {
         cuda::CUdevice_t device = cuda::get_device(0);
         cuda::ComputeCapability cap = cuda::get_compute_capability(device);
@@ -93,7 +93,7 @@ TEST_F(CudaDeviceTest, GetComputeCapabilitySucceeds) {
  * @brief Test that compute capability query with invalid device throws.
  */
 TEST_F(CudaDeviceTest, GetComputeCapabilityInvalidDeviceThrows) {
-    int count = cuda::get_device_count();
+    int count = cuda::getDeviceCount();
     if (count > 0) {
         // Use an invalid device handle (e.g., -1 or a value beyond valid range)
         cuda::CUdevice_t invalid_device = static_cast<cuda::CUdevice_t>(-1);
@@ -121,7 +121,7 @@ TEST_F(CudaDeviceTest, GetSmCountCalculation) {
  * @brief Test that SM count calculation works with real device capability.
  */
 TEST_F(CudaDeviceTest, GetSmCountFromRealDevice) {
-    int count = cuda::get_device_count();
+    int count = cuda::getDeviceCount();
     if (count > 0) {
         cuda::CUdevice_t device = cuda::get_device(0);
         cuda::ComputeCapability cap = cuda::get_compute_capability(device);
@@ -137,7 +137,7 @@ TEST_F(CudaDeviceTest, GetSmCountFromRealDevice) {
  * @brief Test that we can enumerate multiple devices if available.
  */
 TEST_F(CudaDeviceTest, EnumerateMultipleDevices) {
-    int count = cuda::get_device_count();
+    int count = cuda::getDeviceCount();
     if (count > 1) {
         // Get all devices
         std::vector<cuda::CUdevice_t> devices;
@@ -165,7 +165,7 @@ TEST_F(CudaDeviceTest, EnumerateMultipleDevices) {
  * @brief Test that device functions return neutral values when CUDA is disabled.
  */
 TEST(CudaDevice, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(cuda::get_device_count(), 0);
+    EXPECT_EQ(cuda::getDeviceCount(), 0);
     EXPECT_EQ(cuda::get_device(0), 0);
     
     cuda::CUdevice_t device = cuda::get_device(0);

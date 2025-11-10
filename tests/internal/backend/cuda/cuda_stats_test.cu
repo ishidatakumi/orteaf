@@ -25,7 +25,7 @@ class CudaStatsTest : public ::testing::Test {
 protected:
     void SetUp() override {
         cuda::cudaInit();
-        int count = cuda::get_device_count();
+        int count = cuda::getDeviceCount();
         if (count == 0) {
             GTEST_SKIP() << "No CUDA devices available";
         }

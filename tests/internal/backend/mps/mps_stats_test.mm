@@ -25,7 +25,7 @@ namespace mps = orteaf::internal::backend::mps;
 class MpsStatsTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        device_ = mps::get_device();
+        device_ = mps::getDevice();
         if (device_ == nullptr) {
             GTEST_SKIP() << "No Metal devices available";
         }
@@ -33,7 +33,7 @@ protected:
     
     void TearDown() override {
         if (device_ != nullptr) {
-            mps::device_release(device_);
+            mps::deviceRelease(device_);
         }
     }
     
@@ -208,10 +208,10 @@ TEST_F(MpsStatsTest, CommandQueueCreationUpdatesStats) {
     auto& stats = mps::statsInstance();
     uint64_t initial_streams = stats.activeStreams();
     
-    mps::MPSCommandQueue_t queue = mps::create_command_queue(device_);
+    mps::MPSCommandQueue_t queue = mps::createCommandQueue(device_);
     if (queue != nullptr) {
         EXPECT_EQ(stats.activeStreams(), initial_streams + 1);
-        mps::destroy_command_queue(queue);
+        mps::destroyCommandQueue(queue);
         EXPECT_EQ(stats.activeStreams(), initial_streams);
     }
 }
@@ -223,10 +223,10 @@ TEST_F(MpsStatsTest, EventCreationUpdatesStats) {
     auto& stats = mps::statsInstance();
     uint64_t initial_events = stats.activeEvents();
     
-    mps::MPSEvent_t event = mps::create_event(device_);
+    mps::MPSEvent_t event = mps::createEvent(device_);
     if (event != nullptr) {
         EXPECT_EQ(stats.activeEvents(), initial_events + 1);
-        mps::destroy_event(event);
+        mps::destroyEvent(event);
         EXPECT_EQ(stats.activeEvents(), initial_events);
     }
 }

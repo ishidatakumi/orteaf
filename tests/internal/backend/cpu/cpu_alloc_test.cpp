@@ -15,59 +15,59 @@ namespace cpu = orteaf::internal::backend::cpu;
  * @brief Test that is_pow2 correctly identifies powers of 2.
  */
 TEST(CpuAlloc, IsPow2IdentifiesPowersOfTwo) {
-    EXPECT_TRUE(cpu::is_pow2(1));
-    EXPECT_TRUE(cpu::is_pow2(2));
-    EXPECT_TRUE(cpu::is_pow2(4));
-    EXPECT_TRUE(cpu::is_pow2(8));
-    EXPECT_TRUE(cpu::is_pow2(16));
-    EXPECT_TRUE(cpu::is_pow2(32));
-    EXPECT_TRUE(cpu::is_pow2(64));
-    EXPECT_TRUE(cpu::is_pow2(128));
-    EXPECT_TRUE(cpu::is_pow2(256));
-    EXPECT_TRUE(cpu::is_pow2(512));
-    EXPECT_TRUE(cpu::is_pow2(1024));
-    EXPECT_TRUE(cpu::is_pow2(4096));
-    EXPECT_TRUE(cpu::is_pow2(1ULL << 31));
-    EXPECT_TRUE(cpu::is_pow2(1ULL << 63));
+    EXPECT_TRUE(cpu::ispow2(1));
+    EXPECT_TRUE(cpu::ispow2(2));
+    EXPECT_TRUE(cpu::ispow2(4));
+    EXPECT_TRUE(cpu::ispow2(8));
+    EXPECT_TRUE(cpu::ispow2(16));
+    EXPECT_TRUE(cpu::ispow2(32));
+    EXPECT_TRUE(cpu::ispow2(64));
+    EXPECT_TRUE(cpu::ispow2(128));
+    EXPECT_TRUE(cpu::ispow2(256));
+    EXPECT_TRUE(cpu::ispow2(512));
+    EXPECT_TRUE(cpu::ispow2(1024));
+    EXPECT_TRUE(cpu::ispow2(4096));
+    EXPECT_TRUE(cpu::ispow2(1ULL << 31));
+    EXPECT_TRUE(cpu::ispow2(1ULL << 63));
 }
 
 /**
  * @brief Test that is_pow2 correctly identifies non-powers of 2.
  */
 TEST(CpuAlloc, IsPow2IdentifiesNonPowersOfTwo) {
-    EXPECT_FALSE(cpu::is_pow2(0));
-    EXPECT_FALSE(cpu::is_pow2(3));
-    EXPECT_FALSE(cpu::is_pow2(5));
-    EXPECT_FALSE(cpu::is_pow2(6));
-    EXPECT_FALSE(cpu::is_pow2(7));
-    EXPECT_FALSE(cpu::is_pow2(9));
-    EXPECT_FALSE(cpu::is_pow2(10));
-    EXPECT_FALSE(cpu::is_pow2(15));
-    EXPECT_FALSE(cpu::is_pow2(31));
-    EXPECT_FALSE(cpu::is_pow2(33));
-    EXPECT_FALSE(cpu::is_pow2(100));
-    EXPECT_FALSE(cpu::is_pow2(1000));
+    EXPECT_FALSE(cpu::ispow2(0));
+    EXPECT_FALSE(cpu::ispow2(3));
+    EXPECT_FALSE(cpu::ispow2(5));
+    EXPECT_FALSE(cpu::ispow2(6));
+    EXPECT_FALSE(cpu::ispow2(7));
+    EXPECT_FALSE(cpu::ispow2(9));
+    EXPECT_FALSE(cpu::ispow2(10));
+    EXPECT_FALSE(cpu::ispow2(15));
+    EXPECT_FALSE(cpu::ispow2(31));
+    EXPECT_FALSE(cpu::ispow2(33));
+    EXPECT_FALSE(cpu::ispow2(100));
+    EXPECT_FALSE(cpu::ispow2(1000));
 }
 
 /**
  * @brief Test that next_pow2 calculates correctly.
  */
 TEST(CpuAlloc, NextPow2CalculatesCorrectly) {
-    EXPECT_EQ(cpu::next_pow2(0), 1);
-    EXPECT_EQ(cpu::next_pow2(1), 1);
-    EXPECT_EQ(cpu::next_pow2(2), 2);
-    EXPECT_EQ(cpu::next_pow2(3), 4);
-    EXPECT_EQ(cpu::next_pow2(4), 4);
-    EXPECT_EQ(cpu::next_pow2(5), 8);
-    EXPECT_EQ(cpu::next_pow2(7), 8);
-    EXPECT_EQ(cpu::next_pow2(8), 8);
-    EXPECT_EQ(cpu::next_pow2(9), 16);
-    EXPECT_EQ(cpu::next_pow2(15), 16);
-    EXPECT_EQ(cpu::next_pow2(16), 16);
-    EXPECT_EQ(cpu::next_pow2(17), 32);
-    EXPECT_EQ(cpu::next_pow2(31), 32);
-    EXPECT_EQ(cpu::next_pow2(1023), 1024);
-    EXPECT_EQ(cpu::next_pow2(1024), 1024);
+    EXPECT_EQ(cpu::nextpow2(0), 1);
+    EXPECT_EQ(cpu::nextpow2(1), 1);
+    EXPECT_EQ(cpu::nextpow2(2), 2);
+    EXPECT_EQ(cpu::nextpow2(3), 4);
+    EXPECT_EQ(cpu::nextpow2(4), 4);
+    EXPECT_EQ(cpu::nextpow2(5), 8);
+    EXPECT_EQ(cpu::nextpow2(7), 8);
+    EXPECT_EQ(cpu::nextpow2(8), 8);
+    EXPECT_EQ(cpu::nextpow2(9), 16);
+    EXPECT_EQ(cpu::nextpow2(15), 16);
+    EXPECT_EQ(cpu::nextpow2(16), 16);
+    EXPECT_EQ(cpu::nextpow2(17), 32);
+    EXPECT_EQ(cpu::nextpow2(31), 32);
+    EXPECT_EQ(cpu::nextpow2(1023), 1024);
+    EXPECT_EQ(cpu::nextpow2(1024), 1024);
 }
 
 /**
@@ -125,7 +125,7 @@ TEST(CpuAlloc, AllocAlignedWorksWithVariousAlignments) {
     std::vector<size_t> alignments = {8, 16, 32, 64, 128, 256, 512, 1024};
     
     for (size_t alignment : alignments) {
-        void* ptr = cpu::alloc_aligned(1024, alignment);
+        void* ptr = cpu::allocAligned(1024, alignment);
         ASSERT_NE(ptr, nullptr);
         
         uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
@@ -140,7 +140,7 @@ TEST(CpuAlloc, AllocAlignedWorksWithVariousAlignments) {
  */
 TEST(CpuAlloc, AllocAlignedAdjustsNonPowerOfTwoAlignment) {
     // Non-power-of-2 alignment should be adjusted to next power of 2
-    void* ptr = cpu::alloc_aligned(1024, 9);  // 9 -> 16
+    void* ptr = cpu::allocAligned(1024, 9);  // 9 -> 16
     ASSERT_NE(ptr, nullptr);
     
     uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
@@ -154,7 +154,7 @@ TEST(CpuAlloc, AllocAlignedAdjustsNonPowerOfTwoAlignment) {
  */
 TEST(CpuAlloc, AllocAlignedAdjustsSmallAlignment) {
     // Alignment smaller than max_align_t should be adjusted
-    void* ptr = cpu::alloc_aligned(1024, 1);  // Should be adjusted to max_align_t
+    void* ptr = cpu::allocAligned(1024, 1);  // Should be adjusted to max_align_t
     ASSERT_NE(ptr, nullptr);
     
     uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
@@ -167,7 +167,7 @@ TEST(CpuAlloc, AllocAlignedAdjustsSmallAlignment) {
  * @brief Test that alloc_aligned with zero size returns nullptr.
  */
 TEST(CpuAlloc, AllocAlignedZeroSizeReturnsNullptr) {
-    void* ptr = cpu::alloc_aligned(0, 16);
+    void* ptr = cpu::allocAligned(0, 16);
     EXPECT_EQ(ptr, nullptr);
 }
 
@@ -276,7 +276,7 @@ TEST(CpuAlloc, VeryLargeAlignmentWorks) {
     constexpr size_t alignment = 4096;  // Page size
     constexpr size_t size = 1024;
     
-    void* ptr = cpu::alloc_aligned(size, alignment);
+    void* ptr = cpu::allocAligned(size, alignment);
     ASSERT_NE(ptr, nullptr);
     
     uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);

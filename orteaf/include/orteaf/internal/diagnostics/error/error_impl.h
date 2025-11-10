@@ -58,8 +58,12 @@ inline const std::error_category& orteafErrorCategory() {
     return category;
 }
 
-inline std::error_code makeErrorCode(OrteafErrc errc) {
+inline std::error_code make_error_code(OrteafErrc errc) {
     return {static_cast<int>(errc), orteafErrorCategory()};
+}
+
+inline std::error_code makeErrorCode(OrteafErrc errc) {
+    return make_error_code(errc);
 }
 
 inline OrteafError::OrteafError()
