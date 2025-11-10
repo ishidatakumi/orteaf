@@ -14,7 +14,7 @@ namespace {
 
 namespace tables = ::orteaf::generated::architecture_tables;
 
-std::string ToLowerCopy(std::string_view value) {
+std::string toLowerCopy(std::string_view value) {
     std::string result(value);
     std::transform(result.begin(), result.end(), result.begin(), [](unsigned char ch) {
         return static_cast<char>(std::tolower(ch));
@@ -22,17 +22,17 @@ std::string ToLowerCopy(std::string_view value) {
     return result;
 }
 
-bool MatchesVendor(std::string_view required, std::string_view actual_lower) {
+bool matchesVendor(std::string_view required, std::string_view actual_lower) {
     if (required.empty()) {
         return true;
     }
-    return ToLowerCopy(required) == actual_lower;
+    return toLowerCopy(required) == actual_lower;
 }
 
 } // namespace
 
 Architecture detectCudaArchitecture(int compute_capability, std::string_view vendor_hint) {
-    const auto vendor_lower = ToLowerCopy(vendor_hint);
+    const auto vendor_lower = toLowerCopy(vendor_hint);
     const auto count = tables::kArchitectureCount;
     Architecture fallback = Architecture::cuda_generic;
 
@@ -46,7 +46,7 @@ Architecture detectCudaArchitecture(int compute_capability, std::string_view ven
         }
 
         const auto required_vendor = tables::kArchitectureDetectVendors[index];
-        if (!MatchesVendor(required_vendor, vendor_lower)) {
+        if (!matchesVendor(required_vendor, vendor_lower)) {
             continue;
         }
 

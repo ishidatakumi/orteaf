@@ -16,7 +16,7 @@ namespace orteaf::internal {
 
 namespace detail {
 
-constexpr float Pow2(int exp) {
+constexpr float pow2(int exp) {
     float value = 1.0f;
     if (exp > 0) {
         for (int i = 0; i < exp; ++i) {
@@ -37,42 +37,42 @@ struct Fp8FormatSpec {
     bool has_infinity;
     bool saturate_for_nan_inf;  // For formats without infinity (E4M3)
 
-    constexpr std::uint8_t ExponentMask() const {
+    constexpr std::uint8_t exponentMask() const {
         return static_cast<std::uint8_t>((1u << exponent_bits) - 1u);
     }
 
-    constexpr std::uint8_t MantissaMask() const {
+    constexpr std::uint8_t mantissaMask() const {
         return static_cast<std::uint8_t>((1u << mantissa_bits) - 1u);
     }
 
-    constexpr std::uint8_t MaxFiniteExponentField() const {
-        const std::uint8_t mask = ExponentMask();
+    constexpr std::uint8_t maxFiniteExponentField() const {
+        const std::uint8_t mask = exponentMask();
         return has_infinity ? static_cast<std::uint8_t>(mask - 1u) : mask;
     }
 
-    constexpr std::uint8_t MaxFiniteBits() const {
-        return static_cast<std::uint8_t>((MaxFiniteExponentField() << mantissa_bits) | MantissaMask());
+    constexpr std::uint8_t maxFiniteBits() const {
+        return static_cast<std::uint8_t>((maxFiniteExponentField() << mantissa_bits) | mantissaMask());
     }
 
-    constexpr std::uint8_t InfinityBits() const {
-        return static_cast<std::uint8_t>(ExponentMask() << mantissa_bits);
+    constexpr std::uint8_t infinityBits() const {
+        return static_cast<std::uint8_t>(exponentMask() << mantissa_bits);
     }
 
-    constexpr std::uint8_t QuietNaNBits() const {
-        return static_cast<std::uint8_t>((ExponentMask() << mantissa_bits) | 0x1u);
+    constexpr std::uint8_t quietNaNBits() const {
+        return static_cast<std::uint8_t>((exponentMask() << mantissa_bits) | 0x1u);
     }
 };
 
 constexpr Fp8FormatSpec kFormatE4M3{4, 3, 7, false, true};
 constexpr Fp8FormatSpec kFormatE5M2{5, 2, 15, true, false};
 
-constexpr std::uint8_t PackFp8Bits(std::uint8_t sign, std::uint8_t exponent_field, std::uint8_t mantissa_field,
+constexpr std::uint8_t packFp8Bits(std::uint8_t sign, std::uint8_t exponent_field, std::uint8_t mantissa_field,
                                    const Fp8FormatSpec& spec) {
     return static_cast<std::uint8_t>((sign << 7) | (exponent_field << spec.mantissa_bits) | mantissa_field);
 }
 
-constexpr std::uint8_t Float32ToFp8(float value, const Fp8FormatSpec& spec) {
-    const std::uint32_t bits = detail::BitCast<std::uint32_t>(value);
+constexpr std::uint8_t float32ToFp8(float value, const Fp8FormatSpec& spec) {
+    const std::uint32_t bits = detail::bitCast<std::uint32_t>(value);
     const std::uint8_t sign = static_cast<std::uint8_t>(bits >> 31);
     const std::uint32_t exponent = (bits >> 23) & 0xffu;
     const std::uint32_t mantissa = bits & 0x7fffffu;
@@ -81,26 +81,26 @@ constexpr std::uint8_t Float32ToFp8(float value, const Fp8FormatSpec& spec) {
     if (exponent == 0xffu) {
         if (mantissa == 0) {
             if (spec.has_infinity) {
-                return static_cast<std::uint8_t>(sign_bits | spec.InfinityBits());
+                return static_cast<std::uint8_t>(sign_bits | spec.infinityBits());
             }
-            return static_cast<std::uint8_t>(sign_bits | spec.MaxFiniteBits());
+            return static_cast<std::uint8_t>(sign_bits | spec.maxFiniteBits());
         }
-        return static_cast<std::uint8_t>(sign_bits | spec.QuietNaNBits());
+        return static_cast<std::uint8_t>(sign_bits | spec.quietNaNBits());
     }
 
     if ((bits & 0x7fffffffU) == 0u) {
         return sign_bits;
     }
 
-    const int max_finite_exponent = spec.MaxFiniteExponentField();
+    const int max_finite_exponent = spec.maxFiniteExponentField();
     const std::uint32_t mantissa_full = mantissa | 0x00800000u;
     int exponent_field = static_cast<int>(exponent) - 127 + spec.exponent_bias;
 
     if (exponent_field > max_finite_exponent) {
         if (spec.has_infinity) {
-            return static_cast<std::uint8_t>(sign_bits | spec.InfinityBits());
+            return static_cast<std::uint8_t>(sign_bits | spec.infinityBits());
         }
-        return static_cast<std::uint8_t>(sign_bits | spec.MaxFiniteBits());
+        return static_cast<std::uint8_t>(sign_bits | spec.maxFiniteBits());
     }
 
     const unsigned mantissa_shift = static_cast<unsigned>(23 - spec.mantissa_bits);
@@ -118,9 +118,9 @@ constexpr std::uint8_t Float32ToFp8(float value, const Fp8FormatSpec& spec) {
             ++mant;
         }
         if (mant == (1u << spec.mantissa_bits)) {
-            return PackFp8Bits(sign, 1u, 0u, spec);
+            return packFp8Bits(sign, 1u, 0u, spec);
         }
-        return PackFp8Bits(sign, 0u, static_cast<std::uint8_t>(mant & spec.MantissaMask()), spec);
+        return packFp8Bits(sign, 0u, static_cast<std::uint8_t>(mant & spec.mantissaMask()), spec);
     }
 
     std::uint32_t mant = mantissa_full >> mantissa_shift;
@@ -136,23 +136,23 @@ constexpr std::uint8_t Float32ToFp8(float value, const Fp8FormatSpec& spec) {
         ++exponent_field;
         if (exponent_field > max_finite_exponent) {
             if (spec.has_infinity) {
-                return static_cast<std::uint8_t>(sign_bits | spec.InfinityBits());
+                return static_cast<std::uint8_t>(sign_bits | spec.infinityBits());
             }
-            return static_cast<std::uint8_t>(sign_bits | spec.MaxFiniteBits());
+            return static_cast<std::uint8_t>(sign_bits | spec.maxFiniteBits());
         }
     }
 
-    const std::uint8_t mantissa_field = static_cast<std::uint8_t>(mant & spec.MantissaMask());
-    return PackFp8Bits(sign, static_cast<std::uint8_t>(exponent_field), mantissa_field, spec);
+    const std::uint8_t mantissa_field = static_cast<std::uint8_t>(mant & spec.mantissaMask());
+    return packFp8Bits(sign, static_cast<std::uint8_t>(exponent_field), mantissa_field, spec);
 }
 
-constexpr float Fp8ToFloat32(std::uint8_t storage, const Fp8FormatSpec& spec) {
+constexpr float fp8ToFloat32(std::uint8_t storage, const Fp8FormatSpec& spec) {
     const std::uint8_t sign = storage >> 7;
-    const std::uint8_t exponent_field = (storage >> spec.mantissa_bits) & spec.ExponentMask();
-    const std::uint8_t mantissa_field = storage & spec.MantissaMask();
+    const std::uint8_t exponent_field = (storage >> spec.mantissa_bits) & spec.exponentMask();
+    const std::uint8_t mantissa_field = storage & spec.mantissaMask();
     const float sign_value = sign ? -1.0f : 1.0f;
 
-    if (exponent_field == spec.ExponentMask()) {
+    if (exponent_field == spec.exponentMask()) {
         if (spec.has_infinity && mantissa_field == 0) {
             return sign ? -std::numeric_limits<float>::infinity() : std::numeric_limits<float>::infinity();
         }
@@ -165,14 +165,14 @@ constexpr float Fp8ToFloat32(std::uint8_t storage, const Fp8FormatSpec& spec) {
         }
         const float fraction = static_cast<float>(mantissa_field) /
                                static_cast<float>(1u << spec.mantissa_bits);
-        const float magnitude = fraction * Pow2(1 - spec.exponent_bias);
+        const float magnitude = fraction * pow2(1 - spec.exponent_bias);
         return sign_value * magnitude;
     }
 
     const float fraction = 1.0f + static_cast<float>(mantissa_field) /
                                       static_cast<float>(1u << spec.mantissa_bits);
     const int exponent = exponent_field - spec.exponent_bias;
-    return sign_value * fraction * Pow2(exponent);
+    return sign_value * fraction * pow2(exponent);
 }
 
 }  // namespace detail
@@ -183,22 +183,22 @@ struct Float8E4M3 {
     ORTEAF_INTERNAL_FLOAT8_HD constexpr Float8E4M3() = default;
     explicit ORTEAF_INTERNAL_FLOAT8_HD constexpr Float8E4M3(std::uint8_t bits) : storage(bits) {}
     explicit ORTEAF_INTERNAL_FLOAT8_HD constexpr Float8E4M3(float value)
-        : storage(detail::Float32ToFp8(value, detail::kFormatE4M3)) {}
+        : storage(detail::float32ToFp8(value, detail::kFormatE4M3)) {}
     explicit ORTEAF_INTERNAL_FLOAT8_HD constexpr Float8E4M3(double value)
-        : storage(detail::Float32ToFp8(static_cast<float>(value), detail::kFormatE4M3)) {}
+        : storage(detail::float32ToFp8(static_cast<float>(value), detail::kFormatE4M3)) {}
 
-    static ORTEAF_INTERNAL_FLOAT8_HD constexpr Float8E4M3 FromBits(std::uint8_t bits) {
+    static ORTEAF_INTERNAL_FLOAT8_HD constexpr Float8E4M3 fromBits(std::uint8_t bits) {
         return Float8E4M3(bits);
     }
 
-    ORTEAF_INTERNAL_FLOAT8_HD constexpr std::uint8_t Bits() const { return storage; }
+    ORTEAF_INTERNAL_FLOAT8_HD constexpr std::uint8_t bits() const { return storage; }
 
-    ORTEAF_INTERNAL_FLOAT8_HD constexpr float ToFloat32() const {
-        return detail::Fp8ToFloat32(storage, detail::kFormatE4M3);
+    ORTEAF_INTERNAL_FLOAT8_HD constexpr float toFloat32() const {
+        return detail::fp8ToFloat32(storage, detail::kFormatE4M3);
     }
 
-    ORTEAF_INTERNAL_FLOAT8_HD constexpr double ToFloat64() const {
-        return static_cast<double>(ToFloat32());
+    ORTEAF_INTERNAL_FLOAT8_HD constexpr double toFloat64() const {
+        return static_cast<double>(toFloat32());
     }
 
     ORTEAF_INTERNAL_FLOAT8_HD friend constexpr bool operator==(Float8E4M3 lhs, Float8E4M3 rhs) {
@@ -216,22 +216,22 @@ struct Float8E5M2 {
     ORTEAF_INTERNAL_FLOAT8_HD constexpr Float8E5M2() = default;
     explicit ORTEAF_INTERNAL_FLOAT8_HD constexpr Float8E5M2(std::uint8_t bits) : storage(bits) {}
     explicit ORTEAF_INTERNAL_FLOAT8_HD constexpr Float8E5M2(float value)
-        : storage(detail::Float32ToFp8(value, detail::kFormatE5M2)) {}
+        : storage(detail::float32ToFp8(value, detail::kFormatE5M2)) {}
     explicit ORTEAF_INTERNAL_FLOAT8_HD constexpr Float8E5M2(double value)
-        : storage(detail::Float32ToFp8(static_cast<float>(value), detail::kFormatE5M2)) {}
+        : storage(detail::float32ToFp8(static_cast<float>(value), detail::kFormatE5M2)) {}
 
-    static ORTEAF_INTERNAL_FLOAT8_HD constexpr Float8E5M2 FromBits(std::uint8_t bits) {
+    static ORTEAF_INTERNAL_FLOAT8_HD constexpr Float8E5M2 fromBits(std::uint8_t bits) {
         return Float8E5M2(bits);
     }
 
-    ORTEAF_INTERNAL_FLOAT8_HD constexpr std::uint8_t Bits() const { return storage; }
+    ORTEAF_INTERNAL_FLOAT8_HD constexpr std::uint8_t bits() const { return storage; }
 
-    ORTEAF_INTERNAL_FLOAT8_HD constexpr float ToFloat32() const {
-        return detail::Fp8ToFloat32(storage, detail::kFormatE5M2);
+    ORTEAF_INTERNAL_FLOAT8_HD constexpr float toFloat32() const {
+        return detail::fp8ToFloat32(storage, detail::kFormatE5M2);
     }
 
-    ORTEAF_INTERNAL_FLOAT8_HD constexpr double ToFloat64() const {
-        return static_cast<double>(ToFloat32());
+    ORTEAF_INTERNAL_FLOAT8_HD constexpr double toFloat64() const {
+        return static_cast<double>(toFloat32());
     }
 
     ORTEAF_INTERNAL_FLOAT8_HD friend constexpr bool operator==(Float8E5M2 lhs, Float8E5M2 rhs) {

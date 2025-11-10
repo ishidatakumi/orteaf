@@ -20,10 +20,10 @@ namespace orteaf::internal {
 namespace detail {
 
 // Convert IEEE-754 binary32 to binary16 bits (round-to-nearest-even).
-ORTEAF_INTERNAL_FLOAT16_HD constexpr std::uint16_t Float32ToHalfBits(float value) {
+ORTEAF_INTERNAL_FLOAT16_HD constexpr std::uint16_t float32ToHalfBits(float value) {
     using UInt32 = std::uint32_t;
 
-    const UInt32 bits = BitCast<UInt32>(value);
+    const UInt32 bits = bitCast<UInt32>(value);
     const UInt32 sign = (bits >> 16) & 0x8000u;
     UInt32 mantissa = bits & 0x007fffffu;
     int exponent = static_cast<int>((bits >> 23) & 0xffu);
@@ -78,7 +78,7 @@ ORTEAF_INTERNAL_FLOAT16_HD constexpr std::uint16_t Float32ToHalfBits(float value
 }
 
 // Convert IEEE-754 binary16 bits to binary32.
-ORTEAF_INTERNAL_FLOAT16_HD constexpr float HalfBitsToFloat32(std::uint16_t bits) {
+ORTEAF_INTERNAL_FLOAT16_HD constexpr float halfBitsToFloat32(std::uint16_t bits) {
     using UInt32 = std::uint32_t;
 
     const UInt32 sign = static_cast<UInt32>(bits & 0x8000u) << 16;
@@ -87,7 +87,7 @@ ORTEAF_INTERNAL_FLOAT16_HD constexpr float HalfBitsToFloat32(std::uint16_t bits)
 
     if (exponent == 0) {
         if (mantissa == 0) {
-            return BitCast<float>(sign);
+            return bitCast<float>(sign);
         }
         // Subnormal
         int e = -14;
@@ -99,7 +99,7 @@ ORTEAF_INTERNAL_FLOAT16_HD constexpr float HalfBitsToFloat32(std::uint16_t bits)
         const UInt32 exp32 = static_cast<UInt32>(e + 127);
         const UInt32 mant32 = mantissa << 13;
         const UInt32 result = sign | (exp32 << 23) | mant32;
-        return BitCast<float>(result);
+        return bitCast<float>(result);
     }
 
     if (exponent == 0x1fu) {
@@ -108,21 +108,21 @@ ORTEAF_INTERNAL_FLOAT16_HD constexpr float HalfBitsToFloat32(std::uint16_t bits)
         if (mantissa != 0) {
             result |= 0x1u;  // ensure qNaN
         }
-        return BitCast<float>(result);
+        return bitCast<float>(result);
     }
 
     const UInt32 exp32 = static_cast<UInt32>(exponent + (127 - 15));
     const UInt32 mant32 = mantissa << 13;
     const UInt32 result = sign | (exp32 << 23) | mant32;
-    return BitCast<float>(result);
+    return bitCast<float>(result);
 }
 
 #if defined(__CUDACC__)
-ORTEAF_INTERNAL_FLOAT16_HD inline std::uint16_t CudaHalfToBits(__half value) {
+ORTEAF_INTERNAL_FLOAT16_HD inline std::uint16_t cudaHalfToBits(__half value) {
     return __half_as_ushort(value);
 }
 
-ORTEAF_INTERNAL_FLOAT16_HD inline __half BitsToCudaHalf(std::uint16_t bits) {
+ORTEAF_INTERNAL_FLOAT16_HD inline __half bitsToCudaHalf(std::uint16_t bits) {
     return __ushort_as_half(bits);
 }
 #endif
@@ -135,41 +135,41 @@ struct Float16 {
     ORTEAF_INTERNAL_FLOAT16_HD constexpr Float16() = default;
     ORTEAF_INTERNAL_FLOAT16_HD explicit constexpr Float16(std::uint16_t bits) : storage(bits) {}
 
-    ORTEAF_INTERNAL_FLOAT16_HD static constexpr Float16 FromBits(std::uint16_t bits) {
+    ORTEAF_INTERNAL_FLOAT16_HD static constexpr Float16 fromBits(std::uint16_t bits) {
         return Float16(bits);
     }
 
-    ORTEAF_INTERNAL_FLOAT16_HD constexpr std::uint16_t Bits() const { return storage; }
+    ORTEAF_INTERNAL_FLOAT16_HD constexpr std::uint16_t bits() const { return storage; }
 
     ORTEAF_INTERNAL_FLOAT16_HD explicit constexpr Float16(float value)
-        : storage(detail::Float32ToHalfBits(value)) {}
+        : storage(detail::float32ToHalfBits(value)) {}
 
     ORTEAF_INTERNAL_FLOAT16_HD explicit constexpr Float16(double value)
-        : storage(detail::Float32ToHalfBits(static_cast<float>(value))) {}
+        : storage(detail::float32ToHalfBits(static_cast<float>(value))) {}
 
-    ORTEAF_INTERNAL_FLOAT16_HD constexpr float ToFloat32() const {
-        return detail::HalfBitsToFloat32(storage);
+    ORTEAF_INTERNAL_FLOAT16_HD constexpr float toFloat32() const {
+        return detail::halfBitsToFloat32(storage);
     }
 
-    ORTEAF_INTERNAL_FLOAT16_HD constexpr double ToFloat64() const {
-        return static_cast<double>(ToFloat32());
+    ORTEAF_INTERNAL_FLOAT16_HD constexpr double toFloat64() const {
+        return static_cast<double>(toFloat32());
     }
 
 #if defined(__FLT16_MANT_DIG__)
     ORTEAF_INTERNAL_FLOAT16_HD explicit constexpr Float16(_Float16 value)
-        : storage(detail::Float32ToHalfBits(static_cast<float>(value))) {}
+        : storage(detail::float32ToHalfBits(static_cast<float>(value))) {}
 
-    ORTEAF_INTERNAL_FLOAT16_HD constexpr _Float16 ToNativeFloat16() const {
-        return static_cast<_Float16>(ToFloat32());
+    ORTEAF_INTERNAL_FLOAT16_HD constexpr _Float16 toNativeFloat16() const {
+        return static_cast<_Float16>(toFloat32());
     }
 #endif
 
 #if defined(__CUDACC__)
     ORTEAF_INTERNAL_FLOAT16_HD explicit Float16(__half value)
-        : storage(detail::CudaHalfToBits(value)) {}
+        : storage(detail::cudaHalfToBits(value)) {}
 
-    ORTEAF_INTERNAL_FLOAT16_HD __half ToCudaHalf() const {
-        return detail::BitsToCudaHalf(storage);
+    ORTEAF_INTERNAL_FLOAT16_HD __half toCudaHalf() const {
+        return detail::bitsToCudaHalf(storage);
     }
 #endif
 

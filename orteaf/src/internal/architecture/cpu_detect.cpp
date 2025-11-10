@@ -42,7 +42,7 @@ struct CpuInfo {
     std::string machine_id; // lower-case hardware identifier (hw.model or DMI strings)
 };
 
-std::string ToLowerCopy(std::string_view value) {
+std::string toLowerCopy(std::string_view value) {
     std::string result(value);
     std::transform(result.begin(), result.end(), result.begin(), [](unsigned char ch) {
         return static_cast<char>(std::tolower(ch));
@@ -51,7 +51,7 @@ std::string ToLowerCopy(std::string_view value) {
 }
 
 #if defined(__APPLE__)
-std::string ReadSysctlString(const char* key) {
+std::string readSysctlString(const char* key) {
     std::size_t size = 0;
     if (sysctlbyname(key, nullptr, &size, nullptr, 0) != 0 || size == 0) {
         return {};
@@ -68,7 +68,7 @@ std::string ReadSysctlString(const char* key) {
 #endif
 
 #if defined(__APPLE__)
-std::string ReadHardwareModelFromIORegistry() {
+std::string readHardwareModelFromIORegistry() {
     io_registry_entry_t entry = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("IOPlatformExpertDevice"));
     if (entry == MACH_PORT_NULL) {
         return {};
@@ -95,7 +95,7 @@ std::string ReadHardwareModelFromIORegistry() {
 }
 #endif
 
-std::string ReadFirstExistingFileLower(std::initializer_list<const char*> paths) {
+std::string readFirstExistingFileLower(std::initializer_list<const char*> paths) {
     for (const char* path : paths) {
         std::ifstream stream(path);
         if (!stream.is_open()) {
@@ -104,7 +104,7 @@ std::string ReadFirstExistingFileLower(std::initializer_list<const char*> paths)
         std::string line;
         std::getline(stream, line);
         if (!line.empty()) {
-            return ToLowerCopy(line);
+            return toLowerCopy(line);
         }
     }
     return {};
@@ -112,7 +112,7 @@ std::string ReadFirstExistingFileLower(std::initializer_list<const char*> paths)
 
 #if defined(ORTEAF_HAS_X86_CPUID)
 #if defined(_MSC_VER)
-bool CpuId(unsigned int leaf, unsigned int subleaf, unsigned int& eax, unsigned int& ebx,
+bool cpuId(unsigned int leaf, unsigned int subleaf, unsigned int& eax, unsigned int& ebx,
            unsigned int& ecx, unsigned int& edx) {
     int regs[4];
     __cpuidex(regs, static_cast<int>(leaf), static_cast<int>(subleaf));
@@ -123,26 +123,26 @@ bool CpuId(unsigned int leaf, unsigned int subleaf, unsigned int& eax, unsigned 
     return true;
 }
 #else
-bool CpuId(unsigned int leaf, unsigned int subleaf, unsigned int& eax, unsigned int& ebx,
+bool cpuId(unsigned int leaf, unsigned int subleaf, unsigned int& eax, unsigned int& ebx,
            unsigned int& ecx, unsigned int& edx) {
     return __get_cpuid_count(leaf, subleaf, &eax, &ebx, &ecx, &edx);
 }
 #endif
 #endif
 
-CpuInfo CollectCpuInfo() {
+CpuInfo collectCpuInfo() {
     CpuInfo info;
 
 #if defined(__APPLE__)
     if (info.machine_id.empty()) {
-        info.machine_id = ToLowerCopy(ReadSysctlString("hw.model"));
+        info.machine_id = toLowerCopy(readSysctlString("hw.model"));
     }
     if (info.machine_id.empty()) {
-        info.machine_id = ToLowerCopy(ReadHardwareModelFromIORegistry());
+        info.machine_id = toLowerCopy(readHardwareModelFromIORegistry());
     }
 #else
     if (info.machine_id.empty()) {
-        info.machine_id = ReadFirstExistingFileLower({
+        info.machine_id = readFirstExistingFileLower({
             "/sys/devices/virtual/dmi/id/product_name",
             "/sys/devices/virtual/dmi/id/board_name",
         });
@@ -151,13 +151,13 @@ CpuInfo CollectCpuInfo() {
 
 #if defined(ORTEAF_HAS_X86_CPUID)
     unsigned int eax = 0, ebx = 0, ecx = 0, edx = 0;
-    if (CpuId(0, 0, eax, ebx, ecx, edx)) {
+    if (cpuId(0, 0, eax, ebx, ecx, edx)) {
         char vendor_chars[13] = {};
         std::memcpy(vendor_chars + 0, &ebx, sizeof(unsigned int));
         std::memcpy(vendor_chars + 4, &edx, sizeof(unsigned int));
         std::memcpy(vendor_chars + 8, &ecx, sizeof(unsigned int));
         std::string vendor_raw(vendor_chars, 12);
-        auto vendor_lower = ToLowerCopy(vendor_raw);
+        auto vendor_lower = toLowerCopy(vendor_raw);
         if (vendor_lower.find("intel") != std::string::npos) {
             info.vendor = "intel";
         } else if (vendor_lower.find("amd") != std::string::npos) {
@@ -166,7 +166,7 @@ CpuInfo CollectCpuInfo() {
             info.vendor = vendor_lower;
         }
     }
-    if (CpuId(1, 0, eax, ebx, ecx, edx)) {
+    if (cpuId(1, 0, eax, ebx, ecx, edx)) {
         const unsigned int base_family = (eax >> 8) & 0xF;
         const unsigned int ext_family = (eax >> 20) & 0xFF;
         unsigned int family = base_family;
@@ -183,7 +183,7 @@ CpuInfo CollectCpuInfo() {
         }
         info.model = static_cast<int>(model);
     }
-    if (CpuId(7, 0, eax, ebx, ecx, edx)) {
+    if (cpuId(7, 0, eax, ebx, ecx, edx)) {
         if (ebx & (1u << 5)) {
             info.features.insert("avx2");
         }
@@ -206,13 +206,13 @@ CpuInfo CollectCpuInfo() {
         info.vendor = "generic";
     }
     if (!info.machine_id.empty()) {
-        info.machine_id = ToLowerCopy(info.machine_id);
+        info.machine_id = toLowerCopy(info.machine_id);
     }
 
     return info;
 }
 
-bool HasAllFeatures(const CpuInfo& info, std::size_t begin, std::size_t end) {
+bool hasAllFeatures(const CpuInfo& info, std::size_t begin, std::size_t end) {
     if (begin == end) {
         return true;
     }
@@ -220,7 +220,7 @@ bool HasAllFeatures(const CpuInfo& info, std::size_t begin, std::size_t end) {
         return false;
     }
     for (std::size_t i = begin; i < end; ++i) {
-        const auto spec = ToLowerCopy(tables::kArchitectureDetectFeatures[i]);
+        const auto spec = toLowerCopy(tables::kArchitectureDetectFeatures[i]);
         if (!info.features.count(spec)) {
             return false;
         }
@@ -228,7 +228,7 @@ bool HasAllFeatures(const CpuInfo& info, std::size_t begin, std::size_t end) {
     return true;
 }
 
-bool MatchesMachineId(const CpuInfo& info, std::size_t begin, std::size_t end) {
+bool matchesMachineId(const CpuInfo& info, std::size_t begin, std::size_t end) {
     if (begin == end) {
         return true;
     }
@@ -236,7 +236,7 @@ bool MatchesMachineId(const CpuInfo& info, std::size_t begin, std::size_t end) {
         return false;
     }
     for (std::size_t i = begin; i < end; ++i) {
-        const auto spec = ToLowerCopy(tables::kArchitectureDetectMachineIds[i]);
+        const auto spec = toLowerCopy(tables::kArchitectureDetectMachineIds[i]);
         if (spec == info.machine_id) {
             return true;
         }
@@ -244,7 +244,7 @@ bool MatchesMachineId(const CpuInfo& info, std::size_t begin, std::size_t end) {
     return false;
 }
 
-bool MatchesCpuModels(const CpuInfo& info, std::size_t begin, std::size_t end) {
+bool matchesCpuModels(const CpuInfo& info, std::size_t begin, std::size_t end) {
     if (begin == end) {
         return true;
     }
@@ -259,10 +259,10 @@ bool MatchesCpuModels(const CpuInfo& info, std::size_t begin, std::size_t end) {
     return false;
 }
 
-bool MatchesDetectSpec(std::size_t index, const CpuInfo& info) {
+bool matchesDetectSpec(std::size_t index, const CpuInfo& info) {
     const auto vendor = tables::kArchitectureDetectVendors[index];
     if (!vendor.empty()) {
-        if (info.vendor != ToLowerCopy(vendor)) {
+        if (info.vendor != toLowerCopy(vendor)) {
             return false;
         }
     }
@@ -276,19 +276,19 @@ bool MatchesDetectSpec(std::size_t index, const CpuInfo& info) {
 
     const auto model_begin = tables::kArchitectureDetectCpuModelOffsets[index];
     const auto model_end = tables::kArchitectureDetectCpuModelOffsets[index + 1];
-    if (!MatchesCpuModels(info, model_begin, model_end)) {
+    if (!matchesCpuModels(info, model_begin, model_end)) {
         return false;
     }
 
     const auto feature_begin = tables::kArchitectureDetectFeatureOffsets[index];
     const auto feature_end = tables::kArchitectureDetectFeatureOffsets[index + 1];
-    if (!HasAllFeatures(info, feature_begin, feature_end)) {
+    if (!hasAllFeatures(info, feature_begin, feature_end)) {
         return false;
     }
 
     const auto machine_begin = tables::kArchitectureDetectMachineIdOffsets[index];
     const auto machine_end = tables::kArchitectureDetectMachineIdOffsets[index + 1];
-    if (!MatchesMachineId(info, machine_begin, machine_end)) {
+    if (!matchesMachineId(info, machine_begin, machine_end)) {
         return false;
     }
 
@@ -298,7 +298,7 @@ bool MatchesDetectSpec(std::size_t index, const CpuInfo& info) {
 }  // namespace
 
 Architecture detectCpuArchitecture() {
-    const CpuInfo info = CollectCpuInfo();
+    const CpuInfo info = collectCpuInfo();
     const std::size_t count = tables::kArchitectureCount;
     Architecture fallback = Architecture::cpu_generic;
 
@@ -310,7 +310,7 @@ Architecture detectCpuArchitecture() {
         if (backendOf(arch) != backend::Backend::cpu) {
             continue;
         }
-        if (!MatchesDetectSpec(index, info)) {
+        if (!matchesDetectSpec(index, info)) {
             continue;
         }
         return arch;

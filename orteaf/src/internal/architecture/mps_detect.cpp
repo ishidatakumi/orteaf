@@ -14,7 +14,7 @@ namespace {
 
 namespace tables = ::orteaf::generated::architecture_tables;
 
-std::string ToLowerCopy(std::string_view value) {
+std::string toLowerCopy(std::string_view value) {
     std::string result(value);
     std::transform(result.begin(), result.end(), result.begin(), [](unsigned char ch) {
         return static_cast<char>(std::tolower(ch));
@@ -22,11 +22,11 @@ std::string ToLowerCopy(std::string_view value) {
     return result;
 }
 
-bool MatchesVendor(std::string_view required, std::string_view hint_lower) {
+bool matchesVendor(std::string_view required, std::string_view hint_lower) {
     if (required.empty()) {
         return true;
     }
-    return ToLowerCopy(required) == hint_lower;
+    return toLowerCopy(required) == hint_lower;
 }
 
 class ScopedDevice {
@@ -49,8 +49,8 @@ private:
 } // namespace
 
 Architecture detectMpsArchitecture(std::string_view metal_family, std::string_view vendor_hint) {
-    const auto metal_lower = ToLowerCopy(metal_family);
-    const auto vendor_lower = ToLowerCopy(vendor_hint);
+    const auto metal_lower = toLowerCopy(metal_family);
+    const auto vendor_lower = toLowerCopy(vendor_hint);
     const auto count = tables::kArchitectureCount;
     Architecture fallback = Architecture::mps_generic;
 
@@ -64,12 +64,12 @@ Architecture detectMpsArchitecture(std::string_view metal_family, std::string_vi
         }
 
         const auto required_vendor = tables::kArchitectureDetectVendors[index];
-        if (!MatchesVendor(required_vendor, vendor_lower)) {
+        if (!matchesVendor(required_vendor, vendor_lower)) {
             continue;
         }
 
         const auto required_family = tables::kArchitectureDetectMetalFamilies[index];
-        if (!required_family.empty() && ToLowerCopy(required_family) != metal_lower) {
+        if (!required_family.empty() && toLowerCopy(required_family) != metal_lower) {
             continue;
         }
 

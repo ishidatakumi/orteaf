@@ -11,20 +11,20 @@ namespace dtype = orteaf::internal;
 
 namespace {
 
-std::size_t DTypeBit(dtype::DType dt) {
+std::size_t dTypeBit(dtype::DType dt) {
     return static_cast<std::size_t>(dtype::toIndex(dt));
 }
 
-bool MaskIncludes(const ops::InputSpec& spec, dtype::DType dt) {
-    return (spec.dtype.allow_mask & (1ULL << DTypeBit(dt))) != 0ULL;
+bool maskIncludes(const ops::InputSpec& spec, dtype::DType dt) {
+    return (spec.dtype.allow_mask & (1ULL << dTypeBit(dt))) != 0ULL;
 }
 
-bool MaskDenies(const ops::InputSpec& spec, dtype::DType dt) {
-    return (spec.dtype.deny_mask & (1ULL << DTypeBit(dt))) != 0ULL;
+bool maskDenies(const ops::InputSpec& spec, dtype::DType dt) {
+    return (spec.dtype.deny_mask & (1ULL << dTypeBit(dt))) != 0ULL;
 }
 
 template <typename SpanT>
-bool ContainsString(SpanT span, std::string_view target) {
+bool containsString(SpanT span, std::string_view target) {
     return std::find(span.begin(), span.end(), target) != span.end();
 }
 
@@ -50,8 +50,8 @@ TEST(OpsTablesTest, AddOpMetadata) {
 
     const auto& lhs = inputs[0];
     EXPECT_EQ(lhs.dtype.mode, ops::DTypeConstraintMode::Allow);
-    EXPECT_TRUE(MaskIncludes(lhs, dtype::DType::F32));
-    EXPECT_TRUE(MaskIncludes(lhs, dtype::DType::Bool));
+    EXPECT_TRUE(maskIncludes(lhs, dtype::DType::F32));
+    EXPECT_TRUE(maskIncludes(lhs, dtype::DType::Bool));
     EXPECT_FALSE(lhs.dtype.allow_promotion);
     EXPECT_FALSE(lhs.dtype.require_same_shape);
 
@@ -70,11 +70,11 @@ TEST(OpsTablesTest, AddOpMetadata) {
     EXPECT_NE(compute_policy.input_mask, 0ULL);
 
     const auto tags = ops::tagsOf(op);
-    EXPECT_TRUE(ContainsString(tags, "elementwise"));
+    EXPECT_TRUE(containsString(tags, "elementwise"));
     EXPECT_TRUE(ops::metadataOf(op).commutative);
 
     const auto aliases = ops::aliasesOf(op);
-    EXPECT_TRUE(ContainsString(aliases, "add"));
+    EXPECT_TRUE(containsString(aliases, "add"));
 }
 
 TEST(OpsTablesTest, MatMulOptionalInputsAndAttributes) {
@@ -85,7 +85,7 @@ TEST(OpsTablesTest, MatMulOptionalInputsAndAttributes) {
     EXPECT_FALSE(inputs[0].optional);
     EXPECT_TRUE(inputs[2].optional);
     EXPECT_EQ(inputs[2].dtype.mode, ops::DTypeConstraintMode::Allow);
-    EXPECT_TRUE(MaskIncludes(inputs[2], dtype::DType::F32));
+    EXPECT_TRUE(maskIncludes(inputs[2], dtype::DType::F32));
 
     const auto attributes = ops::attributesOf(op);
     ASSERT_EQ(attributes.size(), 2U);
@@ -108,7 +108,7 @@ TEST(OpsTablesTest, SpikeThresholdDeniesBooleanThreshold) {
     ASSERT_EQ(inputs.size(), 2U);
     const auto& threshold = inputs[1];
     EXPECT_EQ(threshold.dtype.mode, ops::DTypeConstraintMode::Deny);
-    EXPECT_TRUE(MaskDenies(threshold, dtype::DType::Bool));
+    EXPECT_TRUE(maskDenies(threshold, dtype::DType::Bool));
 
     const auto outputs = ops::outputsOf(op);
     ASSERT_EQ(outputs.size(), 1U);
@@ -121,7 +121,7 @@ TEST(OpsTablesTest, SpikeThresholdDeniesBooleanThreshold) {
 
     const auto metadata = ops::metadataOf(op);
     EXPECT_FALSE(metadata.differentiable);
-    EXPECT_TRUE(ContainsString(ops::tagsOf(op), "spiking"));
+    EXPECT_TRUE(containsString(ops::tagsOf(op), "spiking"));
 }
 
 TEST(OpsTablesTest, CustomQuantizeUsesCustomHooks) {
@@ -150,7 +150,7 @@ TEST(OpsTablesTest, ReluMetadataAndShape) {
 
     const auto& metadata = ops::metadataOf(op);
     EXPECT_TRUE(metadata.differentiable);
-    EXPECT_TRUE(ContainsString(ops::tagsOf(op), "activation"));
+    EXPECT_TRUE(containsString(ops::tagsOf(op), "activation"));
 
     const auto& shape = ops::shapeInferenceOf(op);
     EXPECT_EQ(shape.kind, "identity");

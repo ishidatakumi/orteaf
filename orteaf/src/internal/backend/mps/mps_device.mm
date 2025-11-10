@@ -117,7 +117,7 @@ MPSDeviceArray_t getDeviceArray() {
 namespace {
 
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
-std::string ToStdString(NSString* str) {
+std::string toStdString(NSString* str) {
     if (str == nil) {
         return {};
     }
@@ -125,7 +125,7 @@ std::string ToStdString(NSString* str) {
     return cstr ? std::string(cstr) : std::string{};
 }
 
-std::string ToLowerAscii(std::string value) {
+std::string toLowerAscii(std::string value) {
     for (char& ch : value) {
         if (ch >= 'A' && ch <= 'Z') {
             ch = static_cast<char>(ch - 'A' + 'a');
@@ -134,7 +134,7 @@ std::string ToLowerAscii(std::string value) {
     return value;
 }
 
-std::string GuessFamilyFromCapabilities(id<MTLDevice> device) {
+std::string guessFamilyFromCapabilities(id<MTLDevice> device) {
 #if defined(MTLGPUFamilyApple9)
     if ([device supportsFamily:MTLGPUFamilyApple9]) {
         return "m4";
@@ -153,9 +153,9 @@ std::string GuessFamilyFromCapabilities(id<MTLDevice> device) {
     return {};
 }
 
-std::string GuessFamilyFromName(id<MTLDevice> device) {
+std::string guessFamilyFromName(id<MTLDevice> device) {
     NSString* name = [device name];
-    std::string lower = ToLowerAscii(ToStdString(name));
+    std::string lower = toLowerAscii(toStdString(name));
     if (lower.find("m4") != std::string::npos) {
         return "m4";
     }
@@ -183,7 +183,7 @@ std::string getDeviceName(MPSDevice_t device) {
         return {};
     }
     id<MTLDevice> objc_device = objcFromOpaqueNoown<id<MTLDevice>>(device);
-    return ToStdString([objc_device name]);
+    return toStdString([objc_device name]);
 #else
     (void)device;
     return {};
@@ -212,10 +212,10 @@ std::string getDeviceMetalFamily(MPSDevice_t device) {
         return {};
     }
     id<MTLDevice> objc_device = objcFromOpaqueNoown<id<MTLDevice>>(device);
-    if (auto family = GuessFamilyFromCapabilities(objc_device); !family.empty()) {
+    if (auto family = guessFamilyFromCapabilities(objc_device); !family.empty()) {
         return family;
     }
-    return GuessFamilyFromName(objc_device);
+    return guessFamilyFromName(objc_device);
 #else
     (void)device;
     return {};

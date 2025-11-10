@@ -6,7 +6,7 @@
 namespace orteaf::internal::detail {
 
 template <class To, class From>
-constexpr To BitCast(From value) {
+constexpr To bitCast(From value) {
 #if defined(__cpp_lib_bit_cast)
     return std::bit_cast<To>(value);
 #else

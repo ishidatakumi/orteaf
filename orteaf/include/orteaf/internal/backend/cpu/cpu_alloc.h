@@ -35,7 +35,7 @@ constexpr std::size_t kCpuDefaultAlign = alignof(std::max_align_t);
  * @return `true` if `x` is a power of 2, `false` otherwise.
  *         Returns `false` if `x` is 0.
  */
-inline bool isPow2(std::size_t x) { return x && ((x & (x-1))==0); }
+inline bool ispow2(std::size_t x) { return x && ((x & (x-1))==0); }
 
 /**
  * @brief Calculate the smallest power of 2 greater than or equal to the specified value.
@@ -47,7 +47,7 @@ inline bool isPow2(std::size_t x) { return x && ((x & (x-1))==0); }
  * @return Smallest power of 2 greater than or equal to `x`.
  *         Returns 1 if `x` is 0 or 1.
  */
-inline std::size_t nextPow2(std::size_t x){
+inline std::size_t nextpow2(std::size_t x){
     if (x<=1) return 1u;
     --x; x|=x>>1; x|=x>>2; x|=x>>4; x|=x>>8; x|=x>>16;
     if constexpr (sizeof(std::size_t)==8) x|=x>>32;
@@ -96,7 +96,7 @@ inline void* allocAligned(std::size_t size, std::size_t alignment) {
 
     const std::size_t min_align = alignof(std::max_align_t);
     if (alignment < min_align) alignment = min_align;
-    if (!isPow2(alignment)) alignment = nextPow2(alignment);
+    if (!ispow2(alignment)) alignment = nextpow2(alignment);
 
 #if defined(_MSC_VER)
     void* p = _aligned_malloc(size, alignment);
