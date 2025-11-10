@@ -39,12 +39,14 @@ orteaf/
 - `Kernel` と `Ops`：演算を登録・実装するための抽象クラス。
 - `ModuleImpl` / `Layer` 実装：標準レイヤや Model の実相。
 
-### Internal 層
+-### Internal（runtime）層
 - `RuntimeManager` と `CurrentStateImpl`：ランタイム初期化と状態保持。
 - `Allocator` / `MemSafe`：メモリ確保と安全管理。
 - `Dispatcher` / `KernelRegister`：OPS と Kernel の橋渡し。
 - `Backends`：CPU / CUDA / MPS を抽象化したバックエンド。
 - `Diagnostics`（`error/`, `log/`）：共通のエラー情報 (`OrteafError`)、致命的エラー (`fatal_error`) と例外ラッパーを提供し、統一的に throw / ログ / 統計連携を扱う。
+
+この層の中核となる `runtime` 構成については [runtime 層アーキテクチャ計画](runtime-architecture.md) にまとめている。ここでは manager/allocator/context を単一のまとまりとして扱い、後続の ops 層で便利機能を追加する方針だ。
 
 ## ビルド時オプション
 
