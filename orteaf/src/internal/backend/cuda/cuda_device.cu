@@ -11,6 +11,8 @@
 #include "orteaf/internal/backend/cuda/cuda_stats.h"
 #include "orteaf/internal/backend/cuda/cuda_objc_bridge.h"
 
+#include <string>
+
 #ifdef ORTEAF_ENABLE_CUDA
 #include <cuda.h>
 #endif
@@ -65,6 +67,34 @@ ComputeCapability get_compute_capability(CUdevice_t device) {
  */
 int get_sm_count(ComputeCapability capability) {
     return capability.major * 10 + capability.minor;
+}
+
+/**
+ * @copydoc orteaf::internal::backend::cuda::get_device_name
+ */
+std::string get_device_name(CUdevice_t device) {
+#ifdef ORTEAF_ENABLE_CUDA
+    CUdevice objc_device = cu_device_from_opaque(device);
+    char name[256];
+    CU_CHECK(cuDeviceGetName(name, sizeof(name), objc_device));
+    return std::string(name);
+#else
+    (void)device;
+    return {};
+#endif
+}
+
+/**
+ * @copydoc orteaf::internal::backend::cuda::get_device_vendor
+ */
+std::string get_device_vendor(CUdevice_t device) {
+#ifdef ORTEAF_ENABLE_CUDA
+    (void)device;
+    return "nvidia";
+#else
+    (void)device;
+    return {};
+#endif
 }
 
 } // namespace orteaf::internal::backend::cuda

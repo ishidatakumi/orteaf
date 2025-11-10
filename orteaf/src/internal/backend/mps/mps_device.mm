@@ -5,6 +5,9 @@
 #include "orteaf/internal/backend/mps/mps_device.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"
 
+#include <string>
+#include <string_view>
+
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
@@ -108,6 +111,114 @@ MPSDeviceArray_t get_device_array() {
     return (MPSDeviceArray_t)opaque_from_objc_noown(devices);
 #else
     return nullptr;
+#endif
+}
+
+namespace {
+
+#if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
+std::string ToStdString(NSString* str) {
+    if (str == nil) {
+        return {};
+    }
+    const char* cstr = [str UTF8String];
+    return cstr ? std::string(cstr) : std::string{};
+}
+
+std::string ToLowerAscii(std::string value) {
+    for (char& ch : value) {
+        if (ch >= 'A' && ch <= 'Z') {
+            ch = static_cast<char>(ch - 'A' + 'a');
+        }
+    }
+    return value;
+}
+
+std::string GuessFamilyFromCapabilities(id<MTLDevice> device) {
+#if defined(MTLGPUFamilyApple9)
+    if ([device supportsFamily:MTLGPUFamilyApple9]) {
+        return "m4";
+    }
+#endif
+#if defined(MTLGPUFamilyApple8)
+    if ([device supportsFamily:MTLGPUFamilyApple8]) {
+        return "m3";
+    }
+#endif
+#if defined(MTLGPUFamilyApple7)
+    if ([device supportsFamily:MTLGPUFamilyApple7]) {
+        return "m2";
+    }
+#endif
+    return {};
+}
+
+std::string GuessFamilyFromName(id<MTLDevice> device) {
+    NSString* name = [device name];
+    std::string lower = ToLowerAscii(ToStdString(name));
+    if (lower.find("m4") != std::string::npos) {
+        return "m4";
+    }
+    if (lower.find("m3") != std::string::npos) {
+        return "m3";
+    }
+    if (lower.find("m2") != std::string::npos) {
+        return "m2";
+    }
+    if (lower.find("m1") != std::string::npos) {
+        return "m1";
+    }
+    return {};
+}
+#endif
+
+} // namespace
+
+/**
+ * @copydoc orteaf::internal::backend::mps::get_device_name
+ */
+std::string get_device_name(MPSDevice_t device) {
+#if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
+    if (device == nullptr) {
+        return {};
+    }
+    id<MTLDevice> objc_device = objc_from_opaque_noown<id<MTLDevice>>(device);
+    return ToStdString([objc_device name]);
+#else
+    (void)device;
+    return {};
+#endif
+}
+
+/**
+ * @copydoc orteaf::internal::backend::mps::get_device_vendor
+ */
+std::string get_device_vendor(MPSDevice_t device) {
+#if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
+    (void)device;
+    return "apple";
+#else
+    (void)device;
+    return {};
+#endif
+}
+
+/**
+ * @copydoc orteaf::internal::backend::mps::get_device_metal_family
+ */
+std::string get_device_metal_family(MPSDevice_t device) {
+#if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
+    if (device == nullptr) {
+        return {};
+    }
+    id<MTLDevice> objc_device = objc_from_opaque_noown<id<MTLDevice>>(device);
+    if (auto family = GuessFamilyFromCapabilities(objc_device); !family.empty()) {
+        return family;
+    }
+    return GuessFamilyFromName(objc_device);
+#else
+    (void)device;
+    return {};
 #endif
 }
 

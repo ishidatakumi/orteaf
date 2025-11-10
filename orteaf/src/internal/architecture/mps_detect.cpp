@@ -1,6 +1,7 @@
 #include "orteaf/internal/architecture/mps_detect.h"
 
 #include "orteaf/internal/backend/backend.h"
+#include "orteaf/internal/backend/mps/mps_device.h"
 
 #include <algorithm>
 #include <cctype>
@@ -27,6 +28,23 @@ bool MatchesVendor(std::string_view required, std::string_view hint_lower) {
     }
     return ToLowerCopy(required) == hint_lower;
 }
+
+class ScopedDevice {
+public:
+    explicit ScopedDevice(backend::mps::MPSDevice_t device) : device_(device) {}
+    ScopedDevice(const ScopedDevice&) = delete;
+    ScopedDevice& operator=(const ScopedDevice&) = delete;
+    ~ScopedDevice() {
+        if (device_ != nullptr) {
+            backend::mps::device_release(device_);
+        }
+    }
+
+    backend::mps::MPSDevice_t get() const { return device_; }
+
+private:
+    backend::mps::MPSDevice_t device_;
+};
 
 } // namespace
 
@@ -59,6 +77,31 @@ Architecture detect_mps_architecture(std::string_view metal_family, std::string_
     }
 
     return fallback;
+}
+
+Architecture detect_mps_architecture_for_device_index(std::uint32_t device_index) {
+#if ORTEAF_ENABLE_MPS
+    int count = backend::mps::get_device_count();
+    if (count <= 0 || device_index >= static_cast<std::uint32_t>(count)) {
+        return Architecture::mps_generic;
+    }
+
+    backend::mps::MPSDevice_t device = backend::mps::get_device(static_cast<backend::mps::MPSInt_t>(device_index));
+    if (device == nullptr) {
+        return Architecture::mps_generic;
+    }
+
+    ScopedDevice guard(device);
+    std::string metal_family = backend::mps::get_device_metal_family(device);
+    std::string vendor = backend::mps::get_device_vendor(device);
+    if (vendor.empty()) {
+        vendor = "apple";
+    }
+    return detect_mps_architecture(metal_family, vendor);
+#else
+    (void)device_index;
+    return Architecture::mps_generic;
+#endif
 }
 
 } // namespace orteaf::internal::architecture

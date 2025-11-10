@@ -3,7 +3,7 @@
 #include "orteaf/internal/architecture/cpu_detect.h"
 
 #include <cstdlib>
-
+#include <iostream>
 #include <gtest/gtest.h>
 namespace architecture = orteaf::internal::architecture;
 namespace backend = orteaf::internal::backend;
@@ -14,7 +14,9 @@ TEST(CpuDetect, ManualEnvironmentCheck) {
     if (!expected_env) {
         GTEST_SKIP() << "Set ORTEAF_EXPECT_CPU_ARCH to run this test on your environment.";
     }
+    std::cout << "expected_env: " << expected_env << std::endl;
     const auto arch = architecture::detect_cpu_architecture();
+    std::cout << "arch: " << architecture::IdOf(arch).data() << std::endl;
     EXPECT_STREQ(expected_env, architecture::IdOf(arch).data());
 }
 

@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#include <string>
+
 #include "orteaf/internal/backend/mps/mps_size.h"
 
 namespace orteaf::internal::backend::mps {
@@ -54,6 +56,21 @@ void device_release(MPSDevice_t device);
  * @return Opaque array handle, or nullptr when unavailable/disabled.
  */
 MPSDeviceArray_t get_device_array();
+
+/**
+ * @brief Human-readable device name (e.g., "Apple M4 Pro").
+ */
+std::string get_device_name(MPSDevice_t device);
+
+/**
+ * @brief Vendor hint string for architecture detection (typically "apple").
+ */
+std::string get_device_vendor(MPSDevice_t device);
+
+/**
+ * @brief Metal family hint (e.g., "m2", "m3", "m4") derived from device capabilities.
+ */
+std::string get_device_metal_family(MPSDevice_t device);
 
 
 } // namespace orteaf::internal::backend::mps
