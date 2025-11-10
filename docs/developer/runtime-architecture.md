@@ -13,7 +13,7 @@ orteaf/
 │   ├── allocator/          # ランタイム共通アロケータ（Backend 別特殊化をここに集約）
 │   ├── context/            # Runtime Context / CurrentState 相当の公開インターフェース
 │   └── ops/                # 便利機能（wait/signal 等）――マネージャ完成後に追加
-└── src/runtime/
+└── src/internal/runtime/
     ├── manager/
     ├── allocator/
     ├── context/
