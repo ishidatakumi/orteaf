@@ -70,9 +70,9 @@ Architecture detectCudaArchitecture(int compute_capability, std::string_view ven
 }
 
 /**
- * @copydoc orteaf::internal::architecture::detectCudaArchitectureForDeviceIndex
+ * @copydoc orteaf::internal::architecture::detectCudaArchitectureForDeviceId
  */
-Architecture detectCudaArchitectureForDeviceIndex(::orteaf::internal::runtime::DeviceId device_id) {
+Architecture detectCudaArchitectureForDeviceId(::orteaf::internal::runtime::DeviceId device_id) {
 #if ORTEAF_ENABLE_CUDA
     using backend::cuda::ComputeCapability;
     using backend::cuda::CUdevice_t;

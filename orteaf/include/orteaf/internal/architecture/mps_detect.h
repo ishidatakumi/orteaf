@@ -32,6 +32,6 @@ Architecture detectMpsArchitecture(std::string_view metal_family, std::string_vi
  * @param device_id Strong-typed MPS device identifier.
  * @return The detected MPS `Architecture`, or `Architecture::mps_generic` on failure.
  */
-Architecture detectMpsArchitectureForDeviceIndex(::orteaf::internal::runtime::DeviceId device_id);
+Architecture detectMpsArchitectureForDeviceId(::orteaf::internal::runtime::DeviceId device_id);
 
 } // namespace orteaf::internal::architecture

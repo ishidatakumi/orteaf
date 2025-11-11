@@ -33,6 +33,6 @@ Architecture detectCudaArchitecture(int compute_capability, std::string_view ven
  * @param device_id Strong-typed CUDA device identifier.
  * @return The detected CUDA `Architecture`, or `Architecture::cuda_generic` when enumeration fails.
  */
-Architecture detectCudaArchitectureForDeviceIndex(::orteaf::internal::runtime::DeviceId device_id);
+Architecture detectCudaArchitectureForDeviceId(::orteaf::internal::runtime::DeviceId device_id);
 
 } // namespace orteaf::internal::architecture

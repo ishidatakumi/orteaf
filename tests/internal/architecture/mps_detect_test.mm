@@ -22,7 +22,7 @@ TEST(MpsDetect, ManualEnvironmentCheck) {
     }
     const ::orteaf::internal::runtime::DeviceId device_id(device_index);
 
-    const auto arch = architecture::detectMpsArchitectureForDeviceIndex(device_id);
+    const auto arch = architecture::detectMpsArchitectureForDeviceId(device_id);
     ASSERT_NE(arch, architecture::Architecture::mps_generic)
         << "Generic fallback indicates Metal backend disabled or no device at index "
         << device_index;
@@ -42,6 +42,6 @@ TEST(MpsDetect, FallsBackToGenericWhenUnknown) {
 
 TEST(MpsDetect, DeviceIndexOutOfRangeFallsBackToGeneric) {
     const ::orteaf::internal::runtime::DeviceId device_id(std::numeric_limits<std::uint32_t>::max());
-    const auto arch = architecture::detectMpsArchitectureForDeviceIndex(device_id);
+    const auto arch = architecture::detectMpsArchitectureForDeviceId(device_id);
     EXPECT_EQ(arch, architecture::Architecture::mps_generic);
 }
