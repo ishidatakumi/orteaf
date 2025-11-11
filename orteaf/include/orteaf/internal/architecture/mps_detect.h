@@ -1,6 +1,7 @@
 #pragma once
 
 #include "orteaf/internal/architecture/architecture.h"
+#include "orteaf/internal/runtime/strong_id.h"
 
 #include <cstdint>
 #include <string_view>
@@ -22,15 +23,15 @@ namespace orteaf::internal::architecture {
 Architecture detectMpsArchitecture(std::string_view metal_family, std::string_view vendor_hint = "apple");
 
 /**
- * @brief Enumerate MPS devices and detect the architecture for the selected index.
+ * @brief Enumerate MPS devices and detect the architecture for the requested `DeviceId`.
  *
  * When MPS is enabled, the helper queries `backend::mps` for the device count, grabs the Metal
  * family and vendor strings for the requested device, and delegates to `detectMpsArchitecture`.
- * Out-of-range indices or disabled MPS support fall back to `Architecture::mps_generic`.
+ * Invalid device IDs or disabled MPS support fall back to `Architecture::mps_generic`.
  *
- * @param device_index Zero-based MPS device index.
+ * @param device_id Strong-typed MPS device identifier.
  * @return The detected MPS `Architecture`, or `Architecture::mps_generic` on failure.
  */
-Architecture detectMpsArchitectureForDeviceIndex(std::uint32_t device_index);
+Architecture detectMpsArchitectureForDeviceIndex(::orteaf::internal::runtime::DeviceId device_id);
 
 } // namespace orteaf::internal::architecture
