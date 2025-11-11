@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "orteaf/internal/runtime/manager/cpu/device_manager.h"
+#include "orteaf/internal/runtime/manager/cpu/cpu_device_manager.h"
 #include "orteaf/internal/architecture/architecture.h"
 #include "orteaf/internal/architecture/cpu_detect.h"
 
