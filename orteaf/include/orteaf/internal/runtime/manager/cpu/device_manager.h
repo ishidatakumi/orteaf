@@ -7,6 +7,13 @@
 
 namespace orteaf::internal::runtime::cpu {
 
+/**
+ * @brief Minimal CPU device manager that exposes getters for the host CPU state.
+ *
+ * See `docs/developer/runtime-architecture.md` for the runtime manager vision; this concrete
+ * CPU implementation currently exposes only a single device with `Architecture` metadata and an
+ * `is_alive` flag, driven by the lightweight detector in `orteaf/internal/architecture/cpu_detect.h`.
+ */
 struct CpuDeviceManager {
     void initializeDevices() {
         if (initialized_) {
@@ -25,21 +32,45 @@ struct CpuDeviceManager {
         initialized_ = false;
     }
 
+    /**
+     * @brief Return the number of managed CPU devices (0 or 1 for now).
+     *
+     * The count is derived from the initialization state. This manager only ever reports a single
+     * host CPU device (`DeviceId{0}`) once `initializeDevices()` has run.
+     */
     std::size_t getDeviceCount() const {
         return initialized_ ? 1u : 0u;
     }
 
+    /**
+     * @brief Return the detected architecture for the requested CPU device.
+     *
+     * The architecture originates from `detectCpuArchitecture()`, so the operating system's
+     * signals determine the value.
+     */
     ::orteaf::internal::architecture::Architecture getArch(DeviceId id) const {
         ensureValid(id);
         return state_.arch;
     }
 
+    /**
+     * @brief Query whether the CPU device is considered alive.
+     *
+     * Only the primary device exists today, so this will be `true` when the manager is initialized
+     * and the caller supplies `DeviceId{0}`.
+     */
     bool isAlive(DeviceId id) const {
         ensureValid(id);
         return state_.is_alive;
     }
 
 private:
+    /**
+     * @brief Validate the device id and initialization state.
+     *
+     * Throws `diagnostics::error::InvalidState` when validation fails, mirroring what the rest of
+     * the runtime manager suite would expect from well-formed getters.
+     */
     void ensureValid(DeviceId id) const {
         if (!initialized_ || id != kPrimaryDevice) {
             ::orteaf::internal::diagnostics::error::throwError(
@@ -48,6 +79,9 @@ private:
         }
     }
 
+    /**
+     * @brief Local storage for the detected CPU device information.
+     */
     struct State {
         ::orteaf::internal::architecture::Architecture arch{::orteaf::internal::architecture::Architecture::cpu_generic};
         bool is_alive{false};
