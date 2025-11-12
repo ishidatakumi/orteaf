@@ -12,15 +12,15 @@ namespace architecture = orteaf::internal::architecture;
 class CpuDeviceManagerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        cpu_rt::CpuDeviceManager.initializeDevices();
+        cpu_rt::GetCpuDeviceManager().initializeDevices();
     }
     void TearDown() override {
-        cpu_rt::CpuDeviceManager.shutdown();
+        cpu_rt::GetCpuDeviceManager().shutdown();
     }
 };
 
 TEST_F(CpuDeviceManagerTest, GetDeviceCount) {
-    EXPECT_EQ(cpu_rt::CpuDeviceManager.getDeviceCount(), 1);
+    EXPECT_EQ(cpu_rt::GetCpuDeviceManager().getDeviceCount(), 1);
 }
 
 #define ORTEAF_CPU_ENV_VAR "ORTEAF_EXPECT_CPU_MANAGER_ARCH"
@@ -31,16 +31,16 @@ TEST_F(CpuDeviceManagerTest, ManualEnvironmentCheck) {
     if (!expected_env) {
         GTEST_SKIP() << "Set " ORTEAF_CPU_ENV_VAR " to run this test on your environment.";
     }
-    const auto arch = cpu_rt::CpuDeviceManager.getArch(base::DeviceId{0});
+    const auto arch = cpu_rt::GetCpuDeviceManager().getArch(base::DeviceId{0});
     EXPECT_STREQ(expected_env, architecture::idOf(arch).data());
 }
 
 TEST_F(CpuDeviceManagerTest, GetArchitecture) {
     base::DeviceId device_id{0};
-    EXPECT_EQ(cpu_rt::CpuDeviceManager.getArch(device_id), architecture::detectCpuArchitecture());
+    EXPECT_EQ(cpu_rt::GetCpuDeviceManager().getArch(device_id), architecture::detectCpuArchitecture());
 }
 
 TEST_F(CpuDeviceManagerTest, GetIsAlive) {
     base::DeviceId device_id{0};
-    EXPECT_TRUE(cpu_rt::CpuDeviceManager.isAlive(device_id));
+    EXPECT_TRUE(cpu_rt::GetCpuDeviceManager().isAlive(device_id));
 }
