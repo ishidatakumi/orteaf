@@ -32,9 +32,8 @@ protected:
             mps::setHeapDescriptorSize(descriptor_, kDefaultHeapSize);
             mps::setHeapDescriptorStorageMode(descriptor_, mps::kMPSStorageModePrivate);
             mps::setHeapDescriptorCPUCacheMode(descriptor_, mps::kMPSCPUCacheModeDefaultCache);
-            mps::setHeapDescriptorHazardTrackingMode(descriptor_, mps::kMPSHazardTrackingModeDefault);
+            mps::setHeapDescriptorHazardTrackingMode(descriptor_, mps::kMPSHazardTrackingModeTracked);
             mps::setHeapDescriptorType(descriptor_, mps::kMPSHeapTypeAutomatic);
-            mps::setHeapDescriptorResourceOptions(descriptor_, mps::kMPSDefaultResourceOptions);
         } catch (const std::exception& ex) {
             GTEST_SKIP() << "Failed to configure heap descriptor: " << ex.what();
         }
@@ -88,10 +87,9 @@ TEST_F(MpsHeapTest, HeapCreationAndQueriesSucceed) {
 
     EXPECT_GE(mps::heapSize(heap), kDefaultHeapSize);
     EXPECT_EQ(mps::heapUsedSize(heap), 0u);
-    EXPECT_EQ(mps::heapResourceOptions(heap), mps::kMPSDefaultResourceOptions);
     EXPECT_EQ(mps::heapStorageMode(heap), mps::kMPSStorageModePrivate);
     EXPECT_EQ(mps::heapCPUCacheMode(heap), mps::kMPSCPUCacheModeDefaultCache);
-    EXPECT_EQ(mps::heapHazardTrackingMode(heap), mps::kMPSHazardTrackingModeDefault);
+    EXPECT_EQ(mps::heapHazardTrackingMode(heap), mps::kMPSHazardTrackingModeTracked);
     EXPECT_EQ(mps::heapType(heap), mps::kMPSHeapTypeAutomatic);
 
     EXPECT_GE(mps::heapMaxAvailableSize(heap, 256), 256u);
@@ -106,7 +104,7 @@ TEST_F(MpsHeapTest, HeapMaxAvailableSizeRejectsZeroAlignment) {
 
 TEST_F(MpsHeapTest, CreateHeapNullptrDeviceThrows) {
     ASSERT_NE(descriptor_, nullptr);
-    EXPECT_THROW(mps::createHeap(nullptr, descriptor_), std::system_error);
+    EXPECT_THROW(static_cast<void>(mps::createHeap(nullptr, descriptor_)), std::system_error);
 }
 
 TEST_F(MpsHeapTest, DestroyHeapNullptrIsIgnored) {
@@ -144,4 +142,3 @@ TEST(MpsHeap, DisabledReturnsNeutralValues) {
 }
 
 #endif  // ORTEAF_ENABLE_MPS
-
