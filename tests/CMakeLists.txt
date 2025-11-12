@@ -63,6 +63,7 @@ if(ORTEAF_TEST_SOURCES)
     )
     target_include_directories(orteaf_tests
         PRIVATE
+            ${PROJECT_SOURCE_DIR}
             ${PROJECT_SOURCE_DIR}/orteaf/include
             ${ORTEAF_GENERATED_INCLUDE_DIR}
     )

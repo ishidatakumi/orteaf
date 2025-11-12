@@ -6,13 +6,13 @@
 
 #include "orteaf/internal/runtime/manager/mps/mps_device_manager.h"
 #include "orteaf/internal/architecture/architecture.h"
-#include "../../testing/static_mock.h"
+#include "tests/internal/runtime/mps/testing/backend_mock.h"
 
 namespace architecture = orteaf::internal::architecture;
 namespace backend = orteaf::internal::backend;
 namespace base = orteaf::internal::base;
 namespace mps_rt = orteaf::internal::runtime::mps;
-namespace test = orteaf::tests;
+namespace test_mps = orteaf::tests::runtime::mps;
 
 using ::testing::_;
 using ::testing::NiceMock;
@@ -20,34 +20,7 @@ using ::testing::Return;
 
 namespace {
 
-struct MpsBackendOpsMock {
-    MOCK_METHOD(int, getDeviceCount, ());
-    MOCK_METHOD(backend::mps::MPSDevice_t, getDevice, (::orteaf::internal::backend::mps::MPSInt_t));
-    MOCK_METHOD(void, releaseDevice, (backend::mps::MPSDevice_t));
-    MOCK_METHOD(architecture::Architecture, detectArchitecture, (base::DeviceId));
-};
-
-using MpsBackendOpsMockRegistry = test::StaticMockRegistry<MpsBackendOpsMock>;
-
-struct MpsBackendOpsMockAdapter {
-    static int getDeviceCount() {
-        return MpsBackendOpsMockRegistry::get().getDeviceCount();
-    }
-
-    static backend::mps::MPSDevice_t getDevice(::orteaf::internal::backend::mps::MPSInt_t index) {
-        return MpsBackendOpsMockRegistry::get().getDevice(index);
-    }
-
-    static void releaseDevice(backend::mps::MPSDevice_t device) {
-        MpsBackendOpsMockRegistry::get().releaseDevice(device);
-    }
-
-    static architecture::Architecture detectArchitecture(base::DeviceId id) {
-        return MpsBackendOpsMockRegistry::get().detectArchitecture(id);
-    }
-};
-
-using MockMpsDeviceManager = mps_rt::MpsDeviceManager<MpsBackendOpsMockAdapter>;
+using MockMpsDeviceManager = mps_rt::MpsDeviceManager<test_mps::MpsBackendOpsMockAdapter>;
 
 backend::mps::MPSDevice_t makeFakeDevice(std::uintptr_t value) {
     return reinterpret_cast<backend::mps::MPSDevice_t>(value);
@@ -62,11 +35,11 @@ protected:
 
     void TearDown() override {
         manager_.shutdown();
-        MpsBackendOpsMockRegistry::unbind(mock_);
+        test_mps::MpsBackendOpsMockRegistry::unbind(mock_);
     }
 
-    NiceMock<MpsBackendOpsMock> mock_;
-    MpsBackendOpsMockRegistry::Guard guard_;
+    NiceMock<test_mps::MpsBackendOpsMock> mock_;
+    test_mps::MpsBackendOpsMockRegistry::Guard guard_;
     MockMpsDeviceManager manager_;
 };
 
