@@ -1,52 +1,88 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <system_error>
 
 #include "orteaf/internal/runtime/manager/cpu/cpu_device_manager.h"
-#include "orteaf/internal/diagnostics/error/error.h"
+#include "orteaf/internal/architecture/architecture.h"
+#include "../../tests/internal/testing/static_mock.h"
 
 namespace architecture = orteaf::internal::architecture;
 namespace base = orteaf::internal::base;
 namespace cpu_rt = orteaf::internal::runtime::cpu;
+namespace test = orteaf::tests;
+using ::testing::NiceMock;
 
 namespace {
 
-struct MockCpuBackendOps {
-    static inline architecture::Architecture next_arch =
-        architecture::Architecture::cpu_generic;
-    static inline int detect_calls = 0;
+struct CpuBackendOpsMock {
+    MOCK_METHOD(architecture::Architecture, detectArchitecture, ());
+};
 
-    static void reset(architecture::Architecture arch) {
-        next_arch = arch;
-        detect_calls = 0;
-    }
+using CpuBackendOpsMockRegistry = test::StaticMockRegistry<CpuBackendOpsMock>;
 
+struct CpuBackendOpsMockAdapter {
     static architecture::Architecture detectArchitecture() {
-        ++detect_calls;
-        return next_arch;
+        return CpuBackendOpsMockRegistry::get().detectArchitecture();
     }
 };
 
-using MockCpuDeviceManager = cpu_rt::CpuDeviceManager<MockCpuBackendOps>;
+using MockCpuDeviceManager = cpu_rt::CpuDeviceManager<CpuBackendOpsMockAdapter>;
 
 }  // namespace
 
-TEST(CpuDeviceManagerMockTest, UsesInjectedBackendOps) {
-    MockCpuBackendOps::reset(architecture::Architecture::cpu_zen4);
-    MockCpuDeviceManager manager;
+class CpuDeviceManagerMockTest : public ::testing::Test {
+protected:
+    CpuDeviceManagerMockTest()
+        : guard_(mock_) {}
 
-    EXPECT_EQ(manager.getDeviceCount(), 0u);
+    void TearDown() override {
+        manager_.shutdown();
+        CpuBackendOpsMockRegistry::unbind(mock_);
+    }
 
-    manager.initializeDevices();
-    EXPECT_EQ(MockCpuBackendOps::detect_calls, 1);
-    EXPECT_EQ(manager.getDeviceCount(), 1u);
-    EXPECT_EQ(manager.getArch(base::DeviceId{0}), architecture::Architecture::cpu_zen4);
-    EXPECT_TRUE(manager.isAlive(base::DeviceId{0}));
+    NiceMock<CpuBackendOpsMock> mock_;
+    CpuBackendOpsMockRegistry::Guard guard_;
+    MockCpuDeviceManager manager_;
+};
 
-    manager.initializeDevices();
-    EXPECT_EQ(MockCpuBackendOps::detect_calls, 1) << "should not re-detect when already initialized";
+TEST_F(CpuDeviceManagerMockTest, InitializesWithBackendArch) {
+    EXPECT_EQ(manager_.getDeviceCount(), 0u);
 
-    manager.shutdown();
-    EXPECT_EQ(manager.getDeviceCount(), 0u);
-    EXPECT_THROW(manager.getArch(base::DeviceId{0}), std::system_error);
+    EXPECT_CALL(mock_, detectArchitecture())
+        .WillOnce(::testing::Return(architecture::Architecture::cpu_zen4));
+    manager_.initializeDevices();
+
+    EXPECT_EQ(manager_.getDeviceCount(), 1u);
+    EXPECT_EQ(manager_.getArch(base::DeviceId{0}), architecture::Architecture::cpu_zen4);
+    EXPECT_TRUE(manager_.isAlive(base::DeviceId{0}));
+}
+
+TEST_F(CpuDeviceManagerMockTest, DoubleInitializeDoesNotRedetect) {
+    EXPECT_CALL(mock_, detectArchitecture())
+        .WillOnce(::testing::Return(architecture::Architecture::cpu_zen4));
+    manager_.initializeDevices();
+
+    manager_.initializeDevices();  // no additional expectation
+    SUCCEED();
+}
+
+TEST_F(CpuDeviceManagerMockTest, ShutdownClearsState) {
+    EXPECT_CALL(mock_, detectArchitecture())
+        .WillOnce(::testing::Return(architecture::Architecture::cpu_zen4));
+    manager_.initializeDevices();
+    manager_.shutdown();
+
+    EXPECT_EQ(manager_.getDeviceCount(), 0u);
+    EXPECT_THROW(manager_.isAlive(base::DeviceId{0}), std::system_error);
+    EXPECT_THROW(manager_.getArch(base::DeviceId{0}), std::system_error);
+}
+
+TEST_F(CpuDeviceManagerMockTest, InvalidDeviceIdThrows) {
+    EXPECT_CALL(mock_, detectArchitecture())
+        .WillOnce(::testing::Return(architecture::Architecture::cpu_zen4));
+    manager_.initializeDevices();
+
+    EXPECT_THROW(manager_.getArch(base::DeviceId{1}), std::system_error);
+    EXPECT_THROW(manager_.isAlive(base::DeviceId{1}), std::system_error);
 }
