@@ -7,68 +7,10 @@
 
 #include <gtest/gtest.h>
 #include <cstring>
+#include <system_error>
 #include <vector>
 
 namespace cpu = orteaf::internal::backend::cpu;
-
-/**
- * @brief Test that is_pow2 correctly identifies powers of 2.
- */
-TEST(CpuAlloc, IsPow2IdentifiesPowersOfTwo) {
-    EXPECT_TRUE(cpu::ispow2(1));
-    EXPECT_TRUE(cpu::ispow2(2));
-    EXPECT_TRUE(cpu::ispow2(4));
-    EXPECT_TRUE(cpu::ispow2(8));
-    EXPECT_TRUE(cpu::ispow2(16));
-    EXPECT_TRUE(cpu::ispow2(32));
-    EXPECT_TRUE(cpu::ispow2(64));
-    EXPECT_TRUE(cpu::ispow2(128));
-    EXPECT_TRUE(cpu::ispow2(256));
-    EXPECT_TRUE(cpu::ispow2(512));
-    EXPECT_TRUE(cpu::ispow2(1024));
-    EXPECT_TRUE(cpu::ispow2(4096));
-    EXPECT_TRUE(cpu::ispow2(1ULL << 31));
-    EXPECT_TRUE(cpu::ispow2(1ULL << 63));
-}
-
-/**
- * @brief Test that is_pow2 correctly identifies non-powers of 2.
- */
-TEST(CpuAlloc, IsPow2IdentifiesNonPowersOfTwo) {
-    EXPECT_FALSE(cpu::ispow2(0));
-    EXPECT_FALSE(cpu::ispow2(3));
-    EXPECT_FALSE(cpu::ispow2(5));
-    EXPECT_FALSE(cpu::ispow2(6));
-    EXPECT_FALSE(cpu::ispow2(7));
-    EXPECT_FALSE(cpu::ispow2(9));
-    EXPECT_FALSE(cpu::ispow2(10));
-    EXPECT_FALSE(cpu::ispow2(15));
-    EXPECT_FALSE(cpu::ispow2(31));
-    EXPECT_FALSE(cpu::ispow2(33));
-    EXPECT_FALSE(cpu::ispow2(100));
-    EXPECT_FALSE(cpu::ispow2(1000));
-}
-
-/**
- * @brief Test that next_pow2 calculates correctly.
- */
-TEST(CpuAlloc, NextPow2CalculatesCorrectly) {
-    EXPECT_EQ(cpu::nextpow2(0), 1);
-    EXPECT_EQ(cpu::nextpow2(1), 1);
-    EXPECT_EQ(cpu::nextpow2(2), 2);
-    EXPECT_EQ(cpu::nextpow2(3), 4);
-    EXPECT_EQ(cpu::nextpow2(4), 4);
-    EXPECT_EQ(cpu::nextpow2(5), 8);
-    EXPECT_EQ(cpu::nextpow2(7), 8);
-    EXPECT_EQ(cpu::nextpow2(8), 8);
-    EXPECT_EQ(cpu::nextpow2(9), 16);
-    EXPECT_EQ(cpu::nextpow2(15), 16);
-    EXPECT_EQ(cpu::nextpow2(16), 16);
-    EXPECT_EQ(cpu::nextpow2(17), 32);
-    EXPECT_EQ(cpu::nextpow2(31), 32);
-    EXPECT_EQ(cpu::nextpow2(1023), 1024);
-    EXPECT_EQ(cpu::nextpow2(1024), 1024);
-}
 
 /**
  * @brief Test that alloc returns valid pointer.
@@ -81,11 +23,10 @@ TEST(CpuAlloc, AllocReturnsValidPointer) {
 }
 
 /**
- * @brief Test that alloc with zero size returns nullptr.
+ * @brief Test that alloc with zero size throws.
  */
 TEST(CpuAlloc, AllocZeroSizeReturnsNullptr) {
-    void* ptr = cpu::alloc(0);
-    EXPECT_EQ(ptr, nullptr);
+    EXPECT_THROW(cpu::alloc(0), std::system_error);
 }
 
 /**
@@ -164,11 +105,10 @@ TEST(CpuAlloc, AllocAlignedAdjustsSmallAlignment) {
 }
 
 /**
- * @brief Test that alloc_aligned with zero size returns nullptr.
+ * @brief Test that alloc_aligned with zero size throws.
  */
 TEST(CpuAlloc, AllocAlignedZeroSizeReturnsNullptr) {
-    void* ptr = cpu::allocAligned(0, 16);
-    EXPECT_EQ(ptr, nullptr);
+    EXPECT_THROW(cpu::allocAligned(0, 16), std::system_error);
 }
 
 /**

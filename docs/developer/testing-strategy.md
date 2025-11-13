@@ -70,13 +70,6 @@ ORTAF のコンポーネント開発ではテスト駆動開発 (TDD) を基本�
 ## 回帰テスト（互換性維持）
 - 互換性維持のため、既存仕様を固定化するテスト。初期フェーズでは必須ではないが、仕様が確定した API や過去のバグに対しては追加する。
 
-## ベースレイヤーの単体テスト指針
-- `orteaf/internal/base` 配下の汎用ユーティリティ（例: `math_utils.h`, `strong_id.h`）は、上位レイヤーに依存しないよう `tests/internal/base` 直下で検証する。
-- 典型パス
-  - `tests/internal/base/math_utils_test.cpp`: `isPowerOfTwo` / `nextPowerOfTwo` の境界ケースや広範な連続値を網羅し、バックエンド実装に影響が出る前に回帰を検出する。
-  - `tests/internal/base/strong_id_test.cpp`: `DeviceId`/`StreamId` など強い ID 型の比較・変換・`invalid()` ヘルパーを確認する。Runtime ディレクトリではなく base 直下に配置し、利用箇所と同じ責務の層で管理する。
-- 「テスト配置が仕様と一致しているか」を PR チェックリストに含め、base 層のユーティリティであれば runtime/backend ではなく base ディレクトリに追加する。
-
 ---
 - 新しいコンポーネントを作る際は、まず等価クラスと境界条件を決め、条件テストとネガティブテストで仕様を固める。
 - その後、TDD のサイクル（Red → Green → Refactor）を回しながら必要な観点を追加していく。

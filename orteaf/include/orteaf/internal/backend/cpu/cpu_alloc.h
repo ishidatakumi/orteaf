@@ -11,6 +11,7 @@
 
 #include "orteaf/internal/backend/cpu/cpu_stats.h"
 #include "orteaf/internal/base/math_utils.h"
+#include "orteaf/internal/diagnostics/error/error.h"
 
 #include <cstdlib>
 #include <new>
@@ -28,38 +29,6 @@ namespace orteaf::internal::backend::cpu {
 constexpr std::size_t kCpuDefaultAlign = alignof(std::max_align_t);
 
 /**
- * @brief Check if the specified value is a power of 2.
- *
- * Uses bitwise operations for efficient checking.
- *
- * @param x Value to check.
- * @return `true` if `x` is a power of 2, `false` otherwise.
- *         Returns `false` if `x` is 0.
- */
-inline bool ispow2(std::size_t x) {
-    return ::orteaf::internal::base::isPowerOfTwo(x);
-}
-
-/**
- * @brief Calculate the smallest power of 2 greater than or equal to the specified value.
- *
- * Uses bit manipulation for efficient calculation.
- * Used for alignment adjustment, etc.
- *
- * @param x Base value.
- * @return Smallest power of 2 greater than or equal to `x`.
- *         Returns 1 if `x` is 0 or 1.
- */
-inline std::size_t nextpow2(std::size_t x){
-    return ::orteaf::internal::base::nextPowerOfTwo(x);
-}
-
-/**
- * @brief Forward declaration of allocAligned.
- */
-inline void* allocAligned(std::size_t size, std::size_t alignment);
-
-/**
  * @brief Allocate memory with default CPU alignment.
  *
  * Wrapper for `allocAligned(size, kCpuDefaultAlign)`.
@@ -69,9 +38,7 @@ inline void* allocAligned(std::size_t size, std::size_t alignment);
  * @return Pointer to allocated memory; throws std::bad_alloc on failure.
  * @throws std::bad_alloc If memory allocation fails.
  */
-inline void* alloc(std::size_t size) {
-    return allocAligned(size, kCpuDefaultAlign);
-}
+inline void* alloc(std::size_t size);
 
 /**
  * @brief Allocate memory with the specified alignment.
@@ -92,11 +59,16 @@ inline void* alloc(std::size_t size) {
  * @throws std::bad_alloc If memory allocation fails.
  */
 inline void* allocAligned(std::size_t size, std::size_t alignment) {
-    if (size == 0) return nullptr;
+    if (size == 0) {
+        using namespace ::orteaf::internal::diagnostics::error;
+        throwError(OrteafErrc::InvalidParameter, "cpu::allocAligned: size cannot be 0");
+    }
 
     const std::size_t min_align = alignof(std::max_align_t);
     if (alignment < min_align) alignment = min_align;
-    if (!ispow2(alignment)) alignment = nextpow2(alignment);
+    if (!::orteaf::internal::base::isPowerOfTwo(alignment)) {
+        alignment = ::orteaf::internal::base::nextPowerOfTwo(alignment);
+    }
 
 #if defined(_MSC_VER)
     void* p = _aligned_malloc(size, alignment);
@@ -110,6 +82,10 @@ inline void* allocAligned(std::size_t size, std::size_t alignment) {
 
     updateAlloc(size);
     return p;
+}
+
+inline void* alloc(std::size_t size) {
+    return allocAligned(size, kCpuDefaultAlign);
 }
 
 /**
