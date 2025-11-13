@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include <cstddef>
 
 #include "orteaf/internal/backend/mps/mps_device.h"
@@ -58,3 +60,5 @@ static_assert(sizeof(MPSLibrary_t) == sizeof(void*), "MPSLibrary must be pointer
 void destroyLibrary(MPSLibrary_t library);
 
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

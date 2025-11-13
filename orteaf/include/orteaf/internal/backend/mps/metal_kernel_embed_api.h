@@ -1,5 +1,7 @@
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include "orteaf/internal/backend/mps/mps_device.h"
 #include "orteaf/internal/backend/mps/mps_function.h"
 #include "orteaf/internal/backend/mps/mps_error.h"
@@ -53,3 +55,5 @@ MPSFunction_t loadEmbeddedFunction(MPSDevice_t device,
                                      MPSError_t* error = nullptr);
 
 } // namespace orteaf::internal::backend::mps::metal_kernel_embed
+
+#endif  // ORTEAF_ENABLE_MPS

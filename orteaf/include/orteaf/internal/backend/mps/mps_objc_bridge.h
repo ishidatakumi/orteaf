@@ -6,6 +6,9 @@
  * Functions use ARC-aware bridging to retain/release when requested.
  */
 #pragma once
+
+#if ORTEAF_ENABLE_MPS
+
 #ifndef __OBJC__
 #  error "This header must be included only from Objective-C++ (.mm)"
 #endif
@@ -52,3 +55,5 @@ static inline void* opaqueRetain(void* p) noexcept {
 #endif
     return p;
 }
+
+#endif  // ORTEAF_ENABLE_MPS

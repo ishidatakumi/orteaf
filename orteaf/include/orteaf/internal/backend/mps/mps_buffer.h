@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include "orteaf/internal/backend/mps/mps_heap.h"
 
 #include <cstddef>
@@ -41,3 +43,5 @@ const void* getBufferContentsConst(MPSBuffer_t buffer);
 void* getBufferContents(MPSBuffer_t buffer);
 
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

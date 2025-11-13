@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include "orteaf/internal/backend/mps/mps_device.h"
 #include "orteaf/internal/backend/mps/mps_command_queue.h"
 
@@ -32,3 +34,4 @@ void waitEvent(MPSCommandBuffer_t command_buffer, MPSEvent_t event, uint64_t val
 
 } // namespace orteaf::internal::backend::mps
 
+#endif  // ORTEAF_ENABLE_MPS

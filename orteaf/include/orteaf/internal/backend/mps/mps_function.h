@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include <string_view>
 
 #include "orteaf/internal/backend/mps/mps_library.h"
@@ -28,3 +30,5 @@ MPSFunction_t createFunction(MPSLibrary_t library, std::string_view name);
 void destroyFunction(MPSFunction_t function);
 
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

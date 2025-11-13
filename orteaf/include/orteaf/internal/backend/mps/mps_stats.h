@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include <atomic>
 #include <string>
 #include <sstream>
@@ -361,3 +363,5 @@ inline void updateDestroyCommandQueue() {
 }
 
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

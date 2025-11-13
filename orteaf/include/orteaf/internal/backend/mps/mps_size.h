@@ -6,7 +6,9 @@
 
 #include <cstdint>
 
-#if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
+#if ORTEAF_ENABLE_MPS
+
+#if defined(__OBJC__)
 #import <Metal/Metal.h>
 #endif
 
@@ -33,11 +35,13 @@ static_assert(sizeof(MPSInt_t) == 8, "MPSInt must be 8 bytes.");
 /** Construct an `MPSSize_t` from components. */
 MPSSize_t makeSize(MPSInt_t width, MPSInt_t height, MPSInt_t depth);
 
-#if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
+#if defined(__OBJC__)
 /** Convert to `MTLSize`. */
 MTLSize toMtlSize(MPSSize_t size);
 /** Convert from `MTLSize`. */
 MPSSize_t fromMtlSize(MTLSize mtl_size);
-#endif
+#endif  // defined(__OBJC__)
 
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

@@ -9,6 +9,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include <string>
 
 #include "orteaf/internal/backend/mps/mps_size.h"
@@ -72,5 +74,6 @@ std::string getDeviceVendor(MPSDevice_t device);
  */
 std::string getDeviceMetalFamily(MPSDevice_t device);
 
-
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

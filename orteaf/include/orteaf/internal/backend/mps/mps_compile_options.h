@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 namespace orteaf::internal::backend::mps {
 
 struct MPSCompileOptions_st; using MPSCompileOptions_t = MPSCompileOptions_st*;
@@ -26,3 +28,5 @@ void setCompileOptionsPreserveInvariance(MPSCompileOptions_t options, bool prese
 void setCompileOptionsPreprocessorMacros(MPSCompileOptions_t options, void* macros_dictionary);
 
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

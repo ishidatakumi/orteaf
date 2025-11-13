@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include "orteaf/internal/backend/mps/mps_device.h"
 #include "orteaf/internal/backend/mps/mps_heap.h"
 
@@ -89,3 +91,4 @@ void replaceTextureRegion(MPSTexture_t texture,
 
 } // namespace orteaf::internal::backend::mps
 
+#endif  // ORTEAF_ENABLE_MPS

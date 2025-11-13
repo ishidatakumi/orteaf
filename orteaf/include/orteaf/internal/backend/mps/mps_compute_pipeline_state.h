@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include "orteaf/internal/backend/mps/mps_function.h"
 #include "orteaf/internal/backend/mps/mps_device.h"
 #include "orteaf/internal/backend/mps/mps_error.h"
@@ -29,3 +31,5 @@ MPSComputePipelineState_t createComputePipelineState(MPSDevice_t device, MPSFunc
 void destroyComputePipelineState(MPSComputePipelineState_t pipeline_state);
 
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

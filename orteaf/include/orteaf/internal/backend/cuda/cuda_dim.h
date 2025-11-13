@@ -14,6 +14,8 @@
 #if ORTEAF_ENABLE_CUDA
 #include <vector_types.h>
 
+namespace orteaf::internal::backend::cuda {
+
 /**
  * @brief 3D grid/block shape (unsigned 32-bit components).
  */
@@ -42,8 +44,6 @@ static_assert(sizeof(CudaUInt3_t) == 3 * sizeof(std::uint32_t), "CudaUInt3_t mus
 static_assert(sizeof(CudaDim3_t) == sizeof(dim3), "dim3 has unexpected size.");
 static_assert(sizeof(CudaUInt3_t) == sizeof(uint3), "uint3 has unexpected size.");
 
-namespace orteaf::internal::backend::cuda {
-
 /**
  * @brief Construct a `CudaDim3_t` from components.
  */
@@ -53,6 +53,7 @@ CudaDim3_t makeDim3(std::uint32_t x, std::uint32_t y, std::uint32_t z) noexcept;
  */
 CudaUInt3_t makeUInt3(std::uint32_t x, std::uint32_t y, std::uint32_t z) noexcept;
 
+#if defined(__CUDACC__)
 /** Convert `CudaDim3_t` to CUDA `dim3`. */
 dim3 toCudaDim3(CudaDim3_t value) noexcept;
 /** Convert CUDA `dim3` to `CudaDim3_t`. */
@@ -62,6 +63,7 @@ CudaDim3_t fromCudaDim3(dim3 value) noexcept;
 uint3 toCudaUInt3(CudaUInt3_t value) noexcept;
 /** Convert CUDA `uint3` to `CudaUInt3_t`. */
 CudaUInt3_t fromCudaUInt3(uint3 value) noexcept;
+#endif  // defined(__CUDACC__)
 
 } // namespace orteaf::internal::backend::cuda
 

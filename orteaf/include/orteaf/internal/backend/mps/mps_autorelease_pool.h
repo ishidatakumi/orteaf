@@ -4,7 +4,7 @@
  */
 #pragma once
 
-#ifdef ORTEAF_ENABLE_MPS
+#if ORTEAF_ENABLE_MPS
 
 #if defined(__OBJC__)
 #import <Foundation/Foundation.h>
@@ -56,6 +56,6 @@ public:
 /** No-op macro when MPS is disabled. */
 #define MPS_AUTORELEASE_POOL()
 
-#endif // ORTEAF_ENABLE_MPS
+#endif  // ORTEAF_ENABLE_MPS
 
 

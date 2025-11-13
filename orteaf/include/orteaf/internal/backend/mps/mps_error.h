@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include <string>
 #include <string_view>
 
@@ -25,3 +27,5 @@ MPSError_t createError(std::string_view domain,
 void destroyError(MPSError_t error);
 
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

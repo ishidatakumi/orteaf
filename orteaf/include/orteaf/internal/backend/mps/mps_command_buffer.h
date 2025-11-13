@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include "orteaf/internal/backend/mps/mps_command_queue.h"
 #include "orteaf/internal/backend/mps/mps_event.h"
 
@@ -41,3 +43,5 @@ void commit(MPSCommandBuffer_t command_buffer);
 void waitUntilCompleted(MPSCommandBuffer_t command_buffer);
 
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

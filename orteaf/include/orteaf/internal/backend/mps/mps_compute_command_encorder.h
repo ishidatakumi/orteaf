@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include "orteaf/internal/backend/mps/mps_command_buffer.h"
 #include "orteaf/internal/backend/mps/mps_buffer.h"
 #include "orteaf/internal/backend/mps/mps_compute_pipeline_state.h"
@@ -34,4 +36,7 @@ void setBytes(MPSComputeCommandEncoder_t compute_command_encoder, const void* by
 void setThreadgroups(MPSComputeCommandEncoder_t compute_command_encoder,
                       MPSSize_t threadgroups,
                       MPSSize_t threads_per_threadgroup);
+
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

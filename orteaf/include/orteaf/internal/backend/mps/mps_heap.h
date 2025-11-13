@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include "orteaf/internal/backend/mps/mps_device.h"
 
 #include <cstddef>
@@ -99,3 +101,4 @@ MPSHeapType_t heapType(MPSHeap_t heap);
 
 } // namespace orteaf::internal::backend::mps
 
+#endif  // ORTEAF_ENABLE_MPS

@@ -8,6 +8,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include "orteaf/internal/backend/mps/mps_device.h"
 
 namespace orteaf::internal::backend::mps {
@@ -30,3 +32,5 @@ MPSCommandQueue_t createCommandQueue(MPSDevice_t device);
 void destroyCommandQueue(MPSCommandQueue_t command_queue);
 
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS
