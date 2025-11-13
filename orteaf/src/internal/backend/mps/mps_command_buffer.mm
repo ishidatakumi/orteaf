@@ -2,6 +2,9 @@
  * @file mps_command_buffer.mm
  * @brief Implementation of MPS/Metal command buffer helpers.
  */
+#ifndef __OBJC__
+#error "mps_command_buffer.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_command_buffer.h"
 #include "orteaf/internal/backend/mps/mps_command_queue.h"
 #include "orteaf/internal/backend/mps/mps_event.h"

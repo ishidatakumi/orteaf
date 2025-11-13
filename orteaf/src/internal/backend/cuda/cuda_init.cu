@@ -2,6 +2,9 @@
  * @file cuda_init.cu
  * @brief Implementation of process-wide CUDA Driver initialization.
  */
+#ifndef __CUDACC__
+#error "cuda_init.cu must be compiled with a CUDA compiler (__CUDACC__ not defined)"
+#endif
 #include "orteaf/internal/backend/cuda/cuda_init.h"
 
 #include <mutex>

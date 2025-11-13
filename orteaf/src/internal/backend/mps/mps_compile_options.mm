@@ -2,6 +2,9 @@
  * @file mps_compile_options.mm
  * @brief Implementation of MPS/Metal compile options helpers.
  */
+#ifndef __OBJC__
+#error "mps_compile_options.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_compile_options.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"
 

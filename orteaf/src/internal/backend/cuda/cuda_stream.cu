@@ -2,6 +2,9 @@
  * @file cuda_stream.cu
  * @brief Implementation of CUDA stream helpers (create/destroy/sync/mem signals).
  */
+#ifndef __CUDACC__
+#error "cuda_stream.cu must be compiled with a CUDA compiler (__CUDACC__ not defined)"
+#endif
 #include "orteaf/internal/backend/cuda/cuda_stream.h"
 #include "orteaf/internal/backend/cuda/cuda_check.h"
 #include "orteaf/internal/backend/cuda/cuda_stats.h"

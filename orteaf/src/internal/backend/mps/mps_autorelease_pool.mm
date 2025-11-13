@@ -2,6 +2,9 @@
  * @file mps_autorelease_pool.mm
  * @brief Implementation of NSAutoreleasePool RAII wrapper.
  */
+#ifndef __OBJC__
+#error "mps_autorelease_pool.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_autorelease_pool.h"
 
 #ifdef ORTEAF_ENABLE_MPS

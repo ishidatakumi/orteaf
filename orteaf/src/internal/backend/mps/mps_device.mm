@@ -2,6 +2,9 @@
  * @file mps_device.mm
  * @brief Implementation of MPS/Metal device helpers (default/list/retain/release).
  */
+#ifndef __OBJC__
+#error "mps_device.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_device.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"
 

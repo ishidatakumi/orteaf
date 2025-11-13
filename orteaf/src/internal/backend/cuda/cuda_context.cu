@@ -6,6 +6,9 @@
  * `OrteafErrc` as `std::system_error` via `CU_CHECK`. When CUDA is disabled,
  * implementations are effectively no-ops and return nullptr where applicable.
  */
+#ifndef __CUDACC__
+#error "cuda_context.cu must be compiled with a CUDA compiler (__CUDACC__ not defined)"
+#endif
 #include "orteaf/internal/backend/cuda/cuda_context.h"
 #include "orteaf/internal/backend/cuda/cuda_device.h"
 #include "orteaf/internal/backend/cuda/cuda_objc_bridge.h"

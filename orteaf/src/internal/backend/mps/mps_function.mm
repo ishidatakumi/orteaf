@@ -2,6 +2,9 @@
  * @file mps_function.mm
  * @brief Implementation of MPS/Metal function helpers.
  */
+#ifndef __OBJC__
+#error "mps_function.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_function.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"
 

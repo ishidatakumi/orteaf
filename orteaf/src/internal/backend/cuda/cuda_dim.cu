@@ -2,6 +2,9 @@
  * @file cuda_dim.cu
  * @brief Implementation for CUDA dimension helper PODs and converters.
  */
+#ifndef __CUDACC__
+#error "cuda_dim.cu must be compiled with a CUDA compiler (__CUDACC__ not defined)"
+#endif
 #include "orteaf/internal/backend/cuda/cuda_dim.h"
 
 namespace orteaf::internal::backend::cuda {

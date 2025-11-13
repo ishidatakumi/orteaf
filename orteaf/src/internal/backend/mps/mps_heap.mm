@@ -2,7 +2,9 @@
  * @file mps_heap.mm
  * @brief Implementation of MPS/Metal heap helpers.
  */
-
+#ifndef __OBJC__
+#error "mps_heap.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_heap.h"
 #include "orteaf/internal/backend/mps/mps_stats.h"
 

@@ -2,7 +2,9 @@
  * @file mps_texture.mm
  * @brief Implementation of Metal texture helpers.
  */
-
+#ifndef __OBJC__
+#error "mps_texture.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_texture.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"
 

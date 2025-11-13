@@ -2,6 +2,9 @@
  * @file mps_error.mm
  * @brief Implementation of NSError construction/destruction helpers.
  */
+#ifndef __OBJC__
+#error "mps_error.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_error.h"
 #include "orteaf/internal/backend/mps/mps_string.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"

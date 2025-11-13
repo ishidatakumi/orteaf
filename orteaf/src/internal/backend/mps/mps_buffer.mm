@@ -2,6 +2,9 @@
  * @file mps_buffer.mm
  * @brief Implementation of MPS/Metal buffer helpers.
  */
+#ifndef __OBJC__
+#error "mps_buffer.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_buffer.h"
 #include "orteaf/internal/backend/mps/mps_heap.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"

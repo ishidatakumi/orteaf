@@ -2,6 +2,9 @@
  * @file cuda_event.cu
  * @brief Implementation of CUDA event helpers (create/destroy/record/query/wait).
  */
+#ifndef __CUDACC__
+#error "cuda_event.cu must be compiled with a CUDA compiler (__CUDACC__ not defined)"
+#endif
 #include "orteaf/internal/backend/cuda/cuda_event.h"
 #include "orteaf/internal/backend/cuda/cuda_stats.h"
 #include "orteaf/internal/backend/cuda/cuda_check.h"

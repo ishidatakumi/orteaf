@@ -2,6 +2,9 @@
  * @file mps_event.mm
  * @brief Implementation of MPS/Metal shared event helpers.
  */
+#ifndef __OBJC__
+#error "mps_event.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_event.h"
 
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)

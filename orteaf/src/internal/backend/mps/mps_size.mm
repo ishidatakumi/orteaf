@@ -2,6 +2,9 @@
  * @file mps_size.mm
  * @brief Implementation for MPS size helpers and Metal conversions.
  */
+#ifndef __OBJC__
+#error "mps_size.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_size.h"
 
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)

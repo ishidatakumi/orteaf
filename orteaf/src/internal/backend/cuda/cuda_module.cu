@@ -2,6 +2,9 @@
  * @file cuda_module.cu
  * @brief Implementation of CUDA module load/unload and function lookup.
  */
+#ifndef __CUDACC__
+#error "cuda_module.cu must be compiled with a CUDA compiler (__CUDACC__ not defined)"
+#endif
 #include "orteaf/internal/backend/cuda/cuda_module.h"
 #include "orteaf/internal/backend/cuda/cuda_objc_bridge.h"
 #include "orteaf/internal/diagnostics/error/error_impl.h"

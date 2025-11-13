@@ -2,6 +2,9 @@
  * @file mps_compute_command_encorder.mm
  * @brief Implementation of MPS/Metal compute command encoder helpers.
  */
+#ifndef __OBJC__
+#error "mps_compute_command_encorder.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_compute_command_encorder.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"
 

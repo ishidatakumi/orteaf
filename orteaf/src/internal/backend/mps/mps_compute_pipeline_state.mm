@@ -2,6 +2,9 @@
  * @file mps_compute_pipeline_state.mm
  * @brief Implementation of MPS/Metal compute pipeline state helpers.
  */
+#ifndef __OBJC__
+#error "mps_compute_pipeline_state.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_compute_pipeline_state.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"
 

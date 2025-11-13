@@ -2,6 +2,9 @@
  * @file mps_library.mm
  * @brief Implementation of MPS/Metal library creation and destruction.
  */
+#ifndef __OBJC__
+#error "mps_library.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_library.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"
 

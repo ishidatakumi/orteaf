@@ -2,6 +2,9 @@
  * @file mps_command_queue.mm
  * @brief Implementation of MPS/Metal command queue helpers.
  */
+#ifndef __OBJC__
+#error "mps_command_queue.mm must be compiled with an Objective-C++ compiler (__OBJC__ not defined)"
+#endif
 #include "orteaf/internal/backend/mps/mps_command_queue.h"
 #include "orteaf/internal/backend/mps/mps_stats.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"
