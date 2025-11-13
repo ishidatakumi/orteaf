@@ -306,18 +306,37 @@ TEST_F(MpsEncoderTest, MultipleEncodersFromSameBuffer) {
 #else  // !ORTEAF_ENABLE_MPS
 
 /**
- * @brief Test that encoder functions return nullptr when MPS is disabled.
+ * @brief Test that encoder functions throw BackendUnavailable when MPS is disabled.
  */
-TEST(MpsEncoder, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(mps::createComputeCommandEncoder(nullptr), nullptr);
-    EXPECT_NO_THROW(mps::destroyComputeCommandEncoder(nullptr));
-    EXPECT_NO_THROW(mps::endEncoding(nullptr));
-    EXPECT_NO_THROW(mps::setPipelineState(nullptr, nullptr));
-    EXPECT_NO_THROW(mps::setBuffer(nullptr, nullptr, 0, 0));
-    EXPECT_NO_THROW(mps::setBytes(nullptr, nullptr, 0, 0));
+TEST(MpsEncoder, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createComputeCommandEncoder(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::destroyComputeCommandEncoder(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::endEncoding(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::setPipelineState(nullptr, nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::setBuffer(nullptr, nullptr, 0, 0); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::setBytes(nullptr, nullptr, 0, 0); });
     
     mps::MPSSize_t size = mps::makeSize(1, 1, 1);
-    EXPECT_NO_THROW(mps::setThreadgroups(nullptr, size, size));
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [&] { mps::setThreadgroups(nullptr, size, size); });
 }
 
 #endif  // ORTEAF_ENABLE_MPS

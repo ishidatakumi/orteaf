@@ -134,15 +134,38 @@ TEST_F(MpsTextureTest, ReplaceRegionNullptrBytesThrows) {
 
 #else  // !ORTEAF_ENABLE_MPS
 
-TEST(MpsTexture, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(mps::createTextureDescriptor(), nullptr);
-    EXPECT_NO_THROW(mps::destroyTextureDescriptor(nullptr));
-    EXPECT_NO_THROW(mps::setTextureDescriptorWidth(nullptr, 1));
-    EXPECT_EQ(mps::createTexture(nullptr, nullptr), nullptr);
-    EXPECT_EQ(mps::createTextureFromHeap(nullptr, nullptr), nullptr);
-    EXPECT_NO_THROW(mps::destroyTexture(nullptr));
-    EXPECT_EQ(mps::textureWidth(nullptr), 0u);
-    EXPECT_NO_THROW(mps::replaceTextureRegion(nullptr, nullptr, 0, 0, 0, 0, 0, 0, 0, 0));
+TEST(MpsTexture, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createTextureDescriptor(); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::destroyTextureDescriptor(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::setTextureDescriptorWidth(nullptr, 1); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createTexture(nullptr, nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createTextureFromHeap(nullptr, nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::destroyTexture(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::textureWidth(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::replaceTextureRegion(nullptr, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); });
 }
 
 #endif  // ORTEAF_ENABLE_MPS

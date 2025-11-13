@@ -332,17 +332,40 @@ TEST_F(MpsCommandQueueBufferTest, EncodeWaitNullCommandBufferThrows) {
 #else  // !ORTEAF_ENABLE_MPS
 
 /**
- * @brief Test that command queue functions return nullptr when MPS is disabled.
+ * @brief Test that command queue functions throw BackendUnavailable when MPS is disabled.
  */
-TEST(MpsCommandQueueBuffer, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(mps::createCommandQueue(nullptr), nullptr);
-    EXPECT_NO_THROW(mps::destroyCommandQueue(nullptr));
-    EXPECT_EQ(mps::createCommandBuffer(nullptr), nullptr);
-    EXPECT_NO_THROW(mps::destroyCommandBuffer(nullptr));
-    EXPECT_NO_THROW(mps::commit(nullptr));
-    EXPECT_NO_THROW(mps::waitUntilCompleted(nullptr));
-    EXPECT_NO_THROW(mps::encodeSignalEvent(nullptr, nullptr, 0));
-    EXPECT_NO_THROW(mps::encodeWait(nullptr, nullptr, 0));
+TEST(MpsCommandQueueBuffer, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createCommandQueue(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::destroyCommandQueue(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createCommandBuffer(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::destroyCommandBuffer(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::commit(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::waitUntilCompleted(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::encodeSignalEvent(nullptr, nullptr, 0); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::encodeWait(nullptr, nullptr, 0); });
 }
 
 #endif  // ORTEAF_ENABLE_MPS

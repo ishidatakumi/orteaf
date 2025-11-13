@@ -284,18 +284,60 @@ TEST_F(MpsLibraryFunctionPipelineTest, CreateLibraryWithDataZeroSizeThrows) {
 #else  // !ORTEAF_ENABLE_MPS
 
 /**
- * @brief Test that library/function/pipeline functions return nullptr when MPS is disabled.
+ * @brief Test that library/function/pipeline functions throw BackendUnavailable when MPS is disabled.
  */
-TEST(MpsLibraryFunctionPipeline, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(mps::createLibrary(nullptr, nullptr), nullptr);
-    EXPECT_EQ(mps::createLibraryWithSource(nullptr, nullptr, nullptr, nullptr), nullptr);
-    EXPECT_EQ(mps::createLibraryWithData(nullptr, nullptr, 0, nullptr), nullptr);
-    EXPECT_EQ(mps::createFunction(nullptr, "name"), nullptr);
-    EXPECT_EQ(mps::createComputePipelineState(nullptr, nullptr), nullptr);
+TEST(MpsLibraryFunctionPipeline, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createLibrary(nullptr, nullptr, nullptr); });
     
-    EXPECT_NO_THROW(mps::destroyLibrary(nullptr));
-    EXPECT_NO_THROW(mps::destroyFunction(nullptr));
-    EXPECT_NO_THROW(mps::destroyComputePipelineState(nullptr));
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createLibraryWithSource(nullptr, nullptr, nullptr, nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createLibraryWithData(nullptr, nullptr, 0, nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createFunction(nullptr, "name"); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createComputePipelineState(nullptr, nullptr, nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::destroyLibrary(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::destroyFunction(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::destroyComputePipelineState(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createCompileOptions(); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::destroyCompileOptions(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::setCompileOptionsMathMode(nullptr, true); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::setCompileOptionsPreserveInvariance(nullptr, true); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::setCompileOptionsPreprocessorMacros(nullptr, nullptr); });
 }
 
 #endif  // ORTEAF_ENABLE_MPS

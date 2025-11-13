@@ -144,12 +144,20 @@ TEST_F(MpsBufferTest, GetBufferContentsNullptrReturnsNullptr) {
 #else  // !ORTEAF_ENABLE_MPS
 
 /**
- * @brief Test that buffer functions return nullptr when MPS is disabled.
+ * @brief Test that buffer functions throw BackendUnavailable when MPS is disabled.
  */
-TEST(MpsBuffer, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(mps::createBuffer(nullptr, 1024, 0), nullptr);
-    EXPECT_NO_THROW(mps::destroyBuffer(nullptr));
-    EXPECT_EQ(mps::getBufferContentsConst(nullptr), nullptr);
+TEST(MpsBuffer, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createBuffer(nullptr, 1024, 0); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::destroyBuffer(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::getBufferContentsConst(nullptr); });
 }
 
 #endif  // ORTEAF_ENABLE_MPS

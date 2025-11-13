@@ -332,18 +332,32 @@ TEST_F(MpsEventTest, WaitEventNullEventThrows) {
 #else  // !ORTEAF_ENABLE_MPS
 
 /**
- * @brief Test that event functions return nullptr when MPS is disabled.
+ * @brief Test that event functions throw BackendUnavailable when MPS is disabled.
  */
-TEST(MpsEvent, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(mps::createEvent(nullptr), nullptr);
-    EXPECT_NO_THROW(mps::destroyEvent(nullptr));
-    EXPECT_NO_THROW(mps::recordEvent(nullptr, nullptr, 0));
-    EXPECT_FALSE(mps::queryEvent(nullptr, 0));
-    EXPECT_EQ(mps::eventValue(nullptr), 0);
-    EXPECT_NO_THROW(mps::write_event(nullptr, nullptr, 0));
-    EXPECT_NO_THROW(mps::waitEvent(nullptr, nullptr, 0));
-    EXPECT_NO_THROW(mps::write_event_queue(nullptr, nullptr, 0));
-    EXPECT_NO_THROW(mps::waitEvent_queue(nullptr, nullptr, 0));
+TEST(MpsEvent, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::createEvent(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::destroyEvent(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::recordEvent(nullptr, nullptr, 0); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::queryEvent(nullptr, 0); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::eventValue(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { mps::waitEvent(nullptr, nullptr, 0); });
 }
 
 #endif  // ORTEAF_ENABLE_MPS
