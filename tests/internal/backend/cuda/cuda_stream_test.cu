@@ -143,12 +143,26 @@ TEST_F(CudaStreamTest, StreamLifecycle) {
 
 #else  // !ORTEAF_ENABLE_CUDA
 
-TEST(CudaStream, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(cuda::get_stream(), nullptr);
-    EXPECT_NO_THROW(cuda::release_stream(nullptr));
-    EXPECT_NO_THROW(cuda::synchronize_stream(nullptr));
-    EXPECT_NO_THROW(cuda::wait_stream(nullptr, 0, 0));
-    EXPECT_NO_THROW(cuda::write_stream(nullptr, 0, 0));
+TEST(CudaStream, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::get_stream(); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::release_stream(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::synchronize_stream(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::wait_stream(nullptr, 0, 0); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::write_stream(nullptr, 0, 0); });
 }
 
 #endif  // ORTEAF_ENABLE_CUDA

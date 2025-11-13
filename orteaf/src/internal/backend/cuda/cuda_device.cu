@@ -12,10 +12,10 @@
 #include "orteaf/internal/backend/cuda/cuda_objc_bridge.h"
 
 #include <string>
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 
 #ifdef ORTEAF_ENABLE_CUDA
 #include <cuda.h>
-#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::cuda {
@@ -29,7 +29,8 @@ int getDeviceCount() {
     CU_CHECK(cuDeviceGetCount(&device_count));
     return device_count;
 #else
-    return 0;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called getDeviceCount()");
 #endif
 }
 
@@ -48,7 +49,8 @@ CUdevice_t getDevice(uint32_t device_id) {
     return opaqueFromCuDevice(device);
 #else
     (void)device_id;
-    return 0;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called getDevice()");
 #endif
 }
 
@@ -64,7 +66,8 @@ ComputeCapability getComputeCapability(CUdevice_t device) {
     return capability;
 #else
     (void)device;
-    return {0, 0};
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called getComputeCapability()");
 #endif
 }
 
@@ -86,7 +89,8 @@ std::string getDeviceName(CUdevice_t device) {
     return std::string(name);
 #else
     (void)device;
-    return {};
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called getDeviceName()");
 #endif
 }
 
@@ -99,7 +103,8 @@ std::string getDeviceVendor(CUdevice_t device) {
     return "nvidia";
 #else
     (void)device;
-    return {};
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called getDeviceVendor()");
 #endif
 }
 

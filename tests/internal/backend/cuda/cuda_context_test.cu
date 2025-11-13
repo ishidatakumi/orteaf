@@ -108,15 +108,28 @@ TEST_F(CudaContextTest, ContextLifecycle) {
 
 #else  // !ORTEAF_ENABLE_CUDA
 
-TEST(CudaContext, DisabledReturnsNeutralValues) {
+TEST(CudaContext, DisabledThrowsBackendUnavailable) {
     cuda::CUdevice_t device = 0;
 
-    EXPECT_EQ(cuda::get_primary_context(device), nullptr);
-    EXPECT_EQ(cuda::create_context(device), nullptr);
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [&] { cuda::get_primary_context(device); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [&] { cuda::create_context(device); });
 
-    EXPECT_NO_THROW(cuda::set_context(nullptr));
-    EXPECT_NO_THROW(cuda::release_context(nullptr));
-    EXPECT_NO_THROW(cuda::release_primary_context(device));
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::set_context(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::release_context(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [&] { cuda::release_primary_context(device); });
 }
 
 #endif  // ORTEAF_ENABLE_CUDA

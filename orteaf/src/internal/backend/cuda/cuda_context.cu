@@ -10,10 +10,11 @@
 #include "orteaf/internal/backend/cuda/cuda_device.h"
 #include "orteaf/internal/backend/cuda/cuda_objc_bridge.h"
 
+#include "orteaf/internal/diagnostics/error/error_impl.h"
+
 #ifdef ORTEAF_ENABLE_CUDA
 #include <cuda.h>
 #include "orteaf/internal/backend/cuda/cuda_check.h"
-#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::cuda {
@@ -29,7 +30,8 @@ CUcontext_t getPrimaryContext(CUdevice_t device) {
     return opaqueFromObjcNoown<CUcontext_t, CUcontext>(context);
 #else
     (void)device;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called getPrimaryContext()");
 #endif
 }
 
@@ -53,7 +55,8 @@ CUcontext_t createContext(CUdevice_t device) {
     return opaqueFromObjcNoown<CUcontext_t, CUcontext>(context);
 #else
     (void)device;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called createContext()");
 #endif
 }
 
@@ -70,6 +73,8 @@ void setContext(CUcontext_t context) {
     CU_CHECK(cuCtxSetCurrent(objc_context));
 #else
     (void)context;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called setContext()");
 #endif
 }
 
@@ -82,6 +87,8 @@ void releasePrimaryContext(CUdevice_t device) {
     CU_CHECK(cuDevicePrimaryCtxRelease(objc_device));
 #else
     (void)device;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called releasePrimaryContext()");
 #endif
 }
 
@@ -95,6 +102,8 @@ void releaseContext(CUcontext_t context) {
     CU_CHECK(cuCtxDestroy(objc_context));
 #else
     (void)context;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called releaseContext()");
 #endif
 }
 

@@ -455,28 +455,48 @@ TEST_F(CudaAllocCopyTest, StatisticsUpdated) {
 #else  // !ORTEAF_ENABLE_CUDA
 
 /**
- * @brief Test that allocation functions return neutral values when CUDA is disabled.
+ * @brief Test that allocation functions throw BackendUnavailable when CUDA is disabled.
  */
-TEST(CudaAllocCopy, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(cuda::alloc(1024), 0);
-    EXPECT_NO_THROW(cuda::free(0, 1024));
+TEST(CudaAllocCopy, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::alloc(1024); });
     
-    EXPECT_EQ(cuda::alloc_stream(1024, nullptr), 0);
-    EXPECT_NO_THROW(cuda::free_stream(0, 1024, nullptr));
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::free(0, 1024); });
     
-    EXPECT_EQ(cuda::alloc_host(1024), nullptr);
-    EXPECT_NO_THROW(cuda::free_host(nullptr, 1024));
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::alloc_stream(1024, nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::free_stream(0, 1024, nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::alloc_host(1024); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::free_host(nullptr, 1024); });
 }
 
 /**
- * @brief Test that copy functions are no-ops when CUDA is disabled.
+ * @brief Test that copy functions throw BackendUnavailable when CUDA is disabled.
  */
-TEST(CudaAllocCopy, DisabledCopyIsNoOp) {
+TEST(CudaAllocCopy, DisabledCopyThrowsBackendUnavailable) {
     int host_value = 42;
     cuda::CUdeviceptr_t dev_ptr = 0;
     
-    EXPECT_NO_THROW(cuda::copy_to_device(&host_value, dev_ptr, sizeof(int)));
-    EXPECT_NO_THROW(cuda::copy_to_host(dev_ptr, &host_value, sizeof(int)));
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [&] { cuda::copy_to_device(&host_value, dev_ptr, sizeof(int)); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [&] { cuda::copy_to_host(dev_ptr, &host_value, sizeof(int)); });
 }
 
 #endif  // ORTEAF_ENABLE_CUDA

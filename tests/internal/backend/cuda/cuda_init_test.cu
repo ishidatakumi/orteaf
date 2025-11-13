@@ -54,10 +54,12 @@ TEST(CudaInit, InitializeIsThreadSafe) {
 #else  // !ORTEAF_ENABLE_CUDA
 
 /**
- * @brief Test that CUDA initialization is skipped when CUDA is disabled.
+ * @brief Test that CUDA initialization throws BackendUnavailable when CUDA is disabled.
  */
-TEST(CudaInit, DisabledWhenCudaNotAvailable) {
-    GTEST_SKIP() << "CUDA is not enabled in this build";
+TEST(CudaInit, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::cudaInit(); });
 }
 
 #endif  // ORTEAF_ENABLE_CUDA

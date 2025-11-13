@@ -71,7 +71,7 @@ TEST(CudaCheckError, CudaCheckThrowsCorrectErrorCode) {
 TEST(CudaCheckError, CudaCheckLastSuccessDoesNotThrow) {
     // Clear any previous errors
     cudaGetLastError();
-    EXPECT_NO_THROW(cuda::cudaCheck_last("test_file", 42));
+    EXPECT_NO_THROW(cuda::cudaCheckLast("test_file", 42));
 }
 
 /**
@@ -80,7 +80,7 @@ TEST(CudaCheckError, CudaCheckLastSuccessDoesNotThrow) {
 TEST(CudaCheckError, CudaCheckSyncIsNoOpWhenDebugDisabled) {
     // Without ORTEAF_DEBUG_CUDA_SYNC, this should be a no-op
     cudaStream_t stream = nullptr;
-    EXPECT_NO_THROW(cuda::cudaCheck_sync(stream, "test_file", 42));
+    EXPECT_NO_THROW(cuda::cudaCheckSync(stream, "test_file", 42));
 }
 
 /**
@@ -191,26 +191,49 @@ TEST(CudaCheckError, ErrorMessagesContainExpression) {
 #else  // !ORTEAF_ENABLE_CUDA
 
 /**
- * @brief Test that error checking functions are no-ops when CUDA is disabled.
+ * @brief Test that error checking functions throw BackendUnavailable when CUDA is disabled.
  */
-TEST(CudaCheckError, DisabledFunctionsAreNoOps) {
-    EXPECT_NO_THROW(cuda::cudaCheck(0, "expr", "file", 1));
-    EXPECT_NO_THROW(cuda::cudaCheck_last("file", 1));
-    EXPECT_NO_THROW(cuda::cudaCheck_sync(nullptr, "file", 1));
-    EXPECT_NO_THROW(cuda::cuDriverCheck(0, "expr", "file", 1));
+TEST(CudaCheckError, DisabledFunctionsThrowBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::cudaCheck(0, "expr", "file", 1); });
     
-    bool result = cuda::tryDriverCall([]() {});
-    EXPECT_TRUE(result);
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::cudaCheckLast("file", 1); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::cudaCheckSync(nullptr, "file", 1); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::cuDriverCheck(0, "expr", "file", 1); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::tryDriverCall([]() {}); });
 }
 
 /**
- * @brief Test that macros are no-ops when CUDA is disabled.
+ * @brief Test that macros throw BackendUnavailable when CUDA is disabled.
  */
-TEST(CudaCheckError, DisabledMacrosAreNoOps) {
-    EXPECT_NO_THROW(CUDA_CHECK(0));
-    EXPECT_NO_THROW(CUDA_CHECK_LAST());
-    EXPECT_NO_THROW(CUDA_CHECK_SYNC(nullptr));
-    EXPECT_NO_THROW(CU_CHECK(0));
+TEST(CudaCheckError, DisabledMacrosThrowBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { CUDA_CHECK(0); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { CUDA_CHECK_LAST(); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { CUDA_CHECK_SYNC(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { CU_CHECK(0); });
 }
 
 #endif  // ORTEAF_ENABLE_CUDA

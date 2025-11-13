@@ -6,10 +6,10 @@
 #include "orteaf/internal/backend/cuda/cuda_check.h"
 #include "orteaf/internal/backend/cuda/cuda_stats.h"
 #include "orteaf/internal/backend/cuda/cuda_objc_bridge.h"
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 
 #ifdef ORTEAF_ENABLE_CUDA
 #include <cuda.h>
-#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::cuda {
@@ -24,7 +24,8 @@ CUstream_t getStream() {
     updateCreateStream();
     return opaqueFromObjcNoown<CUstream_t, CUstream>(stream);
 #else
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called getStream()");
 #endif
 }
 
@@ -39,6 +40,8 @@ void releaseStream(CUstream_t stream) {
     updateDestroyStream();
 #else
     (void)stream;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called releaseStream()");
 #endif
 }
 
@@ -55,6 +58,8 @@ void synchronizeStream(CUstream_t stream) {
     CU_CHECK(cuStreamSynchronize(objc_stream));
 #else
     (void)stream;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called synchronizeStream()");
 #endif
 }
 
@@ -78,6 +83,8 @@ void waitStream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value) {
     (void)stream;
     (void)addr;
     (void)value;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called waitStream()");
 #endif
 }
 
@@ -101,6 +108,8 @@ void writeStream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value) {
     (void)stream;
     (void)addr;
     (void)value;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called writeStream()");
 #endif
 }
 

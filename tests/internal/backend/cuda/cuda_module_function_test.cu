@@ -225,14 +225,24 @@ TEST_F(CudaModuleFunctionTest, UnloadModuleTwice) {
 #else  // !ORTEAF_ENABLE_CUDA
 
 /**
- * @brief Test that module functions return nullptr when CUDA is disabled.
+ * @brief Test that module functions throw BackendUnavailable when CUDA is disabled.
  */
-TEST(CudaModuleFunction, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(cuda::load_module_from_file("module.ptx"), nullptr);
-    EXPECT_EQ(cuda::load_module_from_image("image"), nullptr);
-    EXPECT_EQ(cuda::get_function(nullptr, "kernel"), nullptr);
+TEST(CudaModuleFunction, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::load_module_from_file("module.ptx"); });
     
-    EXPECT_NO_THROW(cuda::unload_module(nullptr));
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::load_module_from_image("image"); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::get_function(nullptr, "kernel"); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::unload_module(nullptr); });
 }
 
 #endif  // ORTEAF_ENABLE_CUDA

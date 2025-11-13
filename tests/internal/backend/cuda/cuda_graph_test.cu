@@ -354,22 +354,42 @@ TEST_F(CudaGraphTest, MultipleGraphCaptures) {
 #else  // !ORTEAF_ENABLE_CUDA
 
 /**
- * @brief Test that graph functions return nullptr when CUDA is disabled.
+ * @brief Test that graph functions throw BackendUnavailable when CUDA is disabled.
  */
-TEST(CudaGraph, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(cuda::create_graph(), nullptr);
-    EXPECT_EQ(cuda::create_graph_exec(nullptr), nullptr);
+TEST(CudaGraph, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::create_graph(); });
     
-    EXPECT_NO_THROW(cuda::destroy_graph(nullptr));
-    EXPECT_NO_THROW(cuda::destroy_graph_exec(nullptr));
-    EXPECT_NO_THROW(cuda::begin_graph_capture(nullptr));
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::create_graph_exec(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::destroy_graph(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::destroy_graph_exec(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::begin_graph_capture(nullptr); });
     
     cuda::CUgraph_t graph = nullptr;
-    EXPECT_NO_THROW(cuda::end_graph_capture(nullptr, &graph));
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [&] { cuda::end_graph_capture(nullptr, &graph); });
     
     cuda::CUgraphExec_t graph_exec = nullptr;
-    EXPECT_NO_THROW(cuda::instantiate_graph(nullptr, &graph_exec));
-    EXPECT_NO_THROW(cuda::graph_launch(nullptr, nullptr));
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [&] { cuda::instantiate_graph(nullptr, &graph_exec); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::graph_launch(nullptr, nullptr); });
 }
 
 #endif  // ORTEAF_ENABLE_CUDA

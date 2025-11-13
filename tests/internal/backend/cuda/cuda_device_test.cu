@@ -166,22 +166,29 @@ TEST_F(CudaDeviceTest, EnumerateMultipleDevices) {
 #else  // !ORTEAF_ENABLE_CUDA
 
 /**
- * @brief Test that device functions return neutral values when CUDA is disabled.
+ * @brief Test that device functions throw BackendUnavailable when CUDA is disabled.
  */
-TEST(CudaDevice, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(cuda::getDeviceCount(), 0);
-    EXPECT_EQ(cuda::get_device(0), 0);
+TEST(CudaDevice, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::getDeviceCount(); });
     
-    cuda::CUdevice_t device = cuda::get_device(0);
-    EXPECT_EQ(device, 0);
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::get_device(0); });
     
-    cuda::ComputeCapability cap = cuda::get_compute_capability(device);
-    EXPECT_EQ(cap.major, 0);
-    EXPECT_EQ(cap.minor, 0);
+    cuda::CUdevice_t device = 0;
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [&] { cuda::get_compute_capability(device); });
     
-    EXPECT_EQ(cuda::get_sm_count(cap), 0);
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [&] { cuda::get_device_name(device); });
     
-    // no set_device in driver-based design
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [&] { cuda::get_device_vendor(device); });
 }
 
 /**

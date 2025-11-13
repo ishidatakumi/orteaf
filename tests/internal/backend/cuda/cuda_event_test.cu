@@ -169,12 +169,26 @@ TEST_F(CudaEventTest, EventLifecycle) {
 
 #else  // !ORTEAF_ENABLE_CUDA
 
-TEST(CudaEvent, DisabledReturnsNeutralValues) {
-    EXPECT_EQ(cuda::create_event(), nullptr);
-    EXPECT_NO_THROW(cuda::destroy_event(nullptr));
-    EXPECT_NO_THROW(cuda::record_event(nullptr, nullptr));
-    EXPECT_TRUE(cuda::query_event(nullptr));
-    EXPECT_NO_THROW(cuda::wait_event(nullptr, nullptr));
+TEST(CudaEvent, DisabledThrowsBackendUnavailable) {
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::create_event(); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::destroy_event(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::record_event(nullptr, nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::query_event(nullptr); });
+    
+    ::orteaf::tests::ExpectError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
+        [] { cuda::wait_event(nullptr, nullptr); });
 }
 
 #endif  // ORTEAF_ENABLE_CUDA

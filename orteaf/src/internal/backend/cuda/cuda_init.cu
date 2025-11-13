@@ -27,4 +27,20 @@ void cudaInit() {
 
 } // namespace orteaf::internal::backend::cuda
 
+#else  // !ORTEAF_ENABLE_CUDA
+
+#include "orteaf/internal/diagnostics/error/error_impl.h"
+
+namespace orteaf::internal::backend::cuda {
+
+/**
+ * @copydoc orteaf::internal::backend::cuda::cudaInit
+ */
+void cudaInit() {
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called cudaInit()");
+}
+
+} // namespace orteaf::internal::backend::cuda
+
 #endif
