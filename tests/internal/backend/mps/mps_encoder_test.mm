@@ -27,8 +27,6 @@
 
 namespace mps = orteaf::internal::backend::mps;
 
-#ifdef ORTEAF_ENABLE_MPS
-
 /**
  * @brief Test fixture for MPS encoder tests.
  */
@@ -302,41 +300,3 @@ TEST_F(MpsEncoderTest, MultipleEncodersFromSameBuffer) {
     
     mps::destroyCommandBuffer(buffer);
 }
-
-#else  // !ORTEAF_ENABLE_MPS
-
-/**
- * @brief Test that encoder functions throw BackendUnavailable when MPS is disabled.
- */
-TEST(MpsEncoder, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::createComputeCommandEncoder(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::destroyComputeCommandEncoder(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::endEncoding(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::setPipelineState(nullptr, nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::setBuffer(nullptr, nullptr, 0, 0); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::setBytes(nullptr, nullptr, 0, 0); });
-    
-    mps::MPSSize_t size = mps::makeSize(1, 1, 1);
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [&] { mps::setThreadgroups(nullptr, size, size); });
-}
-
-#endif  // ORTEAF_ENABLE_MPS

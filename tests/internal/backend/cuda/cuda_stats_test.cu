@@ -16,7 +16,7 @@
 
 namespace cuda = orteaf::internal::backend::cuda;
 
-#if defined(ORTEAF_ENABLE_CUDA) && defined(ORTEAF_STATS_LEVEL_CUDA_VALUE)
+#if defined(ORTEAF_STATS_LEVEL_CUDA_VALUE)
 
 /**
  * @brief Test fixture that initializes CUDA and resets stats.
@@ -357,7 +357,7 @@ TEST_F(CudaStatsTest, CudaStatsReturnsSameInstance) {
     EXPECT_EQ(&stats1, &stats2);
 }
 
-#else  // !ORTEAF_ENABLE_CUDA || !ORTEAF_STATS_LEVEL_CUDA_VALUE
+#else  // !ORTEAF_STATS_LEVEL_CUDA_VALUE
 
 /**
  * @brief Test that statistics are disabled when stats level is not set.
@@ -380,4 +380,4 @@ TEST(CudaStats, DisabledWhenStatsLevelNotSet) {
     EXPECT_NE(str.find("Disabled"), std::string::npos);
 }
 
-#endif  // ORTEAF_ENABLE_CUDA && ORTEAF_STATS_LEVEL_CUDA_VALUE
+#endif  // ORTEAF_STATS_LEVEL_CUDA_VALUE

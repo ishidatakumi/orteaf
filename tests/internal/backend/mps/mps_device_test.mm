@@ -14,8 +14,6 @@
 
 namespace mps = orteaf::internal::backend::mps;
 
-#ifdef ORTEAF_ENABLE_MPS
-
 /**
  * @brief Test fixture for MPS device tests.
  */
@@ -231,36 +229,3 @@ TEST_F(MpsDeviceTest, DefaultDeviceMatchesFirstInArray) {
     mps::deviceRelease(default_device);
     mps::deviceRelease(first_device);
 }
-
-#else  // !ORTEAF_ENABLE_MPS
-
-/**
- * @brief Test that device functions throw BackendUnavailable when MPS is disabled.
- */
-TEST(MpsDevice, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::getDevice(); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::getDevice(0); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::getDeviceCount(); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::getDeviceArray(); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::deviceRetain(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::deviceRelease(nullptr); });
-}
-
-#endif  // ORTEAF_ENABLE_MPS

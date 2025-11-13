@@ -14,8 +14,6 @@
 
 namespace cuda = orteaf::internal::backend::cuda;
 
-#if ORTEAF_ENABLE_CUDA
-
 class CudaStreamTest : public ::testing::Test {
 protected:
     void SetUp() override {
@@ -140,29 +138,3 @@ TEST_F(CudaStreamTest, StreamLifecycle) {
     cuda::synchronize_stream(stream);
     cuda::release_stream(stream);
 }
-
-#else  // !ORTEAF_ENABLE_CUDA
-
-TEST(CudaStream, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::get_stream(); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::release_stream(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::synchronize_stream(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::wait_stream(nullptr, 0, 0); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::write_stream(nullptr, 0, 0); });
-}
-
-#endif  // ORTEAF_ENABLE_CUDA

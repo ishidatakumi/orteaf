@@ -17,7 +17,7 @@
 
 namespace mps = orteaf::internal::backend::mps;
 
-#if defined(ORTEAF_ENABLE_MPS) && defined(ORTEAF_STATS_LEVEL_MPS_VALUE)
+#if defined(ORTEAF_STATS_LEVEL_MPS_VALUE)
 
 /**
  * @brief Test fixture for MPS stats tests.
@@ -317,7 +317,7 @@ TEST_F(MpsStatsTest, StatisticsAreThreadSafe) {
 }
 #endif  // ORTEAF_STATS_LEVEL_MPS_VALUE <= 2
 
-#else  // !ORTEAF_ENABLE_MPS || !ORTEAF_STATS_LEVEL_MPS_VALUE
+#else  // !ORTEAF_STATS_LEVEL_MPS_VALUE
 
 /**
  * @brief Test that statistics are disabled when stats level is not set.
@@ -341,4 +341,4 @@ TEST(MpsStats, DisabledWhenStatsLevelNotSet) {
     EXPECT_NE(str.find("Disabled"), std::string::npos);
 }
 
-#endif  // ORTEAF_ENABLE_MPS && ORTEAF_STATS_LEVEL_MPS_VALUE
+#endif  // ORTEAF_STATS_LEVEL_MPS_VALUE

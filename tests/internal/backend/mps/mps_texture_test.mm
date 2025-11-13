@@ -19,8 +19,6 @@
 
 namespace mps = orteaf::internal::backend::mps;
 
-#ifdef ORTEAF_ENABLE_MPS
-
 class MpsTextureTest : public ::testing::Test {
 protected:
     void SetUp() override {
@@ -131,41 +129,3 @@ TEST_F(MpsTextureTest, ReplaceRegionNullptrBytesThrows) {
                                       0, 0, 0, kWidth, kHeight, 1);
         });
 }
-
-#else  // !ORTEAF_ENABLE_MPS
-
-TEST(MpsTexture, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::createTextureDescriptor(); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::destroyTextureDescriptor(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::setTextureDescriptorWidth(nullptr, 1); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::createTexture(nullptr, nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::createTextureFromHeap(nullptr, nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::destroyTexture(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::textureWidth(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::replaceTextureRegion(nullptr, nullptr, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); });
-}
-
-#endif  // ORTEAF_ENABLE_MPS

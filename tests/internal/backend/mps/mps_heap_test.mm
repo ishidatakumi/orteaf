@@ -17,8 +17,6 @@
 
 namespace mps = orteaf::internal::backend::mps;
 
-#ifdef ORTEAF_ENABLE_MPS
-
 class MpsHeapTest : public ::testing::Test {
 protected:
     void SetUp() override {
@@ -128,65 +126,3 @@ TEST_F(MpsHeapTest, HeapQueryFunctionsHandleNullptr) {
     EXPECT_EQ(mps::heapHazardTrackingMode(nullptr), mps::kMPSHazardTrackingModeDefault);
     EXPECT_EQ(mps::heapType(nullptr), mps::kMPSHeapTypeAutomatic);
 }
-
-#else  // !ORTEAF_ENABLE_MPS
-
-TEST(MpsHeap, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::createHeapDescriptor(); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::destroyHeapDescriptor(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::getHeapDescriptorSize(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::setHeapDescriptorSize(nullptr, 1); });
-
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::createHeap(nullptr, nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::destroyHeap(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::heapSize(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::heapUsedSize(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::heapMaxAvailableSize(nullptr, 1); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::heapResourceOptions(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::heapStorageMode(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::heapCPUCacheMode(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::heapHazardTrackingMode(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::heapType(nullptr); });
-}
-
-#endif  // ORTEAF_ENABLE_MPS

@@ -16,8 +16,6 @@
 
 namespace cuda = orteaf::internal::backend::cuda;
 
-#ifdef ORTEAF_ENABLE_CUDA
-
 /**
  * @brief Test fixture that initializes CUDA and sets up a device and context.
  */
@@ -451,52 +449,3 @@ TEST_F(CudaAllocCopyTest, StatisticsUpdated) {
     // Deallocate pinned host memory (should update stats)
     cuda::free_host(host_ptr, size);
 }
-
-#else  // !ORTEAF_ENABLE_CUDA
-
-/**
- * @brief Test that allocation functions throw BackendUnavailable when CUDA is disabled.
- */
-TEST(CudaAllocCopy, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::alloc(1024); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::free(0, 1024); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::alloc_stream(1024, nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::free_stream(0, 1024, nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::alloc_host(1024); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::free_host(nullptr, 1024); });
-}
-
-/**
- * @brief Test that copy functions throw BackendUnavailable when CUDA is disabled.
- */
-TEST(CudaAllocCopy, DisabledCopyThrowsBackendUnavailable) {
-    int host_value = 42;
-    cuda::CUdeviceptr_t dev_ptr = 0;
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [&] { cuda::copy_to_device(&host_value, dev_ptr, sizeof(int)); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [&] { cuda::copy_to_host(dev_ptr, &host_value, sizeof(int)); });
-}
-
-#endif  // ORTEAF_ENABLE_CUDA

@@ -17,8 +17,6 @@
 
 namespace mps = orteaf::internal::backend::mps;
 
-#ifdef ORTEAF_ENABLE_MPS
-
 /**
  * @brief Test fixture for MPS buffer tests.
  */
@@ -140,24 +138,3 @@ TEST_F(MpsBufferTest, GetBufferContentsSucceeds) {
 TEST_F(MpsBufferTest, GetBufferContentsNullptrReturnsNullptr) {
     EXPECT_EQ(mps::getBufferContentsConst(nullptr), nullptr);
 }
-
-#else  // !ORTEAF_ENABLE_MPS
-
-/**
- * @brief Test that buffer functions throw BackendUnavailable when MPS is disabled.
- */
-TEST(MpsBuffer, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::createBuffer(nullptr, 1024, 0); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::destroyBuffer(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::getBufferContentsConst(nullptr); });
-}
-
-#endif  // ORTEAF_ENABLE_MPS

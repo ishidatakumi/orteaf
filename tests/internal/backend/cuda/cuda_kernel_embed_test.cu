@@ -25,8 +25,6 @@ Blob find_any_available(std::string_view name) {
 
 }  // namespace
 
-#if ORTEAF_ENABLE_CUDA
-
 TEST(CudaKernelEmbedTest, CanRetrieveEmbeddedBlob) {
     constexpr std::string_view kKernelName = "embed_test_kernels";
 
@@ -70,20 +68,8 @@ TEST(CudaKernelEmbedTest, FindAnyAvailableReturnsBlobWhenFormatsPresent) {
 #endif
 }
 
-#else  // !ORTEAF_ENABLE_CUDA
-
-TEST(CudaKernelEmbedTest, SkippedWhenCudaDisabled) {
-    GTEST_SKIP() << "CUDA backend disabled";
-}
-
-#endif  // ORTEAF_ENABLE_CUDA
-
 TEST(CudaKernelEmbedTest, EmptyKernelNameThrows) {
-#if ORTEAF_ENABLE_CUDA
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
         [] { find_kernel_data(std::string_view{}, CudaKernelFmt::Fatbin); });
-#else
-    GTEST_SKIP() << "CUDA backend disabled";
-#endif
 }

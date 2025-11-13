@@ -15,8 +15,6 @@
 
 namespace cuda = orteaf::internal::backend::cuda;
 
-#ifdef ORTEAF_ENABLE_CUDA
-
 /**
  * @brief Test fixture that initializes CUDA and sets up a device and context.
  */
@@ -221,28 +219,3 @@ TEST_F(CudaModuleFunctionTest, UnloadModuleTwice) {
     EXPECT_NO_THROW(cuda::unload_module(nullptr));
     EXPECT_NO_THROW(cuda::unload_module(nullptr));  // Second call should also be safe
 }
-
-#else  // !ORTEAF_ENABLE_CUDA
-
-/**
- * @brief Test that module functions throw BackendUnavailable when CUDA is disabled.
- */
-TEST(CudaModuleFunction, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::load_module_from_file("module.ptx"); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::load_module_from_image("image"); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::get_function(nullptr, "kernel"); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::unload_module(nullptr); });
-}
-
-#endif  // ORTEAF_ENABLE_CUDA

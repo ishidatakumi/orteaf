@@ -16,8 +16,6 @@
 
 namespace cuda = orteaf::internal::backend::cuda;
 
-#if ORTEAF_ENABLE_CUDA
-
 class CudaEventTest : public ::testing::Test {
 protected:
     void SetUp() override {
@@ -166,29 +164,3 @@ TEST_F(CudaEventTest, EventLifecycle) {
     cuda::destroy_event(event);
     cuda::release_stream(stream);
 }
-
-#else  // !ORTEAF_ENABLE_CUDA
-
-TEST(CudaEvent, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::create_event(); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::destroy_event(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::record_event(nullptr, nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::query_event(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::wait_event(nullptr, nullptr); });
-}
-
-#endif  // ORTEAF_ENABLE_CUDA

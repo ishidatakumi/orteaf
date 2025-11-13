@@ -13,8 +13,6 @@
 namespace cuda = orteaf::internal::backend::cuda;
 namespace diag = orteaf::internal::diagnostics::error;
 
-#if ORTEAF_ENABLE_CUDA
-
 /**
  * @brief Test that mapRuntimeErrc maps CUDA errors correctly.
  */
@@ -187,53 +185,3 @@ TEST(CudaCheckError, ErrorMessagesContainExpression) {
         {"cudaErrorInvalidValue"},
         []() { CUDA_CHECK(cudaErrorInvalidValue); });
 }
-
-#else  // !ORTEAF_ENABLE_CUDA
-
-/**
- * @brief Test that error checking functions throw BackendUnavailable when CUDA is disabled.
- */
-TEST(CudaCheckError, DisabledFunctionsThrowBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::cudaCheck(0, "expr", "file", 1); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::cudaCheckLast("file", 1); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::cudaCheckSync(nullptr, "file", 1); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::cuDriverCheck(0, "expr", "file", 1); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::tryDriverCall([]() {}); });
-}
-
-/**
- * @brief Test that macros throw BackendUnavailable when CUDA is disabled.
- */
-TEST(CudaCheckError, DisabledMacrosThrowBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { CUDA_CHECK(0); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { CUDA_CHECK_LAST(); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { CUDA_CHECK_SYNC(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { CU_CHECK(0); });
-}
-
-#endif  // ORTEAF_ENABLE_CUDA

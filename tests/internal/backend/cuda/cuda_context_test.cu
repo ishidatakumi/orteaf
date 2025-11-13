@@ -12,8 +12,6 @@
 
 namespace cuda = orteaf::internal::backend::cuda;
 
-#if ORTEAF_ENABLE_CUDA
-
 class CudaContextTest : public ::testing::Test {
 protected:
     void SetUp() override {
@@ -105,31 +103,3 @@ TEST_F(CudaContextTest, ContextLifecycle) {
     cuda::set_context(context_);
     cuda::release_context(new_ctx);
 }
-
-#else  // !ORTEAF_ENABLE_CUDA
-
-TEST(CudaContext, DisabledThrowsBackendUnavailable) {
-    cuda::CUdevice_t device = 0;
-
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [&] { cuda::get_primary_context(device); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [&] { cuda::create_context(device); });
-
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::set_context(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::release_context(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [&] { cuda::release_primary_context(device); });
-}
-
-#endif  // ORTEAF_ENABLE_CUDA

@@ -11,8 +11,6 @@
 
 namespace cuda = orteaf::internal::backend::cuda;
 
-#if ORTEAF_ENABLE_CUDA
-
 /**
  * @brief Test that CUDA initialization succeeds.
  */
@@ -50,16 +48,3 @@ TEST(CudaInit, InitializeIsThreadSafe) {
     // After all threads finish, initialization should still work
     EXPECT_NO_THROW(cuda::cudaInit());
 }
-
-#else  // !ORTEAF_ENABLE_CUDA
-
-/**
- * @brief Test that CUDA initialization throws BackendUnavailable when CUDA is disabled.
- */
-TEST(CudaInit, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::cudaInit(); });
-}
-
-#endif  // ORTEAF_ENABLE_CUDA

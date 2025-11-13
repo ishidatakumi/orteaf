@@ -11,8 +11,6 @@
 
 namespace cuda = orteaf::internal::backend::cuda;
 
-#ifdef ORTEAF_ENABLE_CUDA
-
 /**
  * @brief Test fixture that initializes CUDA before device tests.
  */
@@ -161,43 +159,3 @@ TEST_F(CudaDeviceTest, EnumerateMultipleDevices) {
         GTEST_SKIP() << "Less than 2 CUDA devices available";
     }
 }
-
-
-#else  // !ORTEAF_ENABLE_CUDA
-
-/**
- * @brief Test that device functions throw BackendUnavailable when CUDA is disabled.
- */
-TEST(CudaDevice, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::getDeviceCount(); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::get_device(0); });
-    
-    cuda::CUdevice_t device = 0;
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [&] { cuda::get_compute_capability(device); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [&] { cuda::get_device_name(device); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [&] { cuda::get_device_vendor(device); });
-}
-
-/**
- * @brief Test that SM count calculation still works when CUDA is disabled.
- */
-TEST(CudaDevice, GetSmCountWorksWhenDisabled) {
-    // Should still work with the formula
-    cuda::ComputeCapability cap{5, 0};
-    EXPECT_EQ(cuda::get_sm_count(cap), 50);
-}
-
-#endif  // ORTEAF_ENABLE_CUDA

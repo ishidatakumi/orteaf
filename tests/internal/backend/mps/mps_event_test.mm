@@ -17,8 +17,6 @@
 
 namespace mps = orteaf::internal::backend::mps;
 
-#ifdef ORTEAF_ENABLE_MPS
-
 /**
  * @brief Test fixture for MPS event tests.
  */
@@ -328,36 +326,3 @@ TEST_F(MpsEventTest, WaitEventNullEventThrows) {
         [&] { mps::waitEvent(buffer, nullptr, 1); });
     mps::destroyCommandBuffer(buffer);
 }
-
-#else  // !ORTEAF_ENABLE_MPS
-
-/**
- * @brief Test that event functions throw BackendUnavailable when MPS is disabled.
- */
-TEST(MpsEvent, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::createEvent(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::destroyEvent(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::recordEvent(nullptr, nullptr, 0); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::queryEvent(nullptr, 0); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::eventValue(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::waitEvent(nullptr, nullptr, 0); });
-}
-
-#endif  // ORTEAF_ENABLE_MPS

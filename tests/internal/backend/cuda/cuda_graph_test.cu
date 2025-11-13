@@ -14,8 +14,6 @@
 
 namespace cuda = orteaf::internal::backend::cuda;
 
-#ifdef ORTEAF_ENABLE_CUDA
-
 /**
  * @brief Test fixture that initializes CUDA and sets up a device and context.
  */
@@ -350,46 +348,3 @@ TEST_F(CudaGraphTest, MultipleGraphCaptures) {
     cuda::destroy_graph(graph2);
     cuda::release_stream(stream);
 }
-
-#else  // !ORTEAF_ENABLE_CUDA
-
-/**
- * @brief Test that graph functions throw BackendUnavailable when CUDA is disabled.
- */
-TEST(CudaGraph, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::create_graph(); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::create_graph_exec(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::destroy_graph(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::destroy_graph_exec(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::begin_graph_capture(nullptr); });
-    
-    cuda::CUgraph_t graph = nullptr;
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [&] { cuda::end_graph_capture(nullptr, &graph); });
-    
-    cuda::CUgraphExec_t graph_exec = nullptr;
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [&] { cuda::instantiate_graph(nullptr, &graph_exec); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { cuda::graph_launch(nullptr, nullptr); });
-}
-
-#endif  // ORTEAF_ENABLE_CUDA

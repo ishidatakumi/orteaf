@@ -17,8 +17,6 @@
 
 namespace mps = orteaf::internal::backend::mps;
 
-#ifdef ORTEAF_ENABLE_MPS
-
 /**
  * @brief Test fixture for MPS command queue and buffer tests.
  */
@@ -328,44 +326,3 @@ TEST_F(MpsCommandQueueBufferTest, EncodeWaitNullCommandBufferThrows) {
         [&] { mps::encodeWait(nullptr, event, 1); });
     mps::destroyEvent(event);
 }
-
-#else  // !ORTEAF_ENABLE_MPS
-
-/**
- * @brief Test that command queue functions throw BackendUnavailable when MPS is disabled.
- */
-TEST(MpsCommandQueueBuffer, DisabledThrowsBackendUnavailable) {
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::createCommandQueue(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::destroyCommandQueue(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::createCommandBuffer(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::destroyCommandBuffer(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::commit(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::waitUntilCompleted(nullptr); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::encodeSignalEvent(nullptr, nullptr, 0); });
-    
-    ::orteaf::tests::ExpectError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::BackendUnavailable,
-        [] { mps::encodeWait(nullptr, nullptr, 0); });
-}
-
-#endif  // ORTEAF_ENABLE_MPS
