@@ -26,7 +26,7 @@ CUevent_t createEvent() {
     return opaqueFromObjcNoown<CUevent_t, CUevent>(event);
 #else
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called createEvent()");
+    throwError(OrteafErrc::BackendUnavailable, "createEvent: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -42,7 +42,7 @@ void destroyEvent(CUevent_t event) {
 #else
     (void)event;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called destroyEvent()");
+    throwError(OrteafErrc::BackendUnavailable, "destroyEvent: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -66,7 +66,7 @@ void recordEvent(CUevent_t event, CUstream_t stream) {
     (void)event;
     (void)stream;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called recordEvent()");
+    throwError(OrteafErrc::BackendUnavailable, "recordEvent: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -85,7 +85,7 @@ bool queryEvent(CUevent_t event) {
 #else
     (void)event;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called queryEvent()");
+    throwError(OrteafErrc::BackendUnavailable, "queryEvent: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -109,7 +109,7 @@ void waitEvent(CUstream_t stream, CUevent_t event) {
     (void)stream;
     (void)event;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called waitEvent()");
+    throwError(OrteafErrc::BackendUnavailable, "waitEvent: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 

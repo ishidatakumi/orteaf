@@ -38,7 +38,7 @@ namespace orteaf::internal::backend::cuda {
  */
 void cudaInit() {
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called cudaInit()");
+    throwError(OrteafErrc::BackendUnavailable, "cudaInit: CUDA backend is not available (CUDA disabled)");
 }
 
 } // namespace orteaf::internal::backend::cuda

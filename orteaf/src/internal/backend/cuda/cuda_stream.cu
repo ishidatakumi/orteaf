@@ -25,7 +25,7 @@ CUstream_t getStream() {
     return opaqueFromObjcNoown<CUstream_t, CUstream>(stream);
 #else
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called getStream()");
+    throwError(OrteafErrc::BackendUnavailable, "getStream: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -41,7 +41,7 @@ void releaseStream(CUstream_t stream) {
 #else
     (void)stream;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called releaseStream()");
+    throwError(OrteafErrc::BackendUnavailable, "releaseStream: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -59,7 +59,7 @@ void synchronizeStream(CUstream_t stream) {
 #else
     (void)stream;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called synchronizeStream()");
+    throwError(OrteafErrc::BackendUnavailable, "synchronizeStream: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -84,7 +84,7 @@ void waitStream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value) {
     (void)addr;
     (void)value;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called waitStream()");
+    throwError(OrteafErrc::BackendUnavailable, "waitStream: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -109,7 +109,7 @@ void writeStream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value) {
     (void)addr;
     (void)value;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called writeStream()");
+    throwError(OrteafErrc::BackendUnavailable, "writeStream: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 

@@ -12,6 +12,8 @@
 
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"
 #include "orteaf/internal/diagnostics/error/error.h"
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -51,7 +53,8 @@ MPSHeapDescriptor_t createHeapDescriptor() {
     descriptor.type = static_cast<MTLHeapType>(kMPSHeapTypeAutomatic);
     return (MPSHeapDescriptor_t)opaqueFromObjcRetained(descriptor);
 #else
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createHeapDescriptor: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -61,6 +64,8 @@ void destroyHeapDescriptor(MPSHeapDescriptor_t descriptor) {
     opaqueReleaseRetained(descriptor);
 #else
     (void)descriptor;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyHeapDescriptor: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -75,6 +80,8 @@ void setHeapDescriptorSize(MPSHeapDescriptor_t descriptor, std::size_t size) {
 #else
     (void)descriptor;
     (void)size;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setHeapDescriptorSize: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -87,7 +94,8 @@ std::size_t getHeapDescriptorSize(MPSHeapDescriptor_t descriptor) {
     return objc_descriptor ? objc_descriptor.size : 0;
 #else
     (void)descriptor;
-    return 0;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "getHeapDescriptorSize: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -99,6 +107,8 @@ void setHeapDescriptorStorageMode(MPSHeapDescriptor_t descriptor, MPSStorageMode
 #else
     (void)descriptor;
     (void)storage_mode;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setHeapDescriptorStorageMode: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -110,6 +120,8 @@ void setHeapDescriptorCPUCacheMode(MPSHeapDescriptor_t descriptor, MPSCPUCacheMo
 #else
     (void)descriptor;
     (void)cache_mode;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setHeapDescriptorCPUCacheMode: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -121,6 +133,8 @@ void setHeapDescriptorHazardTrackingMode(MPSHeapDescriptor_t descriptor, MPSHaza
 #else
     (void)descriptor;
     (void)hazard_mode;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setHeapDescriptorHazardTrackingMode: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -132,6 +146,8 @@ void setHeapDescriptorType(MPSHeapDescriptor_t descriptor, MPSHeapType_t heap_ty
 #else
     (void)descriptor;
     (void)heap_type;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setHeapDescriptorType: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -143,6 +159,8 @@ void setHeapDescriptorResourceOptions(MPSHeapDescriptor_t descriptor, MPSResourc
 #else
     (void)descriptor;
     (void)resource_options;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setHeapDescriptorResourceOptions: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -164,7 +182,8 @@ MPSHeap_t createHeap(MPSDevice_t device, MPSHeapDescriptor_t descriptor) {
 #else
     (void)device;
     (void)descriptor;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createHeap: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -180,6 +199,8 @@ void destroyHeap(MPSHeap_t heap) {
     }
 #else
     (void)heap;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyHeap: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -190,7 +211,8 @@ std::size_t heapSize(MPSHeap_t heap) {
     return objc_heap ? [objc_heap size] : 0;
 #else
     (void)heap;
-    return 0;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "heapSize: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -201,7 +223,8 @@ std::size_t heapUsedSize(MPSHeap_t heap) {
     return objc_heap ? [objc_heap usedSize] : 0;
 #else
     (void)heap;
-    return 0;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "heapUsedSize: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -216,7 +239,8 @@ std::size_t heapMaxAvailableSize(MPSHeap_t heap, std::size_t alignment) {
 #else
     (void)heap;
     (void)alignment;
-    return 0;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "heapMaxAvailableSize: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -227,7 +251,8 @@ MPSResourceOptions_t heapResourceOptions(MPSHeap_t heap) {
     return objc_heap ? static_cast<MPSResourceOptions_t>(objc_heap.resourceOptions) : kMPSDefaultResourceOptions;
 #else
     (void)heap;
-    return kMPSDefaultResourceOptions;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "heapResourceOptions: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -238,7 +263,8 @@ MPSStorageMode_t heapStorageMode(MPSHeap_t heap) {
     return objc_heap ? static_cast<MPSStorageMode_t>(objc_heap.storageMode) : kMPSStorageModeShared;
 #else
     (void)heap;
-    return kMPSStorageModeShared;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "heapStorageMode: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -249,7 +275,8 @@ MPSCPUCacheMode_t heapCPUCacheMode(MPSHeap_t heap) {
     return objc_heap ? static_cast<MPSCPUCacheMode_t>(objc_heap.cpuCacheMode) : kMPSCPUCacheModeDefaultCache;
 #else
     (void)heap;
-    return kMPSCPUCacheModeDefaultCache;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "heapCPUCacheMode: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -260,7 +287,8 @@ MPSHazardTrackingMode_t heapHazardTrackingMode(MPSHeap_t heap) {
     return objc_heap ? static_cast<MPSHazardTrackingMode_t>(objc_heap.hazardTrackingMode) : kMPSHazardTrackingModeDefault;
 #else
     (void)heap;
-    return kMPSHazardTrackingModeDefault;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "heapHazardTrackingMode: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -271,7 +299,8 @@ MPSHeapType_t heapType(MPSHeap_t heap) {
     return objc_heap ? static_cast<MPSHeapType_t>(objc_heap.type) : kMPSHeapTypeAutomatic;
 #else
     (void)heap;
-    return kMPSHeapTypeAutomatic;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "heapType: MPS backend is not available (MPS disabled)");
 #endif
 }
 

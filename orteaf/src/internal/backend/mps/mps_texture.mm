@@ -10,6 +10,8 @@
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
 #include "orteaf/internal/diagnostics/error/error.h"
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -57,7 +59,8 @@ MPSTextureDescriptor_t createTextureDescriptor() {
     descriptor.hazardTrackingMode = MTLHazardTrackingModeDefault;
     return reinterpret_cast<MPSTextureDescriptor_t>(opaqueFromObjcRetained(descriptor));
 #else
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createTextureDescriptor: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -67,6 +70,8 @@ void destroyTextureDescriptor(MPSTextureDescriptor_t descriptor) {
     opaqueReleaseRetained(descriptor);
 #else
     (void)descriptor;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyTextureDescriptor: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -75,6 +80,8 @@ void setTextureDescriptorType(MPSTextureDescriptor_t descriptor, MPSTextureType_
     objcDescriptor(descriptor).textureType = static_cast<MTLTextureType>(type);
 #else
     (void)descriptor; (void)type;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setTextureDescriptorType: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -83,6 +90,8 @@ void setTextureDescriptorPixelFormat(MPSTextureDescriptor_t descriptor, MPSPixel
     objcDescriptor(descriptor).pixelFormat = static_cast<MTLPixelFormat>(pixel_format);
 #else
     (void)descriptor; (void)pixel_format;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setTextureDescriptorPixelFormat: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -92,6 +101,8 @@ void setTextureDescriptorWidth(MPSTextureDescriptor_t descriptor, std::size_t wi
     objcDescriptor(descriptor).width = width;
 #else
     (void)descriptor; (void)width;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setTextureDescriptorWidth: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -101,6 +112,8 @@ void setTextureDescriptorHeight(MPSTextureDescriptor_t descriptor, std::size_t h
     objcDescriptor(descriptor).height = height;
 #else
     (void)descriptor; (void)height;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setTextureDescriptorHeight: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -110,6 +123,8 @@ void setTextureDescriptorDepth(MPSTextureDescriptor_t descriptor, std::size_t de
     objcDescriptor(descriptor).depth = depth;
 #else
     (void)descriptor; (void)depth;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setTextureDescriptorDepth: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -119,6 +134,8 @@ void setTextureDescriptorArrayLength(MPSTextureDescriptor_t descriptor, std::siz
     objcDescriptor(descriptor).arrayLength = length;
 #else
     (void)descriptor; (void)length;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setTextureDescriptorArrayLength: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -128,6 +145,8 @@ void setTextureDescriptorMipmapLevelCount(MPSTextureDescriptor_t descriptor, std
     objcDescriptor(descriptor).mipmapLevelCount = mip_levels;
 #else
     (void)descriptor; (void)mip_levels;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setTextureDescriptorMipmapLevelCount: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -136,6 +155,8 @@ void setTextureDescriptorStorageMode(MPSTextureDescriptor_t descriptor, MPSStora
     objcDescriptor(descriptor).storageMode = static_cast<MTLStorageMode>(storage_mode);
 #else
     (void)descriptor; (void)storage_mode;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setTextureDescriptorStorageMode: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -144,6 +165,8 @@ void setTextureDescriptorCPUCacheMode(MPSTextureDescriptor_t descriptor, MPSCPUC
     objcDescriptor(descriptor).cpuCacheMode = static_cast<MTLCPUCacheMode>(cache_mode);
 #else
     (void)descriptor; (void)cache_mode;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setTextureDescriptorCPUCacheMode: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -152,6 +175,8 @@ void setTextureDescriptorHazardTrackingMode(MPSTextureDescriptor_t descriptor, M
     objcDescriptor(descriptor).hazardTrackingMode = static_cast<MTLHazardTrackingMode>(hazard_mode);
 #else
     (void)descriptor; (void)hazard_mode;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setTextureDescriptorHazardTrackingMode: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -168,7 +193,8 @@ MPSTexture_t createTexture(MPSDevice_t device, MPSTextureDescriptor_t descriptor
     return reinterpret_cast<MPSTexture_t>(opaqueFromObjcRetained(texture));
 #else
     (void)device; (void)descriptor;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createTexture: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -185,7 +211,8 @@ MPSTexture_t createTextureFromHeap(MPSHeap_t heap, MPSTextureDescriptor_t descri
     return reinterpret_cast<MPSTexture_t>(opaqueFromObjcRetained(texture));
 #else
     (void)heap; (void)descriptor;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createTextureFromHeap: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -195,6 +222,8 @@ void destroyTexture(MPSTexture_t texture) {
     opaqueReleaseRetained(texture);
 #else
     (void)texture;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyTexture: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -202,7 +231,9 @@ std::size_t textureWidth(MPSTexture_t texture) {
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
     return objcTexture(texture).width;
 #else
-    (void)texture; return 0;
+    (void)texture;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "textureWidth: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -210,7 +241,9 @@ std::size_t textureHeight(MPSTexture_t texture) {
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
     return objcTexture(texture).height;
 #else
-    (void)texture; return 0;
+    (void)texture;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "textureHeight: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -218,7 +251,9 @@ std::size_t textureDepth(MPSTexture_t texture) {
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
     return objcTexture(texture).depth;
 #else
-    (void)texture; return 0;
+    (void)texture;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "textureDepth: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -226,7 +261,9 @@ std::size_t textureMipmapLevelCount(MPSTexture_t texture) {
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
     return objcTexture(texture).mipmapLevelCount;
 #else
-    (void)texture; return 0;
+    (void)texture;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "textureMipmapLevelCount: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -234,7 +271,9 @@ std::size_t textureArrayLength(MPSTexture_t texture) {
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
     return objcTexture(texture).arrayLength;
 #else
-    (void)texture; return 0;
+    (void)texture;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "textureArrayLength: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -242,7 +281,9 @@ MPSPixelFormat_t texturePixelFormat(MPSTexture_t texture) {
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
     return static_cast<MPSPixelFormat_t>(objcTexture(texture).pixelFormat);
 #else
-    (void)texture; return 0;
+    (void)texture;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "texturePixelFormat: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -273,6 +314,8 @@ void getTextureBytes(MPSTexture_t texture,
     (void)texture; (void)out_bytes; (void)bytes_per_row; (void)bytes_per_image;
     (void)region_x; (void)region_y; (void)region_z; (void)width; (void)height; (void)depth;
     (void)mip_level; (void)slice;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "getTextureBytes: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -303,6 +346,8 @@ void replaceTextureRegion(MPSTexture_t texture,
     (void)texture; (void)bytes; (void)bytes_per_row; (void)bytes_per_image;
     (void)region_x; (void)region_y; (void)region_z; (void)width; (void)height; (void)depth;
     (void)mip_level; (void)slice;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "replaceTextureRegion: MPS backend is not available (MPS disabled)");
 #endif
 }
 

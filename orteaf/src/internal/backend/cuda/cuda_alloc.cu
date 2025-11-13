@@ -34,7 +34,7 @@ CUdeviceptr_t alloc(size_t size) {
 #else
     (void)size;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called alloc()");
+    throwError(OrteafErrc::BackendUnavailable, "alloc: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -57,7 +57,7 @@ void free(CUdeviceptr_t ptr, size_t size) {
     (void)ptr;
     (void)size;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called free()");
+    throwError(OrteafErrc::BackendUnavailable, "free: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -91,7 +91,7 @@ CUdeviceptr_t allocStream(size_t size, CUstream_t stream) {
     (void)size;
     (void)stream;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called allocStream()");
+    throwError(OrteafErrc::BackendUnavailable, "allocStream: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -121,7 +121,7 @@ void freeStream(CUdeviceptr_t ptr, size_t size, CUstream_t stream) {
     (void)size;
     (void)stream;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called freeStream()");
+    throwError(OrteafErrc::BackendUnavailable, "freeStream: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -148,7 +148,7 @@ void* allocHost(std::size_t size) {
 #else
     (void)size;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called allocHost()");
+    throwError(OrteafErrc::BackendUnavailable, "allocHost: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -181,7 +181,7 @@ void copyToHost(CUdeviceptr_t ptr, void* host_ptr, size_t size) {
     (void)host_ptr;
     (void)size;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called copyToHost()");
+    throwError(OrteafErrc::BackendUnavailable, "copyToHost: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -214,7 +214,7 @@ void copyToDevice(void* host_ptr, CUdeviceptr_t ptr, size_t size) {
     (void)ptr;
     (void)size;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called copyToDevice()");
+    throwError(OrteafErrc::BackendUnavailable, "copyToDevice: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -240,7 +240,7 @@ void freeHost(void* ptr, size_t size) {
     (void)ptr;
     (void)size;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called freeHost()");
+    throwError(OrteafErrc::BackendUnavailable, "freeHost: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 

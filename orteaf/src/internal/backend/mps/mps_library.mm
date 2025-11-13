@@ -11,6 +11,8 @@
 #import <objc/message.h>
 #import <dispatch/dispatch.h>
 #include "orteaf/internal/diagnostics/error/error.h"
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -71,7 +73,8 @@ namespace orteaf::internal::backend::mps {
     (void)device;
     (void)name;
     (void)error;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createLibrary: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -128,7 +131,8 @@ namespace orteaf::internal::backend::mps {
     (void)source;
     (void)compile_options;
     (void)error;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createLibraryWithSource: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -141,6 +145,8 @@ void destroyLibrary(MPSLibrary_t library) {
     opaqueReleaseRetained(library);
 #else
     (void)library;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyLibrary: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -211,7 +217,8 @@ void destroyLibrary(MPSLibrary_t library) {
     (void)data;
     (void)size;
     (void)error;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createLibraryWithData: MPS backend is not available (MPS disabled)");
 #endif
 }
 

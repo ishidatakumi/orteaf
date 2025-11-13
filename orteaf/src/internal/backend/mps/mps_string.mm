@@ -7,6 +7,8 @@
 
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
 #import <Foundation/Foundation.h>
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -36,10 +38,11 @@ MPSString_t toNsString(std::string_view view) {
 
 #else // !(defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__))
 
-/** No-op on non-ObjC builds or when MPS is disabled. */
+/** Throw BackendUnavailable on non-ObjC builds or when MPS is disabled. */
 MPSString_t toNsString(std::string_view view) {
     (void)view;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "toNsString: MPS backend is not available (MPS disabled)");
 }
 
 #endif // defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)

@@ -8,6 +8,8 @@
 
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
 #import <Foundation/Foundation.h>
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -52,7 +54,8 @@ MPSError_t createError(const std::string& message) {
     return makeError("NSCocoaErrorDomain", message);
 #else
     (void)message;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createError: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -65,7 +68,8 @@ MPSError_t createError(std::string_view domain, std::string_view description) {
 #else
     (void)domain;
     (void)description;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createError: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -82,7 +86,8 @@ MPSError_t createError(std::string_view domain,
     (void)domain;
     (void)description;
     (void)additional_user_info;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createError: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -95,6 +100,8 @@ void destroyError(MPSError_t error) {
     opaqueReleaseRetained(error);
 #else
     (void)error;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyError: MPS backend is not available (MPS disabled)");
 #endif
 }
 

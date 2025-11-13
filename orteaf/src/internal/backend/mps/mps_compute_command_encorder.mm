@@ -8,6 +8,8 @@
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
 #import <Metal/Metal.h>
     #include "orteaf/internal/diagnostics/error/error.h"
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -26,7 +28,8 @@ MPSComputeCommandEncoder_t createComputeCommandEncoder(MPSCommandBuffer_t comman
     return (MPSComputeCommandEncoder_t)opaqueFromObjcRetained(objc_encoder);
 #else
     (void)command_buffer;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createComputeCommandEncoder: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -39,6 +42,8 @@ void destroyComputeCommandEncoder(MPSComputeCommandEncoder_t compute_command_enc
     opaqueReleaseRetained(compute_command_encoder);
 #else
     (void)compute_command_encoder;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyComputeCommandEncoder: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -61,6 +66,8 @@ void setPipelineState(MPSComputeCommandEncoder_t compute_command_encoder, MPSCom
 #else
     (void)compute_command_encoder;
     (void)pipeline_state;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setPipelineState: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -77,6 +84,8 @@ void endEncoding(MPSComputeCommandEncoder_t compute_command_encoder) {
     [objc_encoder endEncoding];
 #else
     (void)compute_command_encoder;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "endEncoding: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -101,6 +110,8 @@ void setBuffer(MPSComputeCommandEncoder_t compute_command_encoder, MPSBuffer_t b
     (void)buffer;
     (void)offset;
     (void)index;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setBuffer: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -124,6 +135,8 @@ void setBytes(MPSComputeCommandEncoder_t compute_command_encoder, const void* by
     (void)bytes;
     (void)length;
     (void)index;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setBytes: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -147,6 +160,8 @@ void setThreadgroups(MPSComputeCommandEncoder_t compute_command_encoder,
     (void)compute_command_encoder;
     (void)threadgroups;
     (void)threads_per_threadgroup;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setThreadgroups: MPS backend is not available (MPS disabled)");
 #endif
 }
 

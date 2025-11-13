@@ -9,6 +9,8 @@
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
 #include "orteaf/internal/diagnostics/error/error.h"
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -21,7 +23,8 @@ MPSCompileOptions_t createCompileOptions() {
     MTLCompileOptions* options = [[MTLCompileOptions alloc] init];
     return (MPSCompileOptions_t)opaqueFromObjcRetained(options);
 #else
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createCompileOptions: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -34,6 +37,8 @@ void destroyCompileOptions(MPSCompileOptions_t options) {
     opaqueReleaseRetained(options);
 #else
     (void)options;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyCompileOptions: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -56,6 +61,8 @@ void setCompileOptionsMathMode(MPSCompileOptions_t options, bool fast_math_enabl
 #else
     (void)options;
     (void)fast_math_enabled;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setCompileOptionsMathMode: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -74,6 +81,8 @@ void setCompileOptionsPreserveInvariance(MPSCompileOptions_t options, bool prese
 #else
     (void)options;
     (void)preserve_invariance;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setCompileOptionsPreserveInvariance: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -93,6 +102,8 @@ void setCompileOptionsPreprocessorMacros(MPSCompileOptions_t options, void* macr
 #else
     (void)options;
     (void)macros_dictionary;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "setCompileOptionsPreprocessorMacros: MPS backend is not available (MPS disabled)");
 #endif
 }
 

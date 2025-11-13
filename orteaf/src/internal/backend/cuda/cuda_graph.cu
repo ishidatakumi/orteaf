@@ -23,7 +23,7 @@ CUgraph_t createGraph() {
     return opaqueFromObjcNoown<CUgraph_t, CUgraph>(graph);
 #else
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called createGraph()");
+    throwError(OrteafErrc::BackendUnavailable, "createGraph: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -43,7 +43,7 @@ CUgraphExec_t createGraphExec(CUgraph_t graph) {
 #else
     (void)graph;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called createGraphExec()");
+    throwError(OrteafErrc::BackendUnavailable, "createGraphExec: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -58,7 +58,7 @@ void destroyGraph(CUgraph_t graph) {
 #else
     (void)graph;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called destroyGraph()");
+    throwError(OrteafErrc::BackendUnavailable, "destroyGraph: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -73,7 +73,7 @@ void destroyGraphExec(CUgraphExec_t graph_exec) {
 #else
     (void)graph_exec;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called destroyGraphExec()");
+    throwError(OrteafErrc::BackendUnavailable, "destroyGraphExec: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -91,7 +91,7 @@ void beginGraphCapture(CUstream_t stream) {
 #else
     (void)stream;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called beginGraphCapture()");
+    throwError(OrteafErrc::BackendUnavailable, "beginGraphCapture: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -116,7 +116,7 @@ void endGraphCapture(CUstream_t stream, CUgraph_t* graph) {
     (void)stream;
     (void)graph;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called endGraphCapture()");
+    throwError(OrteafErrc::BackendUnavailable, "endGraphCapture: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -141,7 +141,7 @@ void instantiateGraph(CUgraph_t graph, CUgraphExec_t* graph_exec) {
     (void)graph;
     (void)graph_exec;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called instantiateGraph()");
+    throwError(OrteafErrc::BackendUnavailable, "instantiateGraph: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -165,7 +165,7 @@ void graphLaunch(CUgraphExec_t graph_exec, CUstream_t stream) {
     (void)graph_exec;
     (void)stream;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called graphLaunch()");
+    throwError(OrteafErrc::BackendUnavailable, "graphLaunch: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 

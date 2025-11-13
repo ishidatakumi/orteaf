@@ -9,6 +9,8 @@
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
 #import <Metal/Metal.h>
 #include "orteaf/internal/diagnostics/error/error.h"
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -28,7 +30,8 @@ MPSCommandQueue_t createCommandQueue(MPSDevice_t device) {
     return (MPSCommandQueue_t)opaqueFromObjcRetained(objc_command_queue);
 #else
     (void)device;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createCommandQueue: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -42,6 +45,8 @@ void destroyCommandQueue(MPSCommandQueue_t command_queue) {
     updateDestroyCommandQueue();
 #else
     (void)command_queue;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyCommandQueue: MPS backend is not available (MPS disabled)");
 #endif
 }
 

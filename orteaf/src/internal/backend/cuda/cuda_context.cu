@@ -31,7 +31,7 @@ CUcontext_t getPrimaryContext(CUdevice_t device) {
 #else
     (void)device;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called getPrimaryContext()");
+    throwError(OrteafErrc::BackendUnavailable, "getPrimaryContext: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -56,7 +56,7 @@ CUcontext_t createContext(CUdevice_t device) {
 #else
     (void)device;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called createContext()");
+    throwError(OrteafErrc::BackendUnavailable, "createContext: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -74,7 +74,7 @@ void setContext(CUcontext_t context) {
 #else
     (void)context;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called setContext()");
+    throwError(OrteafErrc::BackendUnavailable, "setContext: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -88,7 +88,7 @@ void releasePrimaryContext(CUdevice_t device) {
 #else
     (void)device;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called releasePrimaryContext()");
+    throwError(OrteafErrc::BackendUnavailable, "releasePrimaryContext: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -103,7 +103,7 @@ void releaseContext(CUcontext_t context) {
 #else
     (void)context;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called releaseContext()");
+    throwError(OrteafErrc::BackendUnavailable, "releaseContext: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 

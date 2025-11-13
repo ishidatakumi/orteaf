@@ -10,6 +10,8 @@
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
 #include "orteaf/internal/diagnostics/error/error.h"
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -39,7 +41,8 @@ MPSBuffer_t createBuffer(MPSHeap_t heap, size_t size, MPSBufferUsage_t usage) {
     (void)heap;
     (void)size;
     (void)usage;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createBuffer: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -52,6 +55,8 @@ void destroyBuffer(MPSBuffer_t buffer) {
     opaqueReleaseRetained(buffer);
 #else
     (void)buffer;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyBuffer: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -65,7 +70,8 @@ const void* getBufferContentsConst(MPSBuffer_t buffer) {
     return [objc_buffer contents];
 #else
     (void)buffer;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "getBufferContentsConst: MPS backend is not available (MPS disabled)");
 #endif
 }
 

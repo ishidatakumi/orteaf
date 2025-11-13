@@ -2,17 +2,22 @@
  * @file mps_event.mm
  * @brief Implementation of MPS/Metal shared event helpers.
  */
+#include "orteaf/internal/backend/mps/mps_event.h"
+
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
 
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
 
-#include "orteaf/internal/backend/mps/mps_event.h"
 #include "orteaf/internal/backend/mps/mps_autorelease_pool.h"
 #include "orteaf/internal/backend/mps/mps_command_buffer.h"
 #include "orteaf/internal/backend/mps/mps_stats.h"
 #include "orteaf/internal/backend/mps/mps_objc_bridge.h"
 #include "orteaf/internal/diagnostics/error/error.h"
+
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
+#endif
 
 namespace orteaf::internal::backend::mps {
 
@@ -33,7 +38,8 @@ MPSEvent_t createEvent(MPSDevice_t device) {
     return (MPSEvent_t)retained;
 #else
     (void)device;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createEvent: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -48,6 +54,8 @@ void destroyEvent(MPSEvent_t event) {
     updateDestroyEvent();
 #else
     (void)event;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyEvent: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -71,6 +79,8 @@ void recordEvent(MPSEvent_t event, MPSCommandBuffer_t command_buffer, uint64_t v
     (void)event;
     (void)command_buffer;
     (void)value;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "recordEvent: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -88,7 +98,8 @@ bool queryEvent(MPSEvent_t event, uint64_t expected_value) {
 #else
     (void)event;
     (void)expected_value;
-    return true;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "queryEvent: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -104,7 +115,9 @@ uint64_t eventValue(MPSEvent_t event) {
     id<MTLSharedEvent> e = objcFromOpaqueNoown<id<MTLSharedEvent>>(event);
     return [e signaledValue];
 #else
-    (void)event; return 0;
+    (void)event;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "eventValue: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -128,9 +141,9 @@ void waitEvent(MPSCommandBuffer_t command_buffer, MPSEvent_t event, uint64_t val
     (void)command_buffer;
     (void)event;
     (void)value;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "waitEvent: MPS backend is not available (MPS disabled)");
 #endif
 }
 
 } // namespace orteaf::internal::backend::mps
-
-#endif // defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)

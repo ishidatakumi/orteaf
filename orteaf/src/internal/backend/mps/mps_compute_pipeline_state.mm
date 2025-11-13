@@ -9,6 +9,8 @@
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
 #include "orteaf/internal/diagnostics/error/error.h"
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -33,7 +35,8 @@ MPSComputePipelineState_t createComputePipelineState(MPSDevice_t device, MPSFunc
     (void)device;
     (void)function;
     (void)error;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createComputePipelineState: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -46,6 +49,8 @@ void destroyComputePipelineState(MPSComputePipelineState_t pipeline_state) {
     opaqueReleaseRetained(pipeline_state);
 #else
     (void)pipeline_state;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyComputePipelineState: MPS backend is not available (MPS disabled)");
 #endif
 }
 

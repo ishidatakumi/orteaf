@@ -13,6 +13,8 @@
 #import <Foundation/Foundation.h>
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/diagnostics/log/log.h"
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -29,7 +31,8 @@ MPSDevice_t getDevice() {
     }
     return (MPSDevice_t)opaqueFromObjcRetained(device);
 #else
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "getDevice: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -60,7 +63,8 @@ MPSDevice_t getDevice(MPSInt_t device_id) {
     return handle;
 #else
     (void)device_id;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "getDevice: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -76,7 +80,8 @@ int getDeviceCount() {
     }
     return static_cast<int>(count);
 #else
-    return 0;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "getDeviceCount: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -92,6 +97,8 @@ void deviceRetain(MPSDevice_t device) {
     [objc_device retain];
 #else
     (void)device;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "deviceRetain: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -107,6 +114,8 @@ void deviceRelease(MPSDevice_t device) {
     [objc_device release];
 #else
     (void)device;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "deviceRelease: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -118,7 +127,8 @@ MPSDeviceArray_t getDeviceArray() {
     NSArray<id<MTLDevice>>* devices = MTLCopyAllDevices();
     return (MPSDeviceArray_t)opaqueFromObjcNoown(devices);
 #else
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "getDeviceArray: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -194,7 +204,8 @@ std::string getDeviceName(MPSDevice_t device) {
     return toStdString([objc_device name]);
 #else
     (void)device;
-    return {};
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "getDeviceName: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -207,7 +218,8 @@ std::string getDeviceVendor(MPSDevice_t device) {
     return "apple";
 #else
     (void)device;
-    return {};
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "getDeviceVendor: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -226,7 +238,8 @@ std::string getDeviceMetalFamily(MPSDevice_t device) {
     return guessFamilyFromName(objc_device);
 #else
     (void)device;
-    return {};
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "getDeviceMetalFamily: MPS backend is not available (MPS disabled)");
 #endif
 }
 

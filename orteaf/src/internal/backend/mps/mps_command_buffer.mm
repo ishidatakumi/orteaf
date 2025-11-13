@@ -11,6 +11,8 @@
 #if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
 #import <Metal/Metal.h>
 #include "orteaf/internal/diagnostics/error/error.h"
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -32,7 +34,8 @@ MPSCommandBuffer_t createCommandBuffer(MPSCommandQueue_t command_queue) {
     return (MPSCommandBuffer_t)opaqueFromObjcRetained(objc_command_buffer);
 #else
     (void)command_queue;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createCommandBuffer: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -46,6 +49,8 @@ void destroyCommandBuffer(MPSCommandBuffer_t command_buffer) {
     opaqueReleaseRetained(command_buffer);
 #else
     (void)command_buffer;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyCommandBuffer: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -69,6 +74,8 @@ void encodeSignalEvent(MPSCommandBuffer_t command_buffer, MPSEvent_t event, uint
     (void)command_buffer;
     (void)event;
     (void)value;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "encodeSignalEvent: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -92,6 +99,8 @@ void encodeWait(MPSCommandBuffer_t command_buffer, MPSEvent_t event, uint32_t va
     (void)command_buffer;
     (void)event;
     (void)value;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "encodeWait: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -108,6 +117,8 @@ void commit(MPSCommandBuffer_t command_buffer) {
     [objc_command_buffer commit];
 #else
     (void)command_buffer;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "commit: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -124,6 +135,8 @@ void waitUntilCompleted(MPSCommandBuffer_t command_buffer) {
     [objc_command_buffer waitUntilCompleted];
 #else
     (void)command_buffer;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "waitUntilCompleted: MPS backend is not available (MPS disabled)");
 #endif
 }
 

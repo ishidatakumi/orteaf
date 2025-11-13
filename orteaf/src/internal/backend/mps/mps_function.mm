@@ -9,6 +9,8 @@
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
 #include "orteaf/internal/diagnostics/error/error.h"
+#else
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::mps {
@@ -38,7 +40,8 @@ MPSFunction_t createFunction(MPSLibrary_t library, std::string_view name) {
 #else
     (void)library;
     (void)name;
-    return nullptr;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "createFunction: MPS backend is not available (MPS disabled)");
 #endif
 }
 
@@ -51,6 +54,8 @@ void destroyFunction(MPSFunction_t function) {
     opaqueReleaseRetained(function);
 #else
     (void)function;
+    using namespace orteaf::internal::diagnostics::error;
+    throwError(OrteafErrc::BackendUnavailable, "destroyFunction: MPS backend is not available (MPS disabled)");
 #endif
 }
 

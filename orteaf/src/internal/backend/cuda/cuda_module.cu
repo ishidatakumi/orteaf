@@ -32,7 +32,7 @@ CUmodule_t loadModuleFromFile(const char* filepath) {
 #else
     (void)filepath;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called loadModuleFromFile()");
+    throwError(OrteafErrc::BackendUnavailable, "loadModuleFromFile: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -51,7 +51,7 @@ CUmodule_t loadModuleFromImage(const void* image) {
 #else
     (void)image;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called loadModuleFromImage()");
+    throwError(OrteafErrc::BackendUnavailable, "loadModuleFromImage: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -80,7 +80,7 @@ CUfunction_t getFunction(CUmodule_t module, const char* kernel_name) {
     (void)module;
     (void)kernel_name;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called getFunction()");
+    throwError(OrteafErrc::BackendUnavailable, "getFunction: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
@@ -95,7 +95,7 @@ void unloadModule(CUmodule_t module) {
 #else
     (void)module;
     using namespace orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::BackendUnavailable, "CUDA backend is not available (CUDA is disabled). Called unloadModule()");
+    throwError(OrteafErrc::BackendUnavailable, "unloadModule: CUDA backend is not available (CUDA disabled)");
 #endif
 }
 
