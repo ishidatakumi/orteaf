@@ -15,6 +15,7 @@
 
 #ifdef ORTEAF_ENABLE_CUDA
 #include <cuda.h>
+#include "orteaf/internal/diagnostics/error/error_impl.h"
 #endif
 
 namespace orteaf::internal::backend::cuda {
@@ -37,6 +38,11 @@ int getDeviceCount() {
  */
 CUdevice_t getDevice(uint32_t device_id) {
 #ifdef ORTEAF_ENABLE_CUDA
+    int device_count = getDeviceCount();
+    if (device_id >= static_cast<uint32_t>(device_count)) {
+        using namespace orteaf::internal::diagnostics::error;
+        throwError(OrteafErrc::InvalidParameter, "getDevice: device_id out of range");
+    }
     CUdevice device;
     CU_CHECK(cuDeviceGet(&device, static_cast<int>(device_id)));
     return opaqueFromCuDevice(device);

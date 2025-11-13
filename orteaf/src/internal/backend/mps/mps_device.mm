@@ -43,9 +43,17 @@ MPSDevice_t getDevice(MPSInt_t device_id) {
         using namespace orteaf::internal::diagnostics::error;
         throwError(OrteafErrc::BackendUnavailable, "getDevice: no Metal devices available");
     }
-    ORTEAF_LOG_WARN_IF(Mps, device_id < 0, "getDevice: device_id cannot be negative, returning nullptr");
+    if (device_id < 0) {
+        [devices release];
+        using namespace orteaf::internal::diagnostics::error;
+        throwError(OrteafErrc::InvalidParameter, "getDevice: device_id cannot be negative");
+    }
     NSUInteger index = static_cast<NSUInteger>(device_id);
-    ORTEAF_LOG_WARN_IF(Mps, index >= [devices count], "getDevice: device_id out of range, returning nullptr");
+    if (index >= [devices count]) {
+        [devices release];
+        using namespace orteaf::internal::diagnostics::error;
+        throwError(OrteafErrc::InvalidParameter, "getDevice: device_id out of range");
+    }
     id<MTLDevice> device = [devices objectAtIndex:index];
     MPSDevice_t handle = (MPSDevice_t)opaqueFromObjcRetained(device);
     [devices release];
