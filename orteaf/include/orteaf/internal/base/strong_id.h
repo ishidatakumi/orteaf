@@ -25,14 +25,17 @@ struct StrongId {
 struct DeviceTag {};
 struct StreamTag {};
 struct ContextTag {};
+struct CommandQueueTag {};
 
 using DeviceId  = StrongId<DeviceTag, uint32_t>;
 using StreamId  = StrongId<StreamTag, uint8_t>;
 using ContextId = StrongId<ContextTag, uint8_t>;
+using CommandQueueId = StrongId<CommandQueueTag, uint32_t>;
 
 static_assert(sizeof(DeviceId) == sizeof(uint32_t));
 static_assert(sizeof(StreamId) == sizeof(uint8_t));
 static_assert(sizeof(ContextId) == sizeof(uint8_t));
+static_assert(sizeof(CommandQueueId) == sizeof(uint32_t));
 static_assert(std::is_trivially_copyable_v<DeviceId>);
 
 } // namespace orteaf::internal::base

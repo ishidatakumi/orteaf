@@ -5,6 +5,7 @@
 #include "tests/internal/testing/static_mock.h"
 #include "orteaf/internal/runtime/backend_ops/mps/mps_backend_ops.h"
 #include "orteaf/internal/backend/mps/mps_command_queue.h"
+#include "orteaf/internal/backend/mps/mps_event.h"
 #include "orteaf/internal/base/strong_id.h"
 
 namespace orteaf::tests::runtime::mps {
@@ -20,6 +21,10 @@ struct MpsBackendOpsMock {
                 (::orteaf::internal::backend::mps::MPSDevice_t));
     MOCK_METHOD(void, destroyCommandQueue,
                 (::orteaf::internal::backend::mps::MPSCommandQueue_t));
+    MOCK_METHOD(::orteaf::internal::backend::mps::MPSEvent_t, createEvent,
+                (::orteaf::internal::backend::mps::MPSDevice_t));
+    MOCK_METHOD(void, destroyEvent,
+                (::orteaf::internal::backend::mps::MPSEvent_t));
 };
 
 using MpsBackendOpsMockRegistry = ::orteaf::tests::StaticMockRegistry<MpsBackendOpsMock>;
@@ -48,6 +53,15 @@ struct MpsBackendOpsMockAdapter {
 
     static void destroyCommandQueue(::orteaf::internal::backend::mps::MPSCommandQueue_t command_queue) {
         MpsBackendOpsMockRegistry::get().destroyCommandQueue(command_queue);
+    }
+
+    static ::orteaf::internal::backend::mps::MPSEvent_t createEvent(
+            ::orteaf::internal::backend::mps::MPSDevice_t device) {
+        return MpsBackendOpsMockRegistry::get().createEvent(device);
+    }
+
+    static void destroyEvent(::orteaf::internal::backend::mps::MPSEvent_t event) {
+        MpsBackendOpsMockRegistry::get().destroyEvent(event);
     }
 };
 
