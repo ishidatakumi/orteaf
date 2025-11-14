@@ -20,6 +20,7 @@ using ::testing::_;
 using ::testing::NiceMock;
 using ::testing::Return;
 using ::testing::UnorderedElementsAre;
+using ::testing::StrictMock;
 
 namespace {
 
@@ -174,6 +175,26 @@ TEST_F(MpsCommandQueueManagerMockTest, ReleaseReturnsQueueToPool) {
     EXPECT_NE(first_id, recycled_id);
     EXPECT_EQ(manager_.getCommandQueue(recycled_id), queue_handle);
     manager_.release(recycled_id);
+}
+
+TEST_F(MpsCommandQueueManagerMockTest, StateAccessorsExposeHazardCounters) {
+    const std::array<QueueResource, 1> resources{{
+        {makeFakeCommandQueue(0x33), makeFakeEvent(0x330)},
+    }};
+    expectCreateResources(resources);
+    manager_.initialize(resources.size());
+
+    const auto id = manager_.acquire();
+    EXPECT_EQ(manager_.submitSerial(id), 0u);
+    EXPECT_EQ(manager_.completedSerial(id), 0u);
+
+    manager_.setSubmitSerial(id, 5);
+    manager_.setCompletedSerial(id, 2);
+
+    EXPECT_EQ(manager_.submitSerial(id), 5u);
+    EXPECT_EQ(manager_.completedSerial(id), 2u);
+
+    manager_.release(id);
 }
 
 TEST_F(MpsCommandQueueManagerMockTest, ReleaseWithInvalidIdThrows) {
