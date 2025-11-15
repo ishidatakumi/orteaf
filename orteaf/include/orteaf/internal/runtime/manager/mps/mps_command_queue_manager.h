@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <utility>
+#include <limits>
 
 #include "orteaf/internal/backend/mps/mps_command_queue.h"
 #include "orteaf/internal/backend/mps/mps_event.h"
@@ -141,6 +142,32 @@ public:
         state.completed_serial = value;
     }
 
+#if ORTEAF_ENABLE_TEST
+    struct DebugState {
+        std::uint64_t submit_serial{0};
+        std::uint64_t completed_serial{0};
+        std::uint32_t generation{0};
+        bool in_use{false};
+        bool queue_allocated{false};
+    };
+
+    DebugState debugState(base::CommandQueueId id) const {
+        DebugState snapshot{};
+        const std::size_t index = indexFromIdRaw(id);
+        if (index < states_.size()) {
+            const State& state = states_[index];
+            snapshot.submit_serial = state.submit_serial;
+            snapshot.completed_serial = state.completed_serial;
+            snapshot.generation = state.generation;
+            snapshot.in_use = state.in_use;
+            snapshot.queue_allocated = state.command_queue != nullptr;
+        } else {
+            snapshot.generation = std::numeric_limits<std::uint32_t>::max();
+        }
+        return snapshot;
+    }
+#endif
+
 private:
     struct State {
         ::orteaf::internal::backend::mps::MPSCommandQueue_t command_queue{nullptr};
@@ -193,6 +220,10 @@ private:
     }
 
     std::size_t indexFromId(base::CommandQueueId id) const {
+        return indexFromIdRaw(id);
+    }
+
+    std::size_t indexFromIdRaw(base::CommandQueueId id) const {
         return static_cast<std::size_t>(static_cast<std::uint32_t>(id) & kIndexMask);
     }
 

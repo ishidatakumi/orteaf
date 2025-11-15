@@ -245,6 +245,28 @@ TEST_F(MpsCommandQueueManagerTest, HazardCountersCanBeUpdatedAndResetOnRelease) 
     EXPECT_EQ(manager_.completedSerial(recycled), 0u);
 }
 
+TEST_F(MpsCommandQueueManagerTest, DebugStateReflectsSetterUpdates) {
+    EXPECT_CALL(mock_, createCommandQueue(_)).WillOnce(Return(makeQueue(0x920)));
+    EXPECT_CALL(mock_, createEvent(_)).WillOnce(Return(makeEvent(0x9210)));
+    manager_.initialize(1);
+
+    const auto id = manager_.acquire();
+    manager_.setSubmitSerial(id, 11);
+    manager_.setCompletedSerial(id, 9);
+
+    const auto snapshot = manager_.debugState(id);
+    EXPECT_TRUE(snapshot.in_use);
+    EXPECT_TRUE(snapshot.queue_allocated);
+    EXPECT_EQ(snapshot.submit_serial, 11u);
+    EXPECT_EQ(snapshot.completed_serial, 9u);
+    EXPECT_NE(snapshot.generation, std::numeric_limits<std::uint32_t>::max());
+
+    manager_.setCompletedSerial(id, 11);
+    manager_.release(id);
+    const auto after_release = manager_.debugState(id);
+    EXPECT_FALSE(after_release.in_use);
+}
+
 TEST_F(MpsCommandQueueManagerTest, GetCommandQueueReturnsHandleForAcquiredId) {
     EXPECT_CALL(mock_, createCommandQueue(_)).WillOnce(Return(makeQueue(0x800)));
     EXPECT_CALL(mock_, createEvent(_)).WillOnce(Return(makeEvent(0x8000)));
