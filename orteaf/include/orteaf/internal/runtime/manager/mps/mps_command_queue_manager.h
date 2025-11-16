@@ -11,6 +11,7 @@
 #include "orteaf/internal/base/strong_id.h"
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/runtime/backend_ops/mps/mps_backend_ops.h"
+#include "orteaf/internal/runtime/backend_ops/mps/mps_backend_ops_concepts.h"
 
 namespace orteaf::internal::runtime::mps {
 
@@ -22,6 +23,7 @@ namespace orteaf::internal::runtime::mps {
  * project builds; behaviour is intentionally minimal.
  */
 template <class BackendOps = ::orteaf::internal::runtime::backend_ops::mps::MpsBackendOps>
+requires ::orteaf::internal::runtime::backend_ops::mps::MpsRuntimeBackendOps<BackendOps>
 class MpsCommandQueueManager {
 public:
     void setGrowthChunkSize(std::size_t chunk) {
