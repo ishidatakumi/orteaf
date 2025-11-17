@@ -27,7 +27,6 @@ public:
             return;
         }
 
-        states_.reserve(static_cast<std::size_t>(device_count));
         states_.resize(static_cast<std::size_t>(device_count));
 
         for (int i = 0; i < device_count; ++i) {
@@ -87,8 +86,33 @@ public:
         bool initialized{false};
     };
 
+    struct DeviceDebugState {
+        bool in_range{false};
+        bool is_alive{false};
+        bool has_device{false};
+        ::orteaf::internal::architecture::Architecture arch{
+            ::orteaf::internal::architecture::Architecture::mps_generic};
+    };
+
     DebugState debugState() const {
         return DebugState{states_.size(), initialized_};
+    }
+
+    DeviceDebugState debugState(::orteaf::internal::base::DeviceId id) const {
+        DeviceDebugState snapshot{};
+        if (!initialized_) {
+            return snapshot;
+        }
+        const std::size_t index = static_cast<std::size_t>(static_cast<std::uint32_t>(id));
+        if (index >= states_.size()) {
+            return snapshot;
+        }
+        const State& state = states_[index];
+        snapshot.in_range = true;
+        snapshot.is_alive = state.is_alive;
+        snapshot.has_device = state.device != nullptr;
+        snapshot.arch = state.arch;
+        return snapshot;
     }
 #endif
 
