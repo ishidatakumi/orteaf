@@ -26,6 +26,14 @@ backend::mps::MPSDevice_t makeDevice(std::uintptr_t value) {
     return reinterpret_cast<backend::mps::MPSDevice_t>(value);
 }
 
+backend::mps::MPSCommandQueue_t makeQueue(std::uintptr_t value) {
+    return reinterpret_cast<backend::mps::MPSCommandQueue_t>(value);
+}
+
+backend::mps::MPSEvent_t makeEvent(std::uintptr_t value) {
+    return reinterpret_cast<backend::mps::MPSEvent_t>(value);
+}
+
 bool shouldRunHardwareTests() {
     const char* expected_env = std::getenv(ORTEAF_MPS_ENV_COUNT);
     return expected_env != nullptr && std::stoi(expected_env) > 0;
@@ -64,6 +72,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, AccessBeforeInitializationThrows) {
     EXPECT_THROW(manager.getDevice(base::DeviceId{0}), std::system_error);
     EXPECT_THROW(manager.getArch(base::DeviceId{0}), std::system_error);
     EXPECT_FALSE(manager.isAlive(base::DeviceId{0}));
+    EXPECT_THROW(static_cast<void>(manager.commandQueueManager(base::DeviceId{0})), std::system_error);
     const auto snapshot = manager.debugState(base::DeviceId{0});
     EXPECT_FALSE(snapshot.in_range);
     EXPECT_FALSE(snapshot.is_alive);
@@ -224,6 +233,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, InvalidDeviceIdRejectsAccess) {
 
     EXPECT_THROW(manager.getDevice(invalid), std::system_error);
     EXPECT_THROW(manager.getArch(invalid), std::system_error);
+    EXPECT_THROW(static_cast<void>(manager.commandQueueManager(invalid)), std::system_error);
     EXPECT_FALSE(manager.isAlive(invalid));
     const auto invalid_snapshot = manager.debugState(invalid);
     EXPECT_FALSE(invalid_snapshot.in_range);
@@ -356,5 +366,56 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ShutdownClearsDeviceState) {
         const auto snapshot = manager.debugState(id);
         EXPECT_FALSE(snapshot.in_range);
         EXPECT_FALSE(snapshot.is_alive);
+        EXPECT_THROW(static_cast<void>(manager.commandQueueManager(id)), std::system_error);
     }
+}
+
+TYPED_TEST(MpsDeviceManagerTypedTest, CommandQueueManagersInitializedWithConfiguredCapacity) {
+    auto& manager = this->manager();
+    constexpr std::size_t kCapacity = 2;
+    manager.setCommandQueueInitialCapacity(kCapacity);
+
+    if constexpr (TypeParam::is_mock) {
+        const auto device0 = makeDevice(0x500);
+        const auto device1 = makeDevice(0x600);
+        this->adapter().expectGetDeviceCount(2);
+        this->adapter().expectGetDevices({{0, device0}, {1, device1}});
+        this->adapter().expectDetectArchitectures({
+            {base::DeviceId{0}, architecture::Architecture::mps_m3},
+            {base::DeviceId{1}, architecture::Architecture::mps_m4},
+        });
+        this->adapter().expectCreateCommandQueues(
+            {makeQueue(0x900), makeQueue(0x901)}, ::testing::Eq(device0));
+        this->adapter().expectCreateEvents(
+            {makeEvent(0xA00), makeEvent(0xA01)}, ::testing::Eq(device0));
+        this->adapter().expectCreateCommandQueues(
+            {makeQueue(0x902), makeQueue(0x903)}, ::testing::Eq(device1));
+        this->adapter().expectCreateEvents(
+            {makeEvent(0xA02), makeEvent(0xA03)}, ::testing::Eq(device1));
+        this->adapter().expectReleaseDevices({device0, device1});
+        this->adapter().expectDestroyEvents(
+            {makeEvent(0xA00), makeEvent(0xA01), makeEvent(0xA02), makeEvent(0xA03)});
+        this->adapter().expectDestroyCommandQueues(
+            {makeQueue(0x900), makeQueue(0x901), makeQueue(0x902), makeQueue(0x903)});
+    }
+
+    manager.initialize();
+    const auto count = manager.getDeviceCount();
+    if (count == 0u) {
+        GTEST_SKIP() << "No MPS devices available";
+    }
+
+    for (std::uint32_t index = 0; index < static_cast<std::uint32_t>(count); ++index) {
+        const auto id = base::DeviceId{index};
+        auto& queue_manager = manager.commandQueueManager(id);
+        EXPECT_EQ(queue_manager.capacity(), kCapacity);
+        if constexpr (TypeParam::is_mock) {
+            const auto expected_queue = (index == 0) ? makeQueue(0x900) : makeQueue(0x902);
+            const auto acquired = queue_manager.acquire();
+            EXPECT_EQ(queue_manager.getCommandQueue(acquired), expected_queue);
+            queue_manager.release(acquired);
+        }
+    }
+
+    manager.shutdown();
 }

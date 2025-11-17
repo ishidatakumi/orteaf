@@ -11,6 +11,7 @@
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/runtime/backend_ops/mps/mps_backend_ops.h"
 #include "orteaf/internal/runtime/backend_ops/mps/mps_backend_ops_concepts.h"
+#include "orteaf/internal/runtime/manager/mps/mps_command_queue_manager.h"
 
 namespace orteaf::internal::runtime::mps {
 
@@ -18,6 +19,14 @@ template <class BackendOps = ::orteaf::internal::runtime::backend_ops::mps::MpsB
 requires ::orteaf::internal::runtime::backend_ops::mps::MpsRuntimeBackendOps<BackendOps>
 class MpsDeviceManager {
 public:
+    void setCommandQueueInitialCapacity(std::size_t capacity) {
+        command_queue_initial_capacity_ = capacity;
+    }
+
+    std::size_t commandQueueInitialCapacity() const noexcept {
+        return command_queue_initial_capacity_;
+    }
+
     void initialize() {
         shutdown();
 
@@ -41,6 +50,11 @@ public:
             state.arch = state.is_alive
                 ? BackendOps::detectArchitecture(device_id)
                 : ::orteaf::internal::architecture::Architecture::mps_generic;
+            if (state.is_alive) {
+                state.command_queue_manager.initialize(device, command_queue_initial_capacity_);
+            } else {
+                state.command_queue_manager.shutdown();
+            }
         }
 
         initialized_ = true;
@@ -70,6 +84,18 @@ public:
     ::orteaf::internal::architecture::Architecture getArch(::orteaf::internal::base::DeviceId id) const {
         const State& state = ensureValid(id);
         return state.arch;
+    }
+
+    ::orteaf::internal::runtime::mps::MpsCommandQueueManager<BackendOps>& commandQueueManager(
+        ::orteaf::internal::base::DeviceId id) {
+        State& state = ensureValidState(id);
+        return state.command_queue_manager;
+    }
+
+    const ::orteaf::internal::runtime::mps::MpsCommandQueueManager<BackendOps>& commandQueueManager(
+        ::orteaf::internal::base::DeviceId id) const {
+        const State& state = ensureValid(id);
+        return state.command_queue_manager;
     }
 
     bool isAlive(::orteaf::internal::base::DeviceId id) const {
@@ -122,6 +148,7 @@ private:
         ::orteaf::internal::architecture::Architecture arch{
             ::orteaf::internal::architecture::Architecture::mps_generic};
         bool is_alive{false};
+        ::orteaf::internal::runtime::mps::MpsCommandQueueManager<BackendOps> command_queue_manager{};
 
         State() = default;
         State(const State&) = delete;
@@ -144,6 +171,7 @@ private:
         }
 
         void reset() noexcept {
+            command_queue_manager.shutdown();
             if (device != nullptr) {
                 BackendOps::releaseDevice(device);
             }
@@ -154,6 +182,7 @@ private:
 
     private:
         void moveFrom(State&& other) noexcept {
+            command_queue_manager = std::move(other.command_queue_manager);
             device = other.device;
             arch = other.arch;
             is_alive = other.is_alive;
@@ -183,8 +212,13 @@ private:
         return state;
     }
 
+    State& ensureValidState(::orteaf::internal::base::DeviceId id) {
+        return const_cast<State&>(ensureValid(id));
+    }
+
     ::orteaf::internal::base::HeapVector<State> states_;
     bool initialized_{false};
+    std::size_t command_queue_initial_capacity_{0};
 };
 
 inline MpsDeviceManager<> MpsDeviceManagerInstance{};
