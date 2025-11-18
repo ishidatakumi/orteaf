@@ -1,7 +1,10 @@
 #include "orteaf/internal/architecture/mps_detect.h"
 
 #include "orteaf/internal/backend/backend.h"
+
+#if ORTEAF_ENABLE_MPS
 #include "orteaf/internal/backend/mps/mps_device.h"
+#endif
 
 #include <algorithm>
 #include <cctype>
@@ -32,6 +35,7 @@ bool matchesVendor(std::string_view required, std::string_view hint_lower) {
     return toLowerCopy(required) == hint_lower;
 }
 
+#if ORTEAF_ENABLE_MPS
 class ScopedDevice {
 public:
     explicit ScopedDevice(backend::mps::MPSDevice_t device) : device_(device) {}
@@ -48,6 +52,7 @@ public:
 private:
     backend::mps::MPSDevice_t device_;
 };
+#endif // ORTEAF_ENABLE_MPS
 
 } // namespace
 
