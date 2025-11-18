@@ -28,7 +28,7 @@ public:
      *
      * @return Total number of memory allocations since initialization (0 if stats disabled).
      */
-    uint64_t total_allocations() const noexcept {
+    uint64_t totalAllocations() const noexcept {
         #ifdef ORTEAF_STATS_LEVEL_CPU_VALUE
             #if ORTEAF_STATS_LEVEL_CPU_VALUE <= 2
                 return total_allocations_.load(std::memory_order_relaxed);
@@ -42,7 +42,7 @@ public:
      *
      * @return Total number of memory deallocations since initialization (0 if stats disabled).
      */
-    uint64_t total_deallocations() const noexcept {
+    uint64_t totalDeallocations() const noexcept {
         #ifdef ORTEAF_STATS_LEVEL_CPU_VALUE
             #if ORTEAF_STATS_LEVEL_CPU_VALUE <= 2
                 return total_deallocations_.load(std::memory_order_relaxed);
@@ -58,7 +58,7 @@ public:
      *
      * @return Number of allocations that have not been deallocated (0 if stats disabled).
      */
-    uint64_t active_allocations() const noexcept {
+    uint64_t activeAllocations() const noexcept {
         #ifdef ORTEAF_STATS_LEVEL_CPU_VALUE
             #if ORTEAF_STATS_LEVEL_CPU_VALUE <= 2
                 return active_allocations_.load(std::memory_order_relaxed);
@@ -72,7 +72,7 @@ public:
      *
      * @return Total number of bytes currently allocated (0 if stats disabled or not tracking bytes).
      */
-    uint64_t current_allocated_bytes() const noexcept {
+    uint64_t currentAllocatedBytes() const noexcept {
         #ifdef ORTEAF_STATS_LEVEL_CPU_VALUE
             #if ORTEAF_STATS_LEVEL_CPU_VALUE <= 4
                 return current_allocated_bytes_.load(std::memory_order_relaxed);
@@ -89,7 +89,7 @@ public:
      *
      * @return Peak number of allocated bytes (0 if stats disabled or not tracking bytes).
      */
-    uint64_t peak_allocated_bytes() const noexcept {
+    uint64_t peakAllocatedBytes() const noexcept {
         #ifdef ORTEAF_STATS_LEVEL_CPU_VALUE
             #if ORTEAF_STATS_LEVEL_CPU_VALUE <= 4
                 return peak_allocated_bytes_.load(std::memory_order_relaxed);
@@ -107,7 +107,7 @@ public:
      *
      * @param size Size of the allocated memory in bytes.
      */
-    void update_alloc(size_t size) noexcept {
+    void updateAlloc(size_t size) noexcept {
         #ifdef ORTEAF_STATS_LEVEL_CPU_VALUE
             #if ORTEAF_STATS_LEVEL_CPU_VALUE <= 2
                 total_allocations_.fetch_add(1, std::memory_order_relaxed);
@@ -131,7 +131,7 @@ public:
      *
      * @param size Size of the deallocated memory in bytes.
      */
-    void update_dealloc(size_t size) noexcept {
+    void updateDealloc(size_t size) noexcept {
         #ifdef ORTEAF_STATS_LEVEL_CPU_VALUE
             #if ORTEAF_STATS_LEVEL_CPU_VALUE <= 2
                 total_deallocations_.fetch_add(1, std::memory_order_relaxed);
@@ -151,18 +151,18 @@ public:
      *
      * @return String representation of the statistics.
      */
-    std::string to_string() const {
+    std::string toString() const {
         std::ostringstream oss;
 #if defined(ORTEAF_STATS_LEVEL_CPU_VALUE) && (ORTEAF_STATS_LEVEL_CPU_VALUE <= 4)
         oss << "CPU Stats:\n";
     #if ORTEAF_STATS_LEVEL_CPU_VALUE <= 2
-        oss << "  Total Allocations: " << total_allocations() << "\n";
-        oss << "  Total Deallocations: " << total_deallocations() << "\n";
-        oss << "  Active Allocations: " << active_allocations() << "\n";
+        oss << "  Total Allocations: " << totalAllocations() << "\n";
+        oss << "  Total Deallocations: " << totalDeallocations() << "\n";
+        oss << "  Active Allocations: " << activeAllocations() << "\n";
     #endif
     #if ORTEAF_STATS_LEVEL_CPU_VALUE <= 4
-        oss << "  Current Allocated Bytes: " << current_allocated_bytes() << "\n";
-        oss << "  Peak Allocated Bytes: " << peak_allocated_bytes() << "\n";
+        oss << "  Current Allocated Bytes: " << currentAllocatedBytes() << "\n";
+        oss << "  Peak Allocated Bytes: " << peakAllocatedBytes() << "\n";
     #endif
 #else
         oss << "CPU Stats: Disabled\n";
@@ -173,10 +173,10 @@ public:
     /**
      * @brief Print statistics to standard output.
      *
-     * Equivalent to `std::cout << to_string()`.
+     * Equivalent to `std::cout << toString()`.
      */
     void print() const {
-        std::cout << to_string();
+        std::cout << toString();
     }
 
 private:
@@ -203,7 +203,7 @@ private:
  * @return Reference to the output stream.
  */
 inline std::ostream& operator<<(std::ostream& os, const CpuStats& stats) {
-    return os << stats.to_string();
+    return os << stats.toString();
 }
 
 /**
@@ -214,7 +214,7 @@ inline std::ostream& operator<<(std::ostream& os, const CpuStats& stats) {
  *
  * @return Reference to the global CpuStats instance.
  */
-inline CpuStats& stats_instance() {
+inline CpuStats& statsInstance() {
     static CpuStats stats;
     return stats;
 }
@@ -222,12 +222,12 @@ inline CpuStats& stats_instance() {
 /**
  * @brief Get the global CPU statistics instance.
  *
- * Convenience function that returns the same singleton instance as `stats_instance()`.
+ * Convenience function that returns the same singleton instance as `statsInstance()`.
  *
  * @return Reference to the global CpuStats instance.
  */
-inline CpuStats& cpu_stats() {
-    return stats_instance();
+inline CpuStats& cpuStats() {
+    return statsInstance();
 }
 
 /**
@@ -238,8 +238,8 @@ inline CpuStats& cpu_stats() {
  *
  * @param size Size of the allocated memory in bytes.
  */
-inline void update_alloc(size_t size) {
-    stats_instance().update_alloc(size);
+inline void updateAlloc(size_t size) {
+    statsInstance().updateAlloc(size);
 }
 
 /**
@@ -250,8 +250,8 @@ inline void update_alloc(size_t size) {
  *
  * @param size Size of the deallocated memory in bytes.
  */
-inline void update_dealloc(size_t size) {
-    stats_instance().update_dealloc(size);
+inline void updateDealloc(size_t size) {
+    statsInstance().updateDealloc(size);
 }
 
 } // namespace orteaf::internal::backend::cpu

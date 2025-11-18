@@ -23,6 +23,7 @@ target_compile_definitions(orteaf_extension INTERFACE
     ORTEAF_ENABLE_CPU=${ORTEAF_ENABLE_CPU_INT}
     ORTEAF_ENABLE_CUDA=${ORTEAF_ENABLE_CUDA_INT}
     ORTEAF_ENABLE_MPS=${ORTEAF_ENABLE_MPS_INT}
+    ORTEAF_ENABLE_TEST=${ORTEAF_ENABLE_TEST_INT}
     ORTEAF_LOG_LEVEL_GLOBAL_VALUE=${ORTEAF_LOG_LEVEL_GLOBAL_VALUE_NUMERIC}
     ORTEAF_LOG_LEVEL_CORE_VALUE=${ORTEAF_LOG_LEVEL_CORE_VALUE_NUMERIC}
     ORTEAF_LOG_LEVEL_TENSOR_VALUE=${ORTEAF_LOG_LEVEL_TENSOR_VALUE_NUMERIC}
@@ -94,14 +95,21 @@ if(ORTEAF_ENABLE_CUDA_INT)
     target_link_libraries(orteaf PUBLIC CUDA::cudart CUDA::cuda_driver)
 endif()
 
-# Link Metal/MPS frameworks on macOS when MPS is enabled
-if(APPLE AND ORTEAF_ENABLE_MPS_INT)
+# macOS-specific frameworks
+if(APPLE)
     target_link_libraries(orteaf
         PUBLIC
-            "-framework Metal"
-            "-framework MetalPerformanceShaders"
-            "-framework Foundation"
+            "-framework CoreFoundation"
+            "-framework IOKit"
     )
+    if(ORTEAF_ENABLE_MPS_INT)
+        target_link_libraries(orteaf
+            PUBLIC
+                "-framework Metal"
+                "-framework MetalPerformanceShaders"
+                "-framework Foundation"
+        )
+    endif()
 endif()
 
 target_include_directories(orteaf
@@ -115,6 +123,7 @@ target_compile_definitions(orteaf
         ORTEAF_ENABLE_CPU=${ORTEAF_ENABLE_CPU_INT}
         ORTEAF_ENABLE_CUDA=${ORTEAF_ENABLE_CUDA_INT}
         ORTEAF_ENABLE_MPS=${ORTEAF_ENABLE_MPS_INT}
+        ORTEAF_ENABLE_TEST=${ORTEAF_ENABLE_TEST_INT}
         ORTEAF_LOG_LEVEL_GLOBAL_VALUE=${ORTEAF_LOG_LEVEL_GLOBAL_VALUE_NUMERIC}
         ORTEAF_LOG_LEVEL_CORE_VALUE=${ORTEAF_LOG_LEVEL_CORE_VALUE_NUMERIC}
         ORTEAF_LOG_LEVEL_TENSOR_VALUE=${ORTEAF_LOG_LEVEL_TENSOR_VALUE_NUMERIC}

@@ -8,6 +8,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_CUDA
+
 #include "orteaf/internal/backend/cuda/cuda_stream.h"
 
 namespace orteaf::internal::backend::cuda {
@@ -23,7 +25,7 @@ using CUgraphExec_t = CUgraphExec_st*;
  * @return Opaque graph handle, or nullptr when CUDA is disabled.
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-CUgraph_t create_graph();
+CUgraph_t createGraph();
 
 /**
  * @brief Create an executable instance from a graph.
@@ -31,28 +33,28 @@ CUgraph_t create_graph();
  * @return Opaque executable graph, or nullptr when CUDA is disabled.
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-CUgraphExec_t create_graph_exec(CUgraph_t graph);
+CUgraphExec_t createGraphExec(CUgraph_t graph);
 
 /**
  * @brief Destroy a graph.
  * @param graph Opaque graph handle (ignored if nullptr)
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void destroy_graph(CUgraph_t graph);
+void destroyGraph(CUgraph_t graph);
 
 /**
  * @brief Destroy an executable graph instance.
  * @param graph_exec Opaque graph exec handle (ignored if nullptr)
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void destroy_graph_exec(CUgraphExec_t graph_exec);
+void destroyGraphExec(CUgraphExec_t graph_exec);
 
 /**
  * @brief Begin capturing operations on a stream into a graph (global mode).
  * @param stream Opaque stream handle
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void begin_graph_capture(CUstream_t stream);
+void beginGraphCapture(CUstream_t stream);
 
 /**
  * @brief End capture and return the captured graph.
@@ -60,7 +62,7 @@ void begin_graph_capture(CUstream_t stream);
  * @param graph Out parameter for the captured opaque graph handle
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void end_graph_capture(CUstream_t stream, CUgraph_t* graph);
+void endGraphCapture(CUstream_t stream, CUgraph_t* graph);
 
 /**
  * @brief Instantiate an executable graph from a graph.
@@ -68,7 +70,7 @@ void end_graph_capture(CUstream_t stream, CUgraph_t* graph);
  * @param graph_exec Out parameter for opaque executable graph handle
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void instantiate_graph(CUgraph_t graph, CUgraphExec_t* graph_exec);
+void instantiateGraph(CUgraph_t graph, CUgraphExec_t* graph_exec);
 
 /**
  * @brief Launch an executable graph on a stream.
@@ -76,6 +78,8 @@ void instantiate_graph(CUgraph_t graph, CUgraphExec_t* graph_exec);
  * @param stream Opaque stream handle
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void graph_launch(CUgraphExec_t graph_exec, CUstream_t stream);
+void graphLaunch(CUgraphExec_t graph_exec, CUstream_t stream);
 
 } // namespace orteaf::internal::backend::cuda
+
+#endif  // ORTEAF_ENABLE_CUDA

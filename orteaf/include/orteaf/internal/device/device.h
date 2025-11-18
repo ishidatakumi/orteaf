@@ -26,7 +26,7 @@ enum class Device : std::uint16_t {
 };
 
 /// @brief Convert a device to its generated-table index.
-constexpr std::size_t ToIndex(Device device) {
+constexpr std::size_t toIndex(Device device) {
     return static_cast<std::size_t>(device);
 }
 
@@ -78,25 +78,25 @@ struct Capability {
 };
 
 /// @brief Return the backend this device belongs to.
-constexpr backend::Backend BackendOf(Device device) {
-    return backend::FromIndex(tables::kDeviceBackendIndices[ToIndex(device)]);
+constexpr backend::Backend backendOf(Device device) {
+    return backend::fromIndex(tables::kDeviceBackendIndices[toIndex(device)]);
 }
 
 /// @brief Return the architecture associated with the device.
-constexpr architecture::Architecture ArchitectureOf(Device device) {
-    const auto backend_id = BackendOf(device);
-    const auto local_index = tables::kDeviceArchitectureLocalIndices[ToIndex(device)];
-    return architecture::FromBackendAndLocalIndex(backend_id, local_index);
+constexpr architecture::Architecture architectureOf(Device device) {
+    const auto backend_id = backendOf(device);
+    const auto local_index = tables::kDeviceArchitectureLocalIndices[toIndex(device)];
+    return architecture::fromBackendAndLocalIndex(backend_id, local_index);
 }
 
 /// @brief Return true if the device uses the Generic architecture (local index 0).
-constexpr bool IsGeneric(Device device) {
-    return tables::kDeviceArchitectureLocalIndices[ToIndex(device)] == 0;
+constexpr bool isGeneric(Device device) {
+    return tables::kDeviceArchitectureLocalIndices[toIndex(device)] == 0;
 }
 
 /// @brief Return the configured memory limits (max/shared).
-constexpr MemoryInfo MemoryOf(Device device) {
-    const auto index = ToIndex(device);
+constexpr MemoryInfo memoryOf(Device device) {
+    const auto index = toIndex(device);
     return MemoryInfo{
         tables::kDeviceMemoryMaxBytes[index],
         tables::kDeviceMemorySharedBytes[index],
@@ -104,14 +104,14 @@ constexpr MemoryInfo MemoryOf(Device device) {
 }
 
 /// @brief Return the optional notes string.
-constexpr std::string_view NotesOf(Device device) {
-    return tables::kDeviceNotes[ToIndex(device)];
+constexpr std::string_view notesOf(Device device) {
+    return tables::kDeviceNotes[toIndex(device)];
 }
 
 inline constexpr auto kDeviceDTypeEntries = [] {
     std::array<::orteaf::internal::DType, tables::kDeviceDTypeEntryCount> entries{};
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        entries[i] = ::orteaf::internal::FromIndex(tables::kDeviceDTypeIndices[i]);
+        entries[i] = ::orteaf::internal::fromIndex(tables::kDeviceDTypeIndices[i]);
     }
     return entries;
 }();
@@ -119,7 +119,7 @@ inline constexpr auto kDeviceDTypeEntries = [] {
 inline constexpr auto kDeviceOpEntries = [] {
     std::array<::orteaf::internal::ops::Op, tables::kDeviceOpEntryCount> entries{};
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        entries[i] = ::orteaf::internal::ops::FromIndex(tables::kDeviceOpIndices[i]);
+        entries[i] = ::orteaf::internal::ops::fromIndex(tables::kDeviceOpIndices[i]);
     }
     return entries;
 }();
@@ -135,8 +135,8 @@ inline constexpr auto kDeviceCapabilityEntries = [] {
     return entries;
 }();
 
-inline constexpr std::span<const ::orteaf::internal::DType> SupportedDTypes(Device device) {
-    const auto index = ToIndex(device);
+inline constexpr std::span<const ::orteaf::internal::DType> supportedDTypes(Device device) {
+    const auto index = toIndex(device);
     const auto begin = tables::kDeviceDTypeOffsets[index];
     const auto end = tables::kDeviceDTypeOffsets[index + 1];
     return std::span<const ::orteaf::internal::DType>(kDeviceDTypeEntries.data() + begin,
@@ -144,8 +144,8 @@ inline constexpr std::span<const ::orteaf::internal::DType> SupportedDTypes(Devi
 }
 
 /// @brief Return the ops supported by this device.
-inline constexpr std::span<const ::orteaf::internal::ops::Op> SupportedOps(Device device) {
-    const auto index = ToIndex(device);
+inline constexpr std::span<const ::orteaf::internal::ops::Op> supportedOps(Device device) {
+    const auto index = toIndex(device);
     const auto begin = tables::kDeviceOpOffsets[index];
     const auto end = tables::kDeviceOpOffsets[index + 1];
     return std::span<const ::orteaf::internal::ops::Op>(kDeviceOpEntries.data() + begin,
@@ -153,20 +153,20 @@ inline constexpr std::span<const ::orteaf::internal::ops::Op> SupportedOps(Devic
 }
 
 /// @brief Return the key/value capability list.
-inline constexpr std::span<const Capability> CapabilitiesOf(Device device) {
-    const auto index = ToIndex(device);
+inline constexpr std::span<const Capability> capabilitiesOf(Device device) {
+    const auto index = toIndex(device);
     const auto begin = tables::kDeviceCapabilityOffsets[index];
     const auto end = tables::kDeviceCapabilityOffsets[index + 1];
     return std::span<const Capability>(kDeviceCapabilityEntries.data() + begin, end - begin);
 }
 
 /// @brief Enumerate every device.
-inline constexpr std::span<const Device> AllDevices() {
+inline constexpr std::span<const Device> allDevices() {
     return std::span<const Device>(kAllDevices.data(), kAllDevices.size());
 }
 
 /// @brief Enumerate every device identifier.
-inline constexpr std::span<const std::string_view> AllDeviceIds() {
+inline constexpr std::span<const std::string_view> allDeviceIds() {
     return std::span<const std::string_view>(kDeviceIds.data(), kDeviceIds.size());
 }
 

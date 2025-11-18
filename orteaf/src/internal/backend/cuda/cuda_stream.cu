@@ -2,117 +2,82 @@
  * @file cuda_stream.cu
  * @brief Implementation of CUDA stream helpers (create/destroy/sync/mem signals).
  */
+#ifndef __CUDACC__
+#error "cuda_stream.cu must be compiled with a CUDA compiler (__CUDACC__ not defined)"
+#endif
 #include "orteaf/internal/backend/cuda/cuda_stream.h"
 #include "orteaf/internal/backend/cuda/cuda_check.h"
 #include "orteaf/internal/backend/cuda/cuda_stats.h"
 #include "orteaf/internal/backend/cuda/cuda_objc_bridge.h"
-
-#ifdef ORTEAF_ENABLE_CUDA
+#include "orteaf/internal/diagnostics/error/error.h"
 #include <cuda.h>
-#include "orteaf/internal/diagnostics/error/error_impl.h"
-#endif
 
 namespace orteaf::internal::backend::cuda {
 
 /**
- * @copydoc orteaf::internal::backend::cuda::get_stream
+ * @copydoc orteaf::internal::backend::cuda::getStream
  */
-CUstream_t get_stream() {
-#ifdef ORTEAF_ENABLE_CUDA
+CUstream_t getStream() {
     CUstream stream;
     CU_CHECK(cuStreamCreate(&stream, CU_STREAM_NON_BLOCKING));
-    update_create_stream();
-    return opaque_from_objc_noown<CUstream_t, CUstream>(stream);
-#else
-    return nullptr;
-#endif
+    updateCreateStream();
+    return opaqueFromObjcNoown<CUstream_t, CUstream>(stream);
 }
 
 /**
- * @copydoc orteaf::internal::backend::cuda::set_stream
+ * @copydoc orteaf::internal::backend::cuda::releaseStream
  */
-void set_stream(CUstream_t stream) {
-#ifdef ORTEAF_ENABLE_CUDA
-    (void)stream; // No driver API to set a global current stream.
-#else
-    (void)stream;
-#endif
-}
-
-/**
- * @copydoc orteaf::internal::backend::cuda::release_stream
- */
-void release_stream(CUstream_t stream) {
-#ifdef ORTEAF_ENABLE_CUDA
-    if (!stream) return;
-    CUstream objc_stream = objc_from_opaque_noown<CUstream>(stream);
+void releaseStream(CUstream_t stream) {
+    if (stream == nullptr) return;
+    CUstream objc_stream = objcFromOpaqueNoown<CUstream>(stream);
     CU_CHECK(cuStreamDestroy(objc_stream));
-    update_destroy_stream();
-#else
-    (void)stream;
-#endif
+    updateDestroyStream();
 }
 
 /**
- * @copydoc orteaf::internal::backend::cuda::synchronize_stream
+ * @copydoc orteaf::internal::backend::cuda::synchronizeStream
  */
-void synchronize_stream(CUstream_t stream) {
-#ifdef ORTEAF_ENABLE_CUDA
+void synchronizeStream(CUstream_t stream) {
     if (stream == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
-        throw_error(OrteafErrc::NullPointer, "synchronize_stream: stream cannot be nullptr");
+        throwError(OrteafErrc::NullPointer, "synchronizeStream: stream cannot be nullptr");
     }
-    CUstream objc_stream = objc_from_opaque_noown<CUstream>(stream);
+    CUstream objc_stream = objcFromOpaqueNoown<CUstream>(stream);
     CU_CHECK(cuStreamSynchronize(objc_stream));
-#else
-    (void)stream;
-#endif
 }
 
 /**
- * @copydoc orteaf::internal::backend::cuda::wait_stream
+ * @copydoc orteaf::internal::backend::cuda::waitStream
  */
-void wait_stream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value) {
-#ifdef ORTEAF_ENABLE_CUDA
+void waitStream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value) {
     if (stream == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
-        throw_error(OrteafErrc::NullPointer, "wait_stream: stream cannot be nullptr");
+        throwError(OrteafErrc::NullPointer, "waitStream: stream cannot be nullptr");
     }
     if (addr == 0) {
         using namespace orteaf::internal::diagnostics::error;
-        throw_error(OrteafErrc::InvalidParameter, "wait_stream: addr cannot be 0");
+        throwError(OrteafErrc::InvalidParameter, "waitStream: addr cannot be 0");
     }
-    CUstream objc_stream = objc_from_opaque_noown<CUstream>(stream);
-    CUdeviceptr objc_addr = cu_deviceptr_from_opaque(addr);
+    CUstream objc_stream = objcFromOpaqueNoown<CUstream>(stream);
+    CUdeviceptr objc_addr = cuDeviceptrFromOpaque(addr);
     CU_CHECK(cuStreamWaitValue32(objc_stream, objc_addr, value, CU_STREAM_WAIT_VALUE_GEQ));
-#else
-    (void)stream;
-    (void)addr;
-    (void)value;
-#endif
 }
 
 /**
- * @copydoc orteaf::internal::backend::cuda::write_stream
+ * @copydoc orteaf::internal::backend::cuda::writeStream
  */
-void write_stream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value) {
-#ifdef ORTEAF_ENABLE_CUDA
+void writeStream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value) {
     if (stream == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
-        throw_error(OrteafErrc::NullPointer, "write_stream: stream cannot be nullptr");
+        throwError(OrteafErrc::NullPointer, "writeStream: stream cannot be nullptr");
     }
     if (addr == 0) {
         using namespace orteaf::internal::diagnostics::error;
-        throw_error(OrteafErrc::InvalidParameter, "write_stream: addr cannot be 0");
+        throwError(OrteafErrc::InvalidParameter, "writeStream: addr cannot be 0");
     }
-    CUstream objc_stream = objc_from_opaque_noown<CUstream>(stream);
-    CUdeviceptr objc_addr = cu_deviceptr_from_opaque(addr);
+    CUstream objc_stream = objcFromOpaqueNoown<CUstream>(stream);
+    CUdeviceptr objc_addr = cuDeviceptrFromOpaque(addr);
     CU_CHECK(cuStreamWriteValue32(objc_stream, objc_addr, value, CU_STREAM_WRITE_VALUE_DEFAULT));
-#else
-    (void)stream;
-    (void)addr;
-    (void)value;
-#endif
 }
 
 } // namespace orteaf::internal::backend::cuda

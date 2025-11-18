@@ -128,7 +128,7 @@ inline constexpr int kLogLevelIo =
  * @param level The log level to convert.
  * @return Integer value corresponding to the log level.
  */
-constexpr int level_to_int(LogLevel level) {
+constexpr int levelToInt(LogLevel level) {
     return static_cast<int>(level);
 }
 
@@ -143,14 +143,14 @@ constexpr int level_to_int(LogLevel level) {
  * @return Integer threshold value for the category.
  */
 template <LogCategory Category>
-constexpr int category_threshold();
+constexpr int categoryThreshold();
 
 /**
  * @brief Specialization for Core category threshold.
  * @return Core category log level threshold.
  */
 template <>
-constexpr int category_threshold<LogCategory::Core>() {
+constexpr int categoryThreshold<LogCategory::Core>() {
     return detail::kLogLevelCore;
 }
 
@@ -159,7 +159,7 @@ constexpr int category_threshold<LogCategory::Core>() {
  * @return Tensor category log level threshold.
  */
 template <>
-constexpr int category_threshold<LogCategory::Tensor>() {
+constexpr int categoryThreshold<LogCategory::Tensor>() {
     return detail::kLogLevelTensor;
 }
 
@@ -168,7 +168,7 @@ constexpr int category_threshold<LogCategory::Tensor>() {
  * @return CUDA category log level threshold.
  */
 template <>
-constexpr int category_threshold<LogCategory::Cuda>() {
+constexpr int categoryThreshold<LogCategory::Cuda>() {
     return detail::kLogLevelCuda;
 }
 
@@ -177,7 +177,7 @@ constexpr int category_threshold<LogCategory::Cuda>() {
  * @return MPS category log level threshold.
  */
 template <>
-constexpr int category_threshold<LogCategory::Mps>() {
+constexpr int categoryThreshold<LogCategory::Mps>() {
     return detail::kLogLevelMps;
 }
 
@@ -186,7 +186,7 @@ constexpr int category_threshold<LogCategory::Mps>() {
  * @return I/O category log level threshold.
  */
 template <>
-constexpr int category_threshold<LogCategory::Io>() {
+constexpr int categoryThreshold<LogCategory::Io>() {
     return detail::kLogLevelIo;
 }
 
@@ -199,7 +199,7 @@ constexpr int category_threshold<LogCategory::Io>() {
  * @param category The category of the log message.
  * @param level The severity level of the log message.
  * @param message The log message content.
- * @param context User-provided context pointer passed to set_log_sink().
+ * @param context User-provided context pointer passed to setLogSink().
  */
 using LogSink = void (*)(LogCategory category, LogLevel level, std::string_view message, void* context);
 
@@ -215,15 +215,15 @@ using LogSink = void (*)(LogCategory category, LogLevel level, std::string_view 
  * @param sink Pointer to the log sink function, or `nullptr` to use default.
  * @param context Optional user-provided context pointer passed to the sink function.
  */
-void set_log_sink(LogSink sink, void* context = nullptr);
+void setLogSink(LogSink sink, void* context = nullptr);
 
 /**
  * @brief Reset the log sink to the default behavior.
  *
- * Equivalent to calling `set_log_sink(nullptr, nullptr)`.
+ * Equivalent to calling `setLogSink(nullptr, nullptr)`.
  * After resetting, log messages are sent to stderr with default formatting.
  */
-void reset_log_sink();
+void resetLogSink();
 
 namespace detail {
 
@@ -237,7 +237,7 @@ namespace detail {
  * @param level The severity level of the log message.
  * @param message The log message content.
  */
-void log_message(LogCategory category, LogLevel level, std::string message);
+void logMessage(LogCategory category, LogLevel level, std::string message);
 
 /**
  * @brief Lazy-evaluated logging function.
@@ -252,9 +252,9 @@ void log_message(LogCategory category, LogLevel level, std::string message);
  * @param builder Functor or lambda that builds the log message.
  */
 template <LogCategory Category, LogLevel Level, typename MessageBuilder>
-inline void log_lazy(MessageBuilder&& builder) {
-    if constexpr (level_to_int(Level) >= category_threshold<Category>()) {
-        log_message(Category, Level, std::forward<MessageBuilder>(builder)());
+inline void logLazy(MessageBuilder&& builder) {
+    if constexpr (levelToInt(Level) >= categoryThreshold<Category>()) {
+        logMessage(Category, Level, std::forward<MessageBuilder>(builder)());
     }
 }
 
@@ -273,10 +273,10 @@ inline void log_lazy(MessageBuilder&& builder) {
  * @param message_builder Functor or lambda that builds the log message.
  */
 template <LogCategory Category, LogLevel Level, typename ConditionBuilder, typename MessageBuilder>
-inline void log_lazy_if(ConditionBuilder&& condition_builder, MessageBuilder&& message_builder) {
-    if constexpr (level_to_int(Level) >= category_threshold<Category>()) {
+inline void logLazyIf(ConditionBuilder&& condition_builder, MessageBuilder&& message_builder) {
+    if constexpr (levelToInt(Level) >= categoryThreshold<Category>()) {
         if (std::forward<ConditionBuilder>(condition_builder)()) {
-            log_message(Category, Level, std::forward<MessageBuilder>(message_builder)());
+            logMessage(Category, Level, std::forward<MessageBuilder>(message_builder)());
         }
     }
 }
@@ -289,7 +289,7 @@ inline void log_lazy_if(ConditionBuilder&& condition_builder, MessageBuilder&& m
  * @param level The log level to convert.
  * @return String representation of the log level (e.g., "TRACE", "DEBUG", "INFO").
  */
-constexpr const char* level_to_string(LogLevel level) {
+constexpr const char* levelToString(LogLevel level) {
     switch (level) {
         case LogLevel::Trace:
             return "TRACE";
@@ -315,7 +315,7 @@ constexpr const char* level_to_string(LogLevel level) {
  * @param category The log category to convert.
  * @return String representation of the category (e.g., "core", "tensor", "cuda").
  */
-constexpr const char* category_to_string(LogCategory category) {
+constexpr const char* categoryToString(LogCategory category) {
     switch (category) {
         case LogCategory::Core:
             return "core";
@@ -394,7 +394,7 @@ constexpr const char* category_to_string(LogCategory category) {
  */
 
 #define ORTEAF_LOG_INTERNAL(category, level, expr)                                                        \
-    ::orteaf::internal::diagnostics::log::detail::log_lazy<                                                \
+    ::orteaf::internal::diagnostics::log::detail::logLazy<                                                \
         ::orteaf::internal::diagnostics::log::LogCategory::category,                                       \
         ::orteaf::internal::diagnostics::log::LogLevel::level>(                                            \
         [&]() -> std::string { return std::string(expr); })
@@ -473,7 +473,7 @@ constexpr const char* category_to_string(LogCategory category) {
  */
 
 #define ORTEAF_LOG_INTERNAL_IF(category, level, condition, expr)                                             \
-    ::orteaf::internal::diagnostics::log::detail::log_lazy_if<                                                \
+    ::orteaf::internal::diagnostics::log::detail::logLazyIf<                                                \
         ::orteaf::internal::diagnostics::log::LogCategory::category,                                         \
         ::orteaf::internal::diagnostics::log::LogLevel::level>(                                              \
         [&]() -> bool { return (condition); },                                                               \
@@ -492,7 +492,7 @@ constexpr const char* category_to_string(LogCategory category) {
  *
  * If the expression evaluates to false, this macro:
  * 1. Logs a CRITICAL level message to the Core category.
- * 2. Calls fatal_error() with an InvalidState error code.
+ * 2. Calls fatalError() with an InvalidState error code.
  *
  * This macro is intended for runtime assertions that indicate an invalid program state.
  * The program will terminate after logging and error handling.
@@ -505,8 +505,8 @@ constexpr const char* category_to_string(LogCategory category) {
         if (!(expr)) {                                                                                      \
             const std::string _orteaf_assert_message = std::string(message);                                \
             ORTEAF_LOG_CRITICAL(Core, _orteaf_assert_message);                                              \
-            ::orteaf::internal::diagnostics::error::fatal_error(                                            \
-                ::orteaf::internal::diagnostics::error::make_error(                                         \
+            ::orteaf::internal::diagnostics::error::fatalError(                                            \
+                ::orteaf::internal::diagnostics::error::makeError(                                         \
                     ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,                       \
                     _orteaf_assert_message));                                                               \
         }                                                                                                   \

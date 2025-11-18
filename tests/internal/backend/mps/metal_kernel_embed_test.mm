@@ -4,22 +4,12 @@
 
 using namespace orteaf::internal::backend::mps::metal_kernel_embed;
 
-#ifdef ORTEAF_ENABLE_MPS
-
 TEST(MetalKernelEmbedTest, EmbeddedLibraryIsAvailable) {
     constexpr std::string_view kLibraryName = "embed_test_library";
-    MetallibBlob blob = find_library_data(kLibraryName);
+    MetallibBlob blob = findLibraryData(kLibraryName);
 
     EXPECT_NE(blob.data, nullptr);
     EXPECT_GT(blob.size, 0);
     EXPECT_TRUE(available(kLibraryName));
     EXPECT_FALSE(available("nonexistent_metal_library"));
 }
-
-#else
-
-TEST(MetalKernelEmbedTest, SkippedWhenMpsDisabled) {
-    GTEST_SKIP() << "MPS backend disabled";
-}
-
-#endif

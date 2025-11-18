@@ -9,6 +9,7 @@ ORTEAF に関するドキュメントの索引です。目的に応じて以下�
 ## 拡張開発者向け
 - コアデザイン: [docs/developer/design.md](developer/design.md)
 - 拡張ガイド: [docs/developer/extension-guide.md](developer/extension-guide.md)
+- ランタイム層アーキテクチャ: [docs/developer/runtime-architecture.md](developer/runtime-architecture.md)
 
 ## プロジェクト運営
 - 開発ロードマップ (下書き): [docs/roadmap.md](roadmap.md)

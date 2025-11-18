@@ -1,5 +1,7 @@
 #pragma once
 
+#if ORTEAF_ENABLE_CUDA
+
 #include <cstddef>
 #include <string_view>
 
@@ -30,9 +32,9 @@ namespace orteaf::internal::backend::cuda::kernel_embed {
  *
  * // Prefer a fatbin, but fall back to a PTX blob if fatbin generation was
  * // disabled for the current build.
- * Blob bin = find_kernel_data("embed_test_library",
- *                             KernelFmt::Fatbin,
- *                             find_kernel_data("embed_test_library", KernelFmt::Ptx));
+ * Blob bin = findKernelData("embed_test_library",
+ *                             CudaKernelFmt::Fatbin,
+ *                             findKernelData("embed_test_library", CudaKernelFmt::Ptx));
  * if (!bin.data) {
  *     throw std::runtime_error("Kernel not embedded in this build");
  * }
@@ -45,13 +47,13 @@ namespace orteaf::internal::backend::cuda::kernel_embed {
  * @endcode
  */
 
-enum class KernelFmt { Fatbin, Cubin, Ptx };
+enum class CudaKernelFmt { Fatbin, Cubin, Ptx };
 
-constexpr const char* to_string(KernelFmt fmt) noexcept {
+constexpr const char* toString(CudaKernelFmt fmt) noexcept {
     switch (fmt) {
-    case KernelFmt::Fatbin: return "fatbin";
-    case KernelFmt::Cubin: return "cubin";
-    case KernelFmt::Ptx: return "ptx";
+    case CudaKernelFmt::Fatbin: return "fatbin";
+    case CudaKernelFmt::Cubin: return "cubin";
+    case CudaKernelFmt::Ptx: return "ptx";
     }
     return "unknown";
 }
@@ -61,10 +63,12 @@ struct Blob {
     std::size_t size;
 };
 
-Blob find_kernel_data(std::string_view name,
-                      KernelFmt prefer = KernelFmt::Fatbin,
+Blob findKernelData(std::string_view name,
+                      CudaKernelFmt prefer = CudaKernelFmt::Fatbin,
                       Blob fallback = {nullptr, 0});
 
-bool available(std::string_view name, KernelFmt fmt);
+bool available(std::string_view name, CudaKernelFmt fmt);
 
 } // namespace orteaf::internal::backend::cuda::kernel_embed
+
+#endif  // ORTEAF_ENABLE_CUDA

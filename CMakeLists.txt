@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.25)
 
 # Runtime enable flags (must be set before project() for conditional language enable)
 option(ENABLE_CPU "Enable CPU runtime" ON)
 option(ENABLE_CUDA "Enable CUDA runtime" OFF)
 option(ENABLE_MPS "Enable Metal (MPS) runtime" OFF)
+option(ORTEAF_ENABLE_TEST "Enable internal test instrumentation code" OFF)
 
 # Set languages based on enabled backends
 set(LANGUAGES CXX)
@@ -23,6 +24,16 @@ if(ENABLE_CUDA)
 endif()
 
 project(orteaf VERSION 0.1.0 LANGUAGES ${LANGUAGES})
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+if(ENABLE_CUDA)
+    set(CMAKE_CUDA_STANDARD 20)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    set(CMAKE_CUDA_EXTENSIONS OFF)
+endif()
 
 set(ORTEAF_SOURCE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/orteaf CACHE INTERNAL "")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
@@ -266,6 +277,7 @@ endfunction()
 orteaf_bool_to_int(ORTEAF_ENABLE_CPU_INT ENABLE_CPU)
 orteaf_bool_to_int(ORTEAF_ENABLE_CUDA_INT ENABLE_CUDA)
 orteaf_bool_to_int(ORTEAF_ENABLE_MPS_INT ENABLE_MPS)
+orteaf_bool_to_int(ORTEAF_ENABLE_TEST_INT ORTEAF_ENABLE_TEST)
 
 add_subdirectory(orteaf)
 add_dependencies(orteaf generate_backends generate_ops generate_dtypes generate_architectures generate_devices)
@@ -294,7 +306,9 @@ if(TARGET orteaf)
     endif()
 endif()
 
-add_subdirectory(tests)
-if(TARGET orteaf_tests)
-    add_dependencies(orteaf_tests generate_backends generate_ops generate_dtypes generate_architectures generate_devices)
+if(ORTEAF_ENABLE_TEST)
+    add_subdirectory(tests)
+    if(TARGET orteaf_tests)
+        add_dependencies(orteaf_tests generate_backends generate_ops generate_dtypes generate_architectures generate_devices)
+    endif()
 endif()

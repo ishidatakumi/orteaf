@@ -25,7 +25,7 @@ jobs:
         run: ./scripts/setup-cpu.sh
 
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DENABLE_CPU=ON -DENABLE_CUDA=OFF -DENABLE_MPS=OFF -DORTEAF_FETCH_GTEST=ON
+        run: cmake -S . -B build -G Ninja -DENABLE_CPU=ON -DENABLE_CUDA=OFF -DENABLE_MPS=OFF -DORTEAF_FETCH_GTEST=ON -DORTEAF_ENABLE_TEST=ON
 
       - name: Build
         run: cmake --build build --parallel
@@ -44,7 +44,7 @@ jobs:
         run: ./scripts/setup-mps.sh
 
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DENABLE_MPS=ON -DENABLE_CPU=ON -DENABLE_CUDA=OFF -DORTEAF_FETCH_GTEST=ON
+        run: cmake -S . -B build -G Ninja -DENABLE_MPS=ON -DENABLE_CPU=ON -DENABLE_CUDA=OFF -DORTEAF_FETCH_GTEST=ON -DORTEAF_ENABLE_TEST=ON
 
       - name: Build
         run: cmake --build build --parallel
@@ -63,7 +63,7 @@ jobs:
         run: ./scripts/setup-cuda.sh
 
       - name: Configure
-        run: cmake -S . -B build -G Ninja -DENABLE_CUDA=ON -DENABLE_CPU=ON -DENABLE_MPS=OFF -DORTEAF_FETCH_GTEST=ON
+        run: cmake -S . -B build -G Ninja -DENABLE_CUDA=ON -DENABLE_CPU=ON -DENABLE_MPS=OFF -DORTEAF_FETCH_GTEST=ON -DORTEAF_ENABLE_TEST=ON
 
       - name: Build
         run: cmake --build build --parallel

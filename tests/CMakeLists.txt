@@ -59,9 +59,11 @@ if(ORTEAF_TEST_SOURCES)
         PRIVATE
             orteaf
             GTest::gtest_main
+            GTest::gmock
     )
     target_include_directories(orteaf_tests
         PRIVATE
+            ${PROJECT_SOURCE_DIR}
             ${PROJECT_SOURCE_DIR}/orteaf/include
             ${ORTEAF_GENERATED_INCLUDE_DIR}
     )
@@ -78,19 +80,27 @@ if(ORTEAF_TEST_SOURCES)
             ORTEAF_ENABLE_CPU=${ORTEAF_ENABLE_CPU_INT}
             ORTEAF_ENABLE_CUDA=${ORTEAF_ENABLE_CUDA_INT}
             ORTEAF_ENABLE_MPS=${ORTEAF_ENABLE_MPS_INT}
+            ORTEAF_ENABLE_TEST=${ORTEAF_ENABLE_TEST_INT}
             ORTEAF_EMBED_HAS_FATBIN=${ORTEAF_CUDA_EMBED_HAS_FATBIN}
             ORTEAF_EMBED_HAS_CUBIN=${ORTEAF_CUDA_EMBED_HAS_CUBIN}
             ORTEAF_EMBED_HAS_PTX=${ORTEAF_CUDA_EMBED_HAS_PTX}
     )
     
-    # Link Metal/MPS frameworks on macOS when MPS tests are present
-    if(APPLE AND ORTEAF_ENABLE_MPS_INT)
+    # macOS frameworks
+    if(APPLE)
         target_link_libraries(orteaf_tests
             PRIVATE
-                "-framework Metal"
-                "-framework MetalPerformanceShaders"
-                "-framework Foundation"
+                "-framework CoreFoundation"
+                "-framework IOKit"
         )
+        if(ORTEAF_ENABLE_MPS_INT)
+            target_link_libraries(orteaf_tests
+                PRIVATE
+                    "-framework Metal"
+                    "-framework MetalPerformanceShaders"
+                    "-framework Foundation"
+            )
+        endif()
     endif()
 
     include(GoogleTest)

@@ -118,9 +118,113 @@ bool LooksLikeIdentifier(std::string_view value) {
     return true;
 }
 
+int ReadScalarInt(const YAML::Node& node, std::string_view key, std::string_view context) {
+    const auto value = node[key];
+    if (!value) {
+        std::ostringstream oss;
+        oss << "Missing required integer key '" << key << "' in " << context;
+        Fail(oss.str());
+    }
+    if (!value.IsScalar()) {
+        std::ostringstream oss;
+        oss << "Key '" << key << "' must be an integer scalar in " << context;
+        Fail(oss.str());
+    }
+    return value.as<int>();
+}
+
+std::optional<int> ReadOptionalInt(const YAML::Node& node, std::string_view key, std::string_view context) {
+    const auto value = node[key];
+    if (!value) {
+        return std::nullopt;
+    }
+    if (!value.IsScalar()) {
+        std::ostringstream oss;
+        oss << "Key '" << key << "' must be an integer scalar in " << context;
+        Fail(oss.str());
+    }
+    return value.as<int>();
+}
+
+std::vector<int> ReadOptionalIntList(const YAML::Node& node, std::string_view key, std::string_view context) {
+    const auto value = node[key];
+    if (!value) {
+        return {};
+    }
+    std::vector<int> result;
+    if (value.IsSequence()) {
+        result.reserve(value.size());
+        for (std::size_t i = 0; i < value.size(); ++i) {
+            const auto& item = value[i];
+            if (!item.IsScalar()) {
+                std::ostringstream oss;
+                oss << "Entry '" << key << "[" << i << "]' must be an integer in " << context;
+                Fail(oss.str());
+            }
+            result.push_back(item.as<int>());
+        }
+    } else if (value.IsScalar()) {
+        result.push_back(value.as<int>());
+    } else {
+        std::ostringstream oss;
+        oss << "Key '" << key << "' must be an integer or sequence in " << context;
+        Fail(oss.str());
+    }
+    return result;
+}
+
+std::vector<std::string> ReadOptionalStringList(const YAML::Node& node, std::string_view key, std::string_view context) {
+    const auto value = node[key];
+    if (!value) {
+        return {};
+    }
+    std::vector<std::string> result;
+    if (value.IsSequence()) {
+        result.reserve(value.size());
+        for (std::size_t i = 0; i < value.size(); ++i) {
+            const auto& item = value[i];
+            if (!item.IsScalar()) {
+                std::ostringstream oss;
+                oss << "Entry '" << key << "[" << i << "]' must be a string in " << context;
+                Fail(oss.str());
+            }
+            auto str = item.as<std::string>();
+            if (str.empty()) {
+                std::ostringstream oss;
+                oss << "Entry '" << key << "[" << i << "]' must not be empty in " << context;
+                Fail(oss.str());
+            }
+            result.push_back(std::move(str));
+        }
+    } else if (value.IsScalar()) {
+        auto str = value.as<std::string>();
+        if (str.empty()) {
+            std::ostringstream oss;
+            oss << "Key '" << key << "' must not be empty in " << context;
+            Fail(oss.str());
+        }
+        result.push_back(std::move(str));
+    } else {
+        std::ostringstream oss;
+        oss << "Key '" << key << "' must be a string or sequence in " << context;
+        Fail(oss.str());
+    }
+    return result;
+}
+
 struct BackendInfo {
     std::string id;
     std::string display_name;
+};
+
+struct DetectSpec {
+    std::string vendor;
+    std::optional<int> family;
+    std::vector<int> models;
+    std::vector<std::string> features;
+    std::vector<std::string> machine_ids;
+    std::optional<int> compute_capability;
+    std::optional<std::string> metal_family;
 };
 
 struct ArchitectureInput {
@@ -128,7 +232,42 @@ struct ArchitectureInput {
     std::string backend_id;
     std::string display_name;
     std::string description;
+    std::optional<DetectSpec> detect;
 };
+
+std::optional<DetectSpec> ParseDetectSpec(const YAML::Node& node, std::string_view context) {
+    if (!node) {
+        return std::nullopt;
+    }
+    if (!node.IsMap()) {
+        std::ostringstream oss;
+        oss << "Detect block in " << context << " must be a mapping";
+        Fail(oss.str());
+    }
+    DetectSpec spec;
+    ExpectKeys(node, context, {"vendor", "family", "model", "features", "machine_ids", "compute_capability", "metal_family"});
+    if (const auto vendor = ReadOptionalString(node, "vendor", context); vendor) {
+        spec.vendor = *vendor;
+    }
+    if (const auto family = ReadOptionalInt(node, "family", context); family) {
+        spec.family = *family;
+    }
+    spec.models = ReadOptionalIntList(node, "model", context);
+    spec.features = ReadOptionalStringList(node, "features", context);
+    spec.machine_ids = ReadOptionalStringList(node, "machine_ids", context);
+    if (const auto cc = ReadOptionalInt(node, "compute_capability", context); cc) {
+        spec.compute_capability = *cc;
+    }
+    if (const auto metal = ReadOptionalString(node, "metal_family", context); metal) {
+        spec.metal_family = *metal;
+    }
+
+    if (spec.vendor.empty() && !spec.family && spec.models.empty() && spec.features.empty() &&
+        spec.machine_ids.empty() && !spec.compute_capability && !spec.metal_family) {
+        return std::nullopt;
+    }
+    return spec;
+}
 
 std::vector<BackendInfo> ParseBackendConfig(const fs::path& backend_yaml_path) {
     YAML::Node root;
@@ -254,9 +393,13 @@ std::vector<ArchitectureInput> ParseArchitectureConfig(const fs::path& architect
                 Fail(oss.str());
             }
             const std::string metadata_context = context + ".metadata";
-            ExpectKeys(metadata_node, metadata_context, {"description"});
+            ExpectKeys(metadata_node, metadata_context, {"description", "detect"});
             if (const auto desc = ReadOptionalString(metadata_node, "description", metadata_context); desc) {
                 input.description = *desc;
+            }
+            if (const auto detect_node = metadata_node["detect"]) {
+                const std::string detect_context = metadata_context + ".detect";
+                input.detect = ParseDetectSpec(detect_node, detect_context);
             }
         }
 
@@ -273,6 +416,7 @@ struct ResolvedArchitecture {
     std::string description;
     std::size_t backend_index;
     std::uint16_t local_index;
+    std::optional<DetectSpec> detect;
 };
 
 struct GeneratedData {
@@ -328,6 +472,7 @@ GeneratedData GenerateOutputs(const std::vector<BackendInfo>& backends,
         generic.description = "Backend-wide fallback architecture for " + backend.display_name;
         generic.backend_index = backend_index;
         generic.local_index = 0;
+        generic.detect = std::nullopt;
         resolved.push_back(std::move(generic));
 
         // Append user entries honoring input order.
@@ -343,6 +488,7 @@ GeneratedData GenerateOutputs(const std::vector<BackendInfo>& backends,
                 resolved_entry.description = entry.description;
                 resolved_entry.backend_index = backend_index;
                 resolved_entry.local_index = local_index++;
+                resolved_entry.detect = entry.detect;
                 resolved.push_back(std::move(resolved_entry));
             }
             backend_counts[backend_index] = entries.size() + 1;  // +1 for generic
@@ -422,6 +568,118 @@ GeneratedData GenerateOutputs(const std::vector<BackendInfo>& backends,
                       << "> kBackendArchitectureOffsets = {\n";
         for (const auto offset : backend_offsets) {
             header_stream << "    " << offset << ",\n";
+        }
+        header_stream << "};\n\n";
+
+        const std::size_t arch_count = resolved.size();
+        std::vector<std::string> detect_vendors(arch_count);
+        std::vector<int> detect_cpu_families(arch_count, -1);
+        std::vector<int> detect_compute_caps(arch_count, -1);
+        std::vector<std::string> detect_metal_families(arch_count);
+        std::vector<std::size_t> cpu_model_offsets;
+        std::vector<int> cpu_model_entries;
+        std::vector<std::size_t> feature_offsets;
+        std::vector<std::string> feature_entries;
+        std::vector<std::size_t> machine_id_offsets;
+        std::vector<std::string> machine_id_entries;
+
+        cpu_model_offsets.reserve(arch_count + 1);
+        feature_offsets.reserve(arch_count + 1);
+        machine_id_offsets.reserve(arch_count + 1);
+
+        for (std::size_t idx = 0; idx < arch_count; ++idx) {
+            cpu_model_offsets.push_back(cpu_model_entries.size());
+            feature_offsets.push_back(feature_entries.size());
+            machine_id_offsets.push_back(machine_id_entries.size());
+
+            const auto& detect = resolved[idx].detect;
+            if (!detect) {
+                continue;
+            }
+            if (!detect->vendor.empty()) {
+                detect_vendors[idx] = detect->vendor;
+            }
+            if (detect->family) {
+                detect_cpu_families[idx] = *detect->family;
+            }
+            if (detect->compute_capability) {
+                detect_compute_caps[idx] = *detect->compute_capability;
+            }
+            if (detect->metal_family) {
+                detect_metal_families[idx] = *detect->metal_family;
+            }
+            cpu_model_entries.insert(cpu_model_entries.end(), detect->models.begin(), detect->models.end());
+            feature_entries.insert(feature_entries.end(), detect->features.begin(), detect->features.end());
+            machine_id_entries.insert(machine_id_entries.end(), detect->machine_ids.begin(), detect->machine_ids.end());
+        }
+
+        cpu_model_offsets.push_back(cpu_model_entries.size());
+        feature_offsets.push_back(feature_entries.size());
+        machine_id_offsets.push_back(machine_id_entries.size());
+
+        header_stream << "inline constexpr std::array<std::string_view, kArchitectureCount> kArchitectureDetectVendors = {\n";
+        for (const auto& vendor : detect_vendors) {
+            header_stream << "    std::string_view{\"" << EscapeStringLiteral(vendor) << "\"},\n";
+        }
+        header_stream << "};\n\n";
+
+        header_stream << "inline constexpr std::array<int, kArchitectureCount> kArchitectureDetectCpuFamilies = {\n";
+        for (const auto family : detect_cpu_families) {
+            header_stream << "    " << family << ",\n";
+        }
+        header_stream << "};\n\n";
+
+        header_stream << "inline constexpr std::array<int, kArchitectureCount> kArchitectureDetectComputeCapability = {\n";
+        for (const auto cc : detect_compute_caps) {
+            header_stream << "    " << cc << ",\n";
+        }
+        header_stream << "};\n\n";
+
+        header_stream << "inline constexpr std::array<std::string_view, kArchitectureCount> kArchitectureDetectMetalFamilies = {\n";
+        for (const auto& metal : detect_metal_families) {
+            header_stream << "    std::string_view{\"" << EscapeStringLiteral(metal) << "\"},\n";
+        }
+        header_stream << "};\n\n";
+
+        header_stream << "inline constexpr std::array<std::size_t, " << cpu_model_offsets.size()
+                      << "> kArchitectureDetectCpuModelOffsets = {\n";
+        for (const auto offset : cpu_model_offsets) {
+            header_stream << "    " << offset << ",\n";
+        }
+        header_stream << "};\n\n";
+
+        header_stream << "inline constexpr std::array<int, " << cpu_model_entries.size()
+                      << "> kArchitectureDetectCpuModels = {\n";
+        for (const auto value : cpu_model_entries) {
+            header_stream << "    " << value << ",\n";
+        }
+        header_stream << "};\n\n";
+
+        header_stream << "inline constexpr std::array<std::size_t, " << feature_offsets.size()
+                      << "> kArchitectureDetectFeatureOffsets = {\n";
+        for (const auto offset : feature_offsets) {
+            header_stream << "    " << offset << ",\n";
+        }
+        header_stream << "};\n\n";
+
+        header_stream << "inline constexpr std::array<std::string_view, " << feature_entries.size()
+                      << "> kArchitectureDetectFeatures = {\n";
+        for (const auto& feature : feature_entries) {
+            header_stream << "    std::string_view{\"" << EscapeStringLiteral(feature) << "\"},\n";
+        }
+        header_stream << "};\n\n";
+
+        header_stream << "inline constexpr std::array<std::size_t, " << machine_id_offsets.size()
+                      << "> kArchitectureDetectMachineIdOffsets = {\n";
+        for (const auto offset : machine_id_offsets) {
+            header_stream << "    " << offset << ",\n";
+        }
+        header_stream << "};\n\n";
+
+        header_stream << "inline constexpr std::array<std::string_view, " << machine_id_entries.size()
+                      << "> kArchitectureDetectMachineIds = {\n";
+        for (const auto& machine : machine_id_entries) {
+            header_stream << "    std::string_view{\"" << EscapeStringLiteral(machine) << "\"},\n";
         }
         header_stream << "};\n\n";
 

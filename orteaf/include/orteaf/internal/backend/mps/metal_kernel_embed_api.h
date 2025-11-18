@@ -1,5 +1,7 @@
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include "orteaf/internal/backend/mps/mps_device.h"
 #include "orteaf/internal/backend/mps/mps_function.h"
 #include "orteaf/internal/backend/mps/mps_error.h"
@@ -26,7 +28,7 @@ namespace orteaf::internal::backend::mps::metal_kernel_embed {
  *
  * MPSDevice_t device = acquire_default_device();  // user-defined helper
  * MPSError_t error = nullptr;
- * MPSFunction_t fn = load_embedded_function(device,
+ * MPSFunction_t fn = loadEmbeddedFunction(device,
  *                                           "embed_test_library",
  *                                           "my_kernel",
  *                                           &error);
@@ -43,13 +45,15 @@ struct MetallibBlob {
     std::size_t size;
 };
 
-MetallibBlob find_library_data(std::string_view library_name);
+MetallibBlob findLibraryData(std::string_view library_name);
 
 bool available(std::string_view library_name);
 
-MPSFunction_t load_embedded_function(MPSDevice_t device,
+MPSFunction_t loadEmbeddedFunction(MPSDevice_t device,
                                      std::string_view library_name,
                                      std::string_view function_name,
                                      MPSError_t* error = nullptr);
 
 } // namespace orteaf::internal::backend::mps::metal_kernel_embed
+
+#endif  // ORTEAF_ENABLE_MPS

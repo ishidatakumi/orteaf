@@ -39,6 +39,24 @@ enum class OrteafErrc {
     CompilationFailed = 17,    ///< コンパイル/ロード失敗
 };
 
+/// @brief std::error_code に適合する make_error_code 実装（前方宣言）。
+std::error_code make_error_code(OrteafErrc errc);
+
+/// @brief エラーコードを生成するヘルパ（前方宣言）。
+std::error_code makeErrorCode(OrteafErrc errc);
+
+}  // namespace orteaf::internal::diagnostics::error
+
+namespace std {
+
+// OrteafErrc を std::error_code として扱えるようにする。
+template <>
+struct is_error_code_enum<orteaf::internal::diagnostics::error::OrteafErrc> : true_type {};
+
+}  // namespace std
+
+namespace orteaf::internal::diagnostics::error {
+
 /**
  * @brief ORTEAF 用の error_category。
  */
@@ -52,10 +70,10 @@ public:
 };
 
 /// @brief エラーカテゴリのシングルトンを取得。
-const std::error_category& orteaf_error_category();
+const std::error_category& orteafErrorCategory();
 
 /// @brief エラーコードを生成するヘルパ。
-std::error_code make_error_code(OrteafErrc errc);
+std::error_code makeErrorCode(OrteafErrc errc);
 
 /**
  * @brief ORTEAF 専用のエラー情報。
@@ -85,13 +103,13 @@ public:
     const std::string& message() const noexcept;
 
     /// エラーコードを設定（カテゴリ付き）。
-    void set_code(std::error_code ec);
+    void setCode(std::error_code ec);
 
     /// エラーコードを ORTEAF カテゴリで設定。
-    void set_code(OrteafErrc errc);
+    void setCode(OrteafErrc errc);
 
     /// 詳細メッセージを設定。
-    void set_message(std::string message);
+    void setMessage(std::string message);
 
 private:
     std::error_code code_;
@@ -99,18 +117,18 @@ private:
 };
 
 /// @brief エラーを生成するヘルパ。
-OrteafError make_error(OrteafErrc errc, std::string message = {});
-OrteafError make_error(std::error_code ec, std::string message = {});
+OrteafError makeError(OrteafErrc errc, std::string message = {});
+OrteafError makeError(std::error_code ec, std::string message = {});
 
 /// @brief エラーを送出するヘルパ。内部で std::system_error を生成して投げる。
-[[noreturn]] void throw_error(const OrteafError& error);
-[[noreturn]] void throw_error(OrteafErrc errc, std::string message = {});
-[[noreturn]] void throw_error(std::error_code ec, std::string message = {});
+[[noreturn]] void throwError(const OrteafError& error);
+[[noreturn]] void throwError(OrteafErrc errc, std::string message = {});
+[[noreturn]] void throwError(std::error_code ec, std::string message = {});
 
 /// @brief 致命的エラー。ログ出力後にプログラムを停止する。
-[[noreturn]] void fatal_error(const OrteafError& error);
-[[noreturn]] void fatal_error(OrteafErrc errc, std::string message = {});
-[[noreturn]] void fatal_error(std::error_code ec, std::string message = {});
+[[noreturn]] void fatalError(const OrteafError& error);
+[[noreturn]] void fatalError(OrteafErrc errc, std::string message = {});
+[[noreturn]] void fatalError(std::error_code ec, std::string message = {});
 
 /**
  * @brief Result 型の内部実装。
@@ -176,7 +194,7 @@ public:
     static OrteafResult failure(OrteafError error);
 
     template <typename... Args>
-    static OrteafResult failure_with(OrteafErrc errc, Args&&... args);
+    static OrteafResult failureWith(OrteafErrc errc, Args&&... args);
 
     bool has_value() const noexcept;
     bool has_error() const noexcept;
@@ -221,28 +239,20 @@ private:
  * @brief 関数を実行し、例外を Result に変換する。
  */
 template <typename Fn>
-auto capture_result(Fn&& fn) -> OrteafResult<std::invoke_result_t<Fn>>;
+auto captureResult(Fn&& fn) -> OrteafResult<std::invoke_result_t<Fn>>;
 
 /**
  * @brief Result から値を取り出し、失敗している場合は例外を投げる。
  */
 template <typename T>
-T unwrap_or_throw(OrteafResult<T>&& result);
+T unwrapOrThrow(OrteafResult<T>&& result);
 
-/// @copydoc unwrap_or_throw(OrteafResult<T>&&)
-void unwrap_or_throw(OrteafResult<void>&& result);
+/// @copydoc unwrapOrThrow(OrteafResult<T>&&)
+void unwrapOrThrow(OrteafResult<void>&& result);
 
-/// C 関数ポインタ互換の capture_result。
-OrteafResult<void> capture_result(void (*fn)());
+/// C 関数ポインタ互換の captureResult。
+OrteafResult<void> captureResult(void (*fn)());
 
 }  // namespace orteaf::internal::diagnostics::error
-
-namespace std {
-
-// OrteafErrc を std::error_code として扱えるようにする。
-template <>
-struct is_error_code_enum<orteaf::internal::diagnostics::error::OrteafErrc> : true_type {};
-
-}  // namespace std
 
 #include "error_impl.h"

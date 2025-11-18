@@ -4,7 +4,7 @@ set -euo pipefail
 if ! command -v docker >/dev/null 2>&1; then
     echo "docker is required to run this script." >&2
     exit 1
-endif
+fi
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 image="${ORTEAF_CPU_IMAGE:-orteaf-dev-cpu}"

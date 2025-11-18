@@ -8,7 +8,11 @@
  * {0,0}) and perform no operations.
  */
 #pragma once
+
+#if ORTEAF_ENABLE_CUDA
+
 #include <cstdint>
+#include <string>
 
 namespace orteaf::internal::backend::cuda {
 
@@ -45,27 +49,43 @@ struct ComputeCapability {
  * @brief Get the number of CUDA devices available.
  * @return Number of devices; 0 when CUDA is disabled.
  */
-int get_device_count();
+int getDeviceCount();
 
 /**
  * @brief Get an opaque device handle for the given index.
  * @param device_id Zero-based device index
  * @return Opaque `CUdevice_t`; 0 when CUDA is disabled.
  */
-CUdevice_t get_device(uint32_t device_id);
+CUdevice_t getDevice(uint32_t device_id);
 
 /**
  * @brief Query the compute capability of a device.
  * @param device Opaque device handle
  * @return SM compute capability; {0,0} when CUDA is disabled.
  */
-ComputeCapability get_compute_capability(CUdevice_t device);
+ComputeCapability getComputeCapability(CUdevice_t device);
 
 /**
  * @brief Compute a simple SM count heuristic from capability.
  * @param capability SM compute capability
  * @return Heuristic SM count used internally for sizing.
  */
-int get_sm_count(ComputeCapability capability);
+int getSmCount(ComputeCapability capability);
+
+/**
+ * @brief Human-readable device name (e.g., "NVIDIA H100").
+ * @param device Opaque device handle
+ * @return UTF-8 device name; empty when CUDA is disabled/unavailable.
+ */
+std::string getDeviceName(CUdevice_t device);
+
+/**
+ * @brief Vendor hint for architecture detection.
+ * @param device Opaque device handle
+ * @return Vendor string (typically "nvidia"); empty when unavailable.
+ */
+std::string getDeviceVendor(CUdevice_t device);
 
 } // namespace orteaf::internal::backend::cuda
+
+#endif  // ORTEAF_ENABLE_CUDA

@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include <string_view>
 
 namespace orteaf::internal::backend::mps {
@@ -16,6 +18,8 @@ static_assert(sizeof(MPSString_t) == sizeof(void*), "MPSString must be pointer-s
  * @brief Convert std::string_view to NSString*.
  * Tries UTF-8 encoding first, then falls back to ISO Latin-1.
  */
-[[nodiscard]] MPSString_t to_ns_string(std::string_view view);
+[[nodiscard]] MPSString_t toNsString(std::string_view view);
 
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

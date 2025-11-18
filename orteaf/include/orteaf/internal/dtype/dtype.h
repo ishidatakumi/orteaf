@@ -23,7 +23,7 @@ enum class DType : std::uint16_t {
 };
 
 /// @brief Convert a dtype to its stable index within the generated tables.
-constexpr std::size_t ToIndex(DType dtype) {
+constexpr std::size_t toIndex(DType dtype) {
     return static_cast<std::size_t>(dtype);
 }
 
@@ -58,59 +58,59 @@ enum class CastMode {
 };
 
 /// @brief Check whether an index is within the valid dtype range.
-constexpr bool IsValidIndex(std::size_t index) {
+constexpr bool isValidIndex(std::size_t index) {
     return index < kDTypeCount;
 }
 
 /// @brief Convert an index back into the corresponding enum value.
-constexpr DType FromIndex(std::size_t index) {
+constexpr DType fromIndex(std::size_t index) {
     return static_cast<DType>(index);
 }
 
 /// @brief Return the YAML identifier (e.g. `"F32"`).
-constexpr std::string_view IdOf(DType dtype) {
-    return kDTypeIds[ToIndex(dtype)];
+constexpr std::string_view idOf(DType dtype) {
+    return kDTypeIds[toIndex(dtype)];
 }
 
 /// @brief Return the human-readable display name (e.g. `"float32"`).
-constexpr std::string_view DisplayNameOf(DType dtype) {
-    return generated_tables::kDTypeDisplayNames[ToIndex(dtype)];
+constexpr std::string_view displayNameOf(DType dtype) {
+    return generated_tables::kDTypeDisplayNames[toIndex(dtype)];
 }
 
 /// @brief Return the category string this dtype belongs to.
-constexpr std::string_view CategoryOf(DType dtype) {
-    return generated_tables::kDTypeCategories[ToIndex(dtype)];
+constexpr std::string_view categoryOf(DType dtype) {
+    return generated_tables::kDTypeCategories[toIndex(dtype)];
 }
 
 /// @brief Return the promotion priority (higher means more precise).
-constexpr int PromotionPriority(DType dtype) {
-    return generated_tables::kDTypePromotionPriorities[ToIndex(dtype)];
+constexpr int promotionPriority(DType dtype) {
+    return generated_tables::kDTypePromotionPriorities[toIndex(dtype)];
 }
 
 /// @brief Return the element size in bytes.
-constexpr std::size_t SizeOf(DType dtype) {
-    return generated_tables::kDTypeSize[ToIndex(dtype)];
+constexpr std::size_t sizeOf(DType dtype) {
+    return generated_tables::kDTypeSize[toIndex(dtype)];
 }
 
 /// @brief Return the required alignment in bytes.
-constexpr std::size_t AlignmentOf(DType dtype) {
-    return generated_tables::kDTypeAlignment[ToIndex(dtype)];
+constexpr std::size_t alignmentOf(DType dtype) {
+    return generated_tables::kDTypeAlignment[toIndex(dtype)];
 }
 
 /// @brief Return the compute dtype (e.g. FP8 promotes to FP16 when accumulated).
-constexpr DType ComputeType(DType dtype) {
-    return generated_tables::kDTypeComputeType[ToIndex(dtype)];
+constexpr DType computeType(DType dtype) {
+    return generated_tables::kDTypeComputeType[toIndex(dtype)];
 }
 
 /// @brief Return the promotion result of two dtypes.
-constexpr DType Promote(DType lhs, DType rhs) {
-    return generated_tables::kPromotionTable[ToIndex(lhs)][ToIndex(rhs)];
+constexpr DType promote(DType lhs, DType rhs) {
+    return generated_tables::kPromotionTable[toIndex(lhs)][toIndex(rhs)];
 }
 
 /// @brief Return whether casting is allowed under the specified mode.
-constexpr bool CanCast(DType from, DType to, CastMode mode) {
-    const auto from_index = ToIndex(from);
-    const auto to_index = ToIndex(to);
+constexpr bool canCast(DType from, DType to, CastMode mode) {
+    const auto from_index = toIndex(from);
+    const auto to_index = toIndex(to);
     const auto& matrix = (mode == CastMode::Implicit)
                              ? generated_tables::kImplicitCastMatrix[from_index]
                              : generated_tables::kExplicitCastMatrix[from_index];
@@ -118,13 +118,13 @@ constexpr bool CanCast(DType from, DType to, CastMode mode) {
 }
 
 /// @brief Convenience helper for implicit casts.
-constexpr bool CanImplicitlyCast(DType from, DType to) {
-    return CanCast(from, to, CastMode::Implicit);
+constexpr bool canImplicitlyCast(DType from, DType to) {
+    return canCast(from, to, CastMode::Implicit);
 }
 
 /// @brief Convenience helper for explicit casts.
-constexpr bool CanExplicitlyCast(DType from, DType to) {
-    return CanCast(from, to, CastMode::Explicit);
+constexpr bool canExplicitlyCast(DType from, DType to) {
+    return canCast(from, to, CastMode::Explicit);
 }
 
 }  // namespace orteaf::internal

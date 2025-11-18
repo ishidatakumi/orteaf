@@ -6,6 +6,9 @@
  * Functions use ARC-aware bridging to retain/release when requested.
  */
 #pragma once
+
+#if ORTEAF_ENABLE_MPS
+
 #ifndef __OBJC__
 #  error "This header must be included only from Objective-C++ (.mm)"
 #endif
@@ -15,17 +18,17 @@
 
 /** Raw cast without changing ownership. */
 template <typename ObjcPtr>
-static inline void* opaque_from_objc_noown(ObjcPtr p) noexcept {
+static inline void* opaqueFromObjcNoown(ObjcPtr p) noexcept {
     return (__bridge void*)p;
 }
 template <typename ObjcPtr>
-static inline ObjcPtr objc_from_opaque_noown(void* p) noexcept {
+static inline ObjcPtr objcFromOpaqueNoown(void* p) noexcept {
     return (__bridge ObjcPtr)p;
 }
 
 /** Return an opaque handle with +1 retain (ARC-aware). */
 template <typename ObjcPtr>
-static inline void* opaque_from_objc_retained(ObjcPtr p) noexcept {
+static inline void* opaqueFromObjcRetained(ObjcPtr p) noexcept {
 #if __has_feature(objc_arc)
     return (__bridge_retained void*)p;
 #else
@@ -35,7 +38,7 @@ static inline void* opaque_from_objc_retained(ObjcPtr p) noexcept {
 }
 
 /** Release a previously retained opaque handle. */
-static inline void opaque_release_retained(void* p) noexcept {
+static inline void opaqueReleaseRetained(void* p) noexcept {
 #if __has_feature(objc_arc)
     CFBridgingRelease(p);
 #else
@@ -44,7 +47,7 @@ static inline void opaque_release_retained(void* p) noexcept {
 }
 
 /** Retain an opaque handle and return it. */
-static inline void* opaque_retain(void* p) noexcept {
+static inline void* opaqueRetain(void* p) noexcept {
 #if __has_feature(objc_arc)
     CFRetain(p);
 #else
@@ -52,3 +55,5 @@ static inline void* opaque_retain(void* p) noexcept {
 #endif
     return p;
 }
+
+#endif  // ORTEAF_ENABLE_MPS

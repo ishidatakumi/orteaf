@@ -23,12 +23,12 @@ void test_sink(log::LogCategory, log::LogLevel, std::string_view message, void* 
 
 TEST(DiagnosticsLog, InfoEmitsWhenEnabled) {
     SinkCapture capture;
-    log::set_log_sink(&test_sink, &capture);
+    log::setLogSink(&test_sink, &capture);
 
     capture.messages.clear();
     ORTEAF_LOG_INFO(Core, "info message");
 
-    log::reset_log_sink();
+    log::resetLogSink();
 
     ASSERT_EQ(capture.messages.size(), 1u);
     EXPECT_EQ(capture.messages[0], "info message");
@@ -36,12 +36,12 @@ TEST(DiagnosticsLog, InfoEmitsWhenEnabled) {
 
 TEST(DiagnosticsLog, TraceIsCompiledOutWhenDisabled) {
     SinkCapture capture;
-    log::set_log_sink(&test_sink, &capture);
+    log::setLogSink(&test_sink, &capture);
 
     capture.messages.clear();
     ORTEAF_LOG_TRACE(Core, "trace message");
 
-    log::reset_log_sink();
+    log::resetLogSink();
 
     EXPECT_TRUE(capture.messages.empty());
 }

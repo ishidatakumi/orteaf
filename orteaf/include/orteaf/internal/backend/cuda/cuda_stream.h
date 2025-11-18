@@ -6,6 +6,9 @@
  * functions exist but behave as no-ops and return neutral values.
  */
 #pragma once
+
+#if ORTEAF_ENABLE_CUDA
+
 #include <cstdint>
 #include "orteaf/internal/backend/cuda/cuda_device.h"
 
@@ -27,15 +30,7 @@ static_assert(sizeof(CUstream_t) == sizeof(void*), "CUstream_t must be pointer-s
  *
  * Also updates internal CUDA statistics on success.
  */
-CUstream_t get_stream();
-
-/**
- * @brief Set the current stream (no-op for CUDA Driver API).
- * @param stream Opaque stream handle; ignored.
- *
- * Provided for API symmetry; Driver API has no notion of a global current stream.
- */
-void set_stream(CUstream_t stream);
+CUstream_t getStream();
 
 /**
  * @brief Destroy a CUDA stream.
@@ -44,14 +39,14 @@ void set_stream(CUstream_t stream);
  *
  * Also updates internal CUDA statistics on success.
  */
-void release_stream(CUstream_t stream);
+void releaseStream(CUstream_t stream);
 
 /**
  * @brief Synchronize the given CUDA stream.
  * @param stream Opaque stream handle
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void synchronize_stream(CUstream_t stream);
+void synchronizeStream(CUstream_t stream);
 
 /**
  * @brief Make a stream wait until a device memory value reaches a threshold.
@@ -60,7 +55,7 @@ void synchronize_stream(CUstream_t stream);
  * @param value Wait until value >= this threshold
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void wait_stream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value);
+void waitStream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value);
 
 /**
  * @brief Write a 32-bit value to device memory from a stream.
@@ -69,5 +64,8 @@ void wait_stream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value);
  * @param value Value to write
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void write_stream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value);
+void writeStream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value);
+
 } // namespace orteaf::internal::backend::cuda
+
+#endif  // ORTEAF_ENABLE_CUDA

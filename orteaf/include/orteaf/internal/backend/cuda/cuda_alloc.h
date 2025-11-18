@@ -1,5 +1,7 @@
 #pragma once
 
+#if ORTEAF_ENABLE_CUDA
+
 #include <cstddef>
 #include "orteaf/internal/backend/cuda/cuda_stream.h"
 
@@ -40,7 +42,7 @@ void free(CUdeviceptr_t ptr, size_t size);
  * @return Opaque CUDA device pointer. Returns 0 if CUDA is not available.
  * @throws std::runtime_error If stream is nullptr or CUDA allocation fails.
  */
-CUdeviceptr_t alloc_stream(size_t size, CUstream_t stream);
+CUdeviceptr_t allocStream(size_t size, CUstream_t stream);
 
 /**
  * @brief Free device memory on CUDA device asynchronously.
@@ -54,7 +56,7 @@ CUdeviceptr_t alloc_stream(size_t size, CUstream_t stream);
  * @param stream CUDA stream handle for asynchronous deallocation.
  * @throws std::runtime_error If stream is nullptr or CUDA deallocation fails.
  */
-void free_stream(CUdeviceptr_t ptr, size_t size, CUstream_t stream);
+void freeStream(CUdeviceptr_t ptr, size_t size, CUstream_t stream);
 
 /**
  * @brief Allocate pinned host memory.
@@ -67,7 +69,7 @@ void free_stream(CUdeviceptr_t ptr, size_t size, CUstream_t stream);
  * @return Pointer to allocated pinned host memory. Returns nullptr if CUDA is not available.
  * @throws std::runtime_error If CUDA allocation fails (when ORTEAF_ENABLE_CUDA is defined).
  */
-void* alloc_host(size_t size);
+void* allocHost(size_t size);
 
 /**
  * @brief Copy data from device to host memory.
@@ -81,7 +83,7 @@ void* alloc_host(size_t size);
  * @param size Number of bytes to copy.
  * @throws std::runtime_error If CUDA copy operation fails (when ORTEAF_ENABLE_CUDA is defined).
  */
-void copy_to_host(CUdeviceptr_t ptr, void* host_ptr, size_t size);
+void copyToHost(CUdeviceptr_t ptr, void* host_ptr, size_t size);
 
 /**
  * @brief Copy data from host to device memory.
@@ -95,18 +97,20 @@ void copy_to_host(CUdeviceptr_t ptr, void* host_ptr, size_t size);
  * @param size Number of bytes to copy.
  * @throws std::runtime_error If CUDA copy operation fails (when ORTEAF_ENABLE_CUDA is defined).
  */
-void copy_to_device(void* host_ptr, CUdeviceptr_t ptr, size_t size);
+void copyToDevice(void* host_ptr, CUdeviceptr_t ptr, size_t size);
 
 /**
  * @brief Free pinned host memory.
  *
- * Frees page-locked (pinned) host memory allocated by alloc_host using cuMemFreeHost.
+ * Frees page-locked (pinned) host memory allocated by allocHost using cuMemFreeHost.
  * Statistics are automatically updated on deallocation.
  *
  * @param ptr Pointer to pinned host memory to free.
  * @param size Size of memory to free in bytes. Used for statistics update.
  * @throws std::runtime_error If CUDA deallocation fails (when ORTEAF_ENABLE_CUDA is defined).
  */
-void free_host(void* ptr, size_t size);
+void freeHost(void* ptr, size_t size);
 
 } // namespace orteaf::internal::backend::cuda
+
+#endif  // ORTEAF_ENABLE_CUDA

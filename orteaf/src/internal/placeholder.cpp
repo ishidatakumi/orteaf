@@ -3,6 +3,6 @@
 namespace orteaf::internal {
 // Placeholder translation unit so the target builds before core implementation lands.
 void placeholder() {
-    (void)ComputeType(DType::Bool);
+    (void)computeType(DType::Bool);
 }
 }  // namespace orteaf::internal

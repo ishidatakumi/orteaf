@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_MPS
+
 #include <cstddef>
 
 #include "orteaf/internal/backend/mps/mps_device.h"
@@ -24,7 +26,7 @@ static_assert(sizeof(MPSLibrary_t) == sizeof(void*), "MPSLibrary must be pointer
  * @param error Optional error out parameter
  * @return Opaque library handle, or nullptr on failure.
  */
-[[nodiscard]] MPSLibrary_t create_library(MPSDevice_t device, MPSString_t name, MPSError_t* error = nullptr);
+[[nodiscard]] MPSLibrary_t createLibrary(MPSDevice_t device, MPSString_t name, MPSError_t* error = nullptr);
 
 /**
  * @brief Create a library from source code.
@@ -34,7 +36,7 @@ static_assert(sizeof(MPSLibrary_t) == sizeof(void*), "MPSLibrary must be pointer
  * @param error Optional error out parameter
  * @return Opaque library handle, or nullptr on failure.
  */
-[[nodiscard]] MPSLibrary_t create_library_with_source(MPSDevice_t device,
+[[nodiscard]] MPSLibrary_t createLibraryWithSource(MPSDevice_t device,
                                                       MPSString_t source,
                                                       MPSCompileOptions_t compile_options,
                                                       MPSError_t* error = nullptr);
@@ -47,7 +49,7 @@ static_assert(sizeof(MPSLibrary_t) == sizeof(void*), "MPSLibrary must be pointer
  * @param error Optional error out parameter
  * @return Opaque library handle, or nullptr on failure.
  */
-[[nodiscard]] MPSLibrary_t create_library_with_data(MPSDevice_t device,
+[[nodiscard]] MPSLibrary_t createLibraryWithData(MPSDevice_t device,
                                                     const void* data,
                                                     std::size_t size,
                                                     MPSError_t* error = nullptr);
@@ -55,6 +57,8 @@ static_assert(sizeof(MPSLibrary_t) == sizeof(void*), "MPSLibrary must be pointer
 /**
  * @brief Destroy a library; ignores nullptr.
  */
-void destroy_library(MPSLibrary_t library);
+void destroyLibrary(MPSLibrary_t library);
 
 } // namespace orteaf::internal::backend::mps
+
+#endif  // ORTEAF_ENABLE_MPS

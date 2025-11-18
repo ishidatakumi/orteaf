@@ -30,51 +30,51 @@ protected:
  * @brief Test that update_alloc increments counters.
  */
 TEST_F(CpuStatsTest, UpdateAllocIncrementsCounters) {
-    auto& stats = cpu::stats_instance();
-    uint64_t initial = stats.total_allocations();
+    auto& stats = cpu::statsInstance();
+    uint64_t initial = stats.totalAllocations();
     
-    cpu::update_alloc(1024);
+    cpu::updateAlloc(1024);
     
-    EXPECT_EQ(stats.total_allocations(), initial + 1);
-    EXPECT_EQ(stats.active_allocations(), 1);
+    EXPECT_EQ(stats.totalAllocations(), initial + 1);
+    EXPECT_EQ(stats.activeAllocations(), 1);
 }
 
 /**
  * @brief Test that update_dealloc decrements active allocations.
  */
 TEST_F(CpuStatsTest, UpdateDeallocDecrementsActive) {
-    auto& stats = cpu::stats_instance();
+    auto& stats = cpu::statsInstance();
     
-    cpu::update_alloc(1024);
-    EXPECT_EQ(stats.active_allocations(), 1);
-    EXPECT_EQ(stats.total_deallocations(), 0);
+    cpu::updateAlloc(1024);
+    EXPECT_EQ(stats.activeAllocations(), 1);
+    EXPECT_EQ(stats.totalDeallocations(), 0);
     
-    cpu::update_dealloc(1024);
-    EXPECT_EQ(stats.active_allocations(), 0);
-    EXPECT_EQ(stats.total_deallocations(), 1);
+    cpu::updateDealloc(1024);
+    EXPECT_EQ(stats.activeAllocations(), 0);
+    EXPECT_EQ(stats.totalDeallocations(), 1);
 }
 
 /**
  * @brief Test that multiple allocations are tracked correctly.
  */
 TEST_F(CpuStatsTest, MultipleAllocationsTracked) {
-    auto& stats = cpu::stats_instance();
-    uint64_t initial_total = stats.total_allocations();
-    uint64_t initial_active = stats.active_allocations();
+    auto& stats = cpu::statsInstance();
+    uint64_t initial_total = stats.totalAllocations();
+    uint64_t initial_active = stats.activeAllocations();
     
-    cpu::update_alloc(1024);
-    cpu::update_alloc(2048);
-    cpu::update_alloc(4096);
+    cpu::updateAlloc(1024);
+    cpu::updateAlloc(2048);
+    cpu::updateAlloc(4096);
     
-    EXPECT_EQ(stats.total_allocations(), initial_total + 3);
-    EXPECT_EQ(stats.active_allocations(), initial_active + 3);
+    EXPECT_EQ(stats.totalAllocations(), initial_total + 3);
+    EXPECT_EQ(stats.activeAllocations(), initial_active + 3);
     
-    cpu::update_dealloc(1024);
-    EXPECT_EQ(stats.active_allocations(), initial_active + 2);
+    cpu::updateDealloc(1024);
+    EXPECT_EQ(stats.activeAllocations(), initial_active + 2);
     
-    cpu::update_dealloc(2048);
-    cpu::update_dealloc(4096);
-    EXPECT_EQ(stats.active_allocations(), initial_active);
+    cpu::updateDealloc(2048);
+    cpu::updateDealloc(4096);
+    EXPECT_EQ(stats.activeAllocations(), initial_active);
 }
 
 #endif  // ORTEAF_STATS_LEVEL_CPU_VALUE <= 2
@@ -85,42 +85,42 @@ TEST_F(CpuStatsTest, MultipleAllocationsTracked) {
  * @brief Test that current_allocated_bytes tracks correctly.
  */
 TEST_F(CpuStatsTest, CurrentAllocatedBytesTracked) {
-    auto& stats = cpu::stats_instance();
-    uint64_t initial = stats.current_allocated_bytes();
+    auto& stats = cpu::statsInstance();
+    uint64_t initial = stats.currentAllocatedBytes();
     
-    cpu::update_alloc(1024);
-    EXPECT_EQ(stats.current_allocated_bytes(), initial + 1024);
+    cpu::updateAlloc(1024);
+    EXPECT_EQ(stats.currentAllocatedBytes(), initial + 1024);
     
-    cpu::update_alloc(2048);
-    EXPECT_EQ(stats.current_allocated_bytes(), initial + 1024 + 2048);
+    cpu::updateAlloc(2048);
+    EXPECT_EQ(stats.currentAllocatedBytes(), initial + 1024 + 2048);
     
-    cpu::update_dealloc(1024);
-    EXPECT_EQ(stats.current_allocated_bytes(), initial + 2048);
+    cpu::updateDealloc(1024);
+    EXPECT_EQ(stats.currentAllocatedBytes(), initial + 2048);
 }
 
 /**
  * @brief Test that peak_allocated_bytes tracks maximum.
  */
 TEST_F(CpuStatsTest, PeakAllocatedBytesTracksMaximum) {
-    auto& stats = cpu::stats_instance();
-    uint64_t initial_peak = stats.peak_allocated_bytes();
-    uint64_t initial_current = stats.current_allocated_bytes();
+    auto& stats = cpu::statsInstance();
+    uint64_t initial_peak = stats.peakAllocatedBytes();
+    uint64_t initial_current = stats.currentAllocatedBytes();
     
-    cpu::update_alloc(1024);
-    uint64_t peak1 = stats.peak_allocated_bytes();
+    cpu::updateAlloc(1024);
+    uint64_t peak1 = stats.peakAllocatedBytes();
     EXPECT_GE(peak1, initial_peak);
     
-    cpu::update_alloc(2048);
-    uint64_t peak2 = stats.peak_allocated_bytes();
+    cpu::updateAlloc(2048);
+    uint64_t peak2 = stats.peakAllocatedBytes();
     EXPECT_GE(peak2, peak1);
     
-    cpu::update_dealloc(1024);
-    uint64_t peak3 = stats.peak_allocated_bytes();
+    cpu::updateDealloc(1024);
+    uint64_t peak3 = stats.peakAllocatedBytes();
     EXPECT_EQ(peak3, peak2);  // Peak should not decrease
     
-    cpu::update_dealloc(2048);
-    EXPECT_EQ(stats.current_allocated_bytes(), initial_current);
-    EXPECT_EQ(stats.peak_allocated_bytes(), peak2);  // Peak should remain
+    cpu::updateDealloc(2048);
+    EXPECT_EQ(stats.currentAllocatedBytes(), initial_current);
+    EXPECT_EQ(stats.peakAllocatedBytes(), peak2);  // Peak should remain
 }
 
 #endif  // ORTEAF_STATS_LEVEL_CPU_VALUE <= 4
@@ -131,30 +131,30 @@ TEST_F(CpuStatsTest, PeakAllocatedBytesTracksMaximum) {
  * @brief Test that statistics are updated when using alloc/dealloc.
  */
 TEST_F(CpuStatsTest, AllocDeallocUpdatesStats) {
-    auto& stats = cpu::stats_instance();
-    uint64_t initial_total = stats.total_allocations();
-    uint64_t initial_active = stats.active_allocations();
+    auto& stats = cpu::statsInstance();
+    uint64_t initial_total = stats.totalAllocations();
+    uint64_t initial_active = stats.activeAllocations();
     
     void* ptr1 = cpu::alloc(1024);
-    EXPECT_EQ(stats.total_allocations(), initial_total + 1);
-    EXPECT_EQ(stats.active_allocations(), initial_active + 1);
+    EXPECT_EQ(stats.totalAllocations(), initial_total + 1);
+    EXPECT_EQ(stats.activeAllocations(), initial_active + 1);
     
     void* ptr2 = cpu::alloc(2048);
-    EXPECT_EQ(stats.total_allocations(), initial_total + 2);
-    EXPECT_EQ(stats.active_allocations(), initial_active + 2);
+    EXPECT_EQ(stats.totalAllocations(), initial_total + 2);
+    EXPECT_EQ(stats.activeAllocations(), initial_active + 2);
     
     cpu::dealloc(ptr1, 1024);
-    EXPECT_EQ(stats.active_allocations(), initial_active + 1);
+    EXPECT_EQ(stats.activeAllocations(), initial_active + 1);
     
     cpu::dealloc(ptr2, 2048);
-    EXPECT_EQ(stats.active_allocations(), initial_active);
+    EXPECT_EQ(stats.activeAllocations(), initial_active);
 }
 
 /**
  * @brief Test that statistics are thread-safe.
  */
 TEST_F(CpuStatsTest, StatisticsAreThreadSafe) {
-    auto& stats = cpu::stats_instance();
+    auto& stats = cpu::statsInstance();
     constexpr int num_threads = 4;
     constexpr int ops_per_thread = 100;
     
@@ -163,8 +163,8 @@ TEST_F(CpuStatsTest, StatisticsAreThreadSafe) {
     for (int i = 0; i < num_threads; ++i) {
         threads.emplace_back([&stats]() {
             for (int j = 0; j < ops_per_thread; ++j) {
-                cpu::update_alloc(1024);
-                cpu::update_dealloc(1024);
+                cpu::updateAlloc(1024);
+                cpu::updateDealloc(1024);
             }
         });
     }
@@ -174,18 +174,18 @@ TEST_F(CpuStatsTest, StatisticsAreThreadSafe) {
     }
     
     // All allocations should be deallocated
-    EXPECT_EQ(stats.active_allocations(), 0);
-    EXPECT_EQ(stats.total_allocations(), num_threads * ops_per_thread);
-    EXPECT_EQ(stats.total_deallocations(), num_threads * ops_per_thread);
+    EXPECT_EQ(stats.activeAllocations(), 0);
+    EXPECT_EQ(stats.totalAllocations(), num_threads * ops_per_thread);
+    EXPECT_EQ(stats.totalDeallocations(), num_threads * ops_per_thread);
 }
 
 /**
  * @brief Test that statistics work with actual allocations.
  */
 TEST_F(CpuStatsTest, StatisticsWithActualAllocations) {
-    auto& stats = cpu::stats_instance();
-    uint64_t initial_total = stats.total_allocations();
-    uint64_t initial_active = stats.active_allocations();
+    auto& stats = cpu::statsInstance();
+    uint64_t initial_total = stats.totalAllocations();
+    uint64_t initial_active = stats.activeAllocations();
     
     std::vector<void*> ptrs;
     constexpr size_t size = 256;
@@ -195,14 +195,14 @@ TEST_F(CpuStatsTest, StatisticsWithActualAllocations) {
         ptrs.push_back(cpu::alloc(size));
     }
     
-    EXPECT_EQ(stats.total_allocations(), initial_total + num_allocs);
-    EXPECT_EQ(stats.active_allocations(), initial_active + num_allocs);
+    EXPECT_EQ(stats.totalAllocations(), initial_total + num_allocs);
+    EXPECT_EQ(stats.activeAllocations(), initial_active + num_allocs);
     
     for (auto ptr : ptrs) {
         cpu::dealloc(ptr, size);
     }
     
-    EXPECT_EQ(stats.active_allocations(), initial_active);
+    EXPECT_EQ(stats.activeAllocations(), initial_active);
 }
 
 #endif  // ORTEAF_STATS_LEVEL_CPU_VALUE <= 2
@@ -211,8 +211,8 @@ TEST_F(CpuStatsTest, StatisticsWithActualAllocations) {
  * @brief Test that to_string produces valid output.
  */
 TEST_F(CpuStatsTest, ToStringProducesValidOutput) {
-    auto& stats = cpu::stats_instance();
-    std::string str = stats.to_string();
+    auto& stats = cpu::statsInstance();
+    std::string str = stats.toString();
     
     EXPECT_FALSE(str.empty());
     EXPECT_NE(str.find("CPU Stats"), std::string::npos);
@@ -222,8 +222,8 @@ TEST_F(CpuStatsTest, ToStringProducesValidOutput) {
  * @brief Test that to_string is not empty even with no operations.
  */
 TEST_F(CpuStatsTest, ToStringNotEmptyWhenEmpty) {
-    auto& stats = cpu::stats_instance();
-    std::string str = stats.to_string();
+    auto& stats = cpu::statsInstance();
+    std::string str = stats.toString();
     
     EXPECT_FALSE(str.empty());
 }
@@ -232,7 +232,7 @@ TEST_F(CpuStatsTest, ToStringNotEmptyWhenEmpty) {
  * @brief Test that stream output operator works.
  */
 TEST_F(CpuStatsTest, StreamOutputOperatorWorks) {
-    auto& stats = cpu::stats_instance();
+    auto& stats = cpu::statsInstance();
     std::ostringstream oss;
     
     oss << stats;
@@ -244,8 +244,8 @@ TEST_F(CpuStatsTest, StreamOutputOperatorWorks) {
  * @brief Test that stats_instance returns singleton.
  */
 TEST_F(CpuStatsTest, StatsInstanceIsSingleton) {
-    cpu::CpuStats& stats1 = cpu::stats_instance();
-    cpu::CpuStats& stats2 = cpu::stats_instance();
+    cpu::CpuStats& stats1 = cpu::statsInstance();
+    cpu::CpuStats& stats2 = cpu::statsInstance();
     
     EXPECT_EQ(&stats1, &stats2);
 }
@@ -254,8 +254,8 @@ TEST_F(CpuStatsTest, StatsInstanceIsSingleton) {
  * @brief Test that cpu_stats returns same instance.
  */
 TEST_F(CpuStatsTest, CpuStatsReturnsSameInstance) {
-    cpu::CpuStats& stats1 = cpu::stats_instance();
-    cpu::CpuStats& stats2 = cpu::cpu_stats();
+    cpu::CpuStats& stats1 = cpu::statsInstance();
+    cpu::CpuStats& stats2 = cpu::cpuStats();
     
     EXPECT_EQ(&stats1, &stats2);
 }
@@ -266,14 +266,14 @@ TEST_F(CpuStatsTest, CpuStatsReturnsSameInstance) {
  * @brief Test that statistics are disabled when stats level is not set.
  */
 TEST(CpuStats, DisabledWhenStatsLevelNotSet) {
-    auto& stats = cpu::stats_instance();
+    auto& stats = cpu::statsInstance();
     
     // All update methods should be no-ops
-    EXPECT_NO_THROW(stats.update_alloc(1024));
-    EXPECT_NO_THROW(stats.update_dealloc(1024));
+    EXPECT_NO_THROW(stats.updateAlloc(1024));
+    EXPECT_NO_THROW(stats.updateDealloc(1024));
     
-    // to_string should indicate disabled state
-    std::string str = stats.to_string();
+    // toString should indicate disabled state
+    std::string str = stats.toString();
     EXPECT_NE(str.find("Disabled"), std::string::npos);
 }
 

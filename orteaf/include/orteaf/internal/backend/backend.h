@@ -20,7 +20,7 @@ enum class Backend : std::uint16_t {
 };
 
 /// @brief Convert a backend to its generated-table index.
-constexpr std::size_t ToIndex(Backend backend) {
+constexpr std::size_t toIndex(Backend backend) {
     return static_cast<std::size_t>(backend);
 }
 
@@ -50,34 +50,34 @@ inline constexpr std::array<Backend, kBackendCount> kAllBackends = {
 };
 
 /// @brief Return whether an index is within range.
-constexpr bool IsValidIndex(std::size_t index) {
+constexpr bool isValidIndex(std::size_t index) {
     return index < kBackendCount;
 }
 
 /// @brief Convert an index back into the enum value.
-constexpr Backend FromIndex(std::size_t index) {
+constexpr Backend fromIndex(std::size_t index) {
     return static_cast<Backend>(index);
 }
 
 /// @brief Return the YAML identifier (e.g. `"cuda"`).
-constexpr std::string_view IdOf(Backend backend) {
-    return kBackendIds[ToIndex(backend)];
+constexpr std::string_view idOf(Backend backend) {
+    return kBackendIds[toIndex(backend)];
 }
 
 /// @brief Return the display name.
-inline constexpr std::string_view DisplayNameOf(Backend backend) {
-    return tables::kBackendDisplayNames[ToIndex(backend)];
+inline constexpr std::string_view displayNameOf(Backend backend) {
+    return tables::kBackendDisplayNames[toIndex(backend)];
 }
 
-inline constexpr std::string_view ModulePathOf(Backend backend) {
-    return tables::kBackendModulePaths[ToIndex(backend)];
+inline constexpr std::string_view modulePathOf(Backend backend) {
+    return tables::kBackendModulePaths[toIndex(backend)];
 }
 
-inline constexpr std::string_view DescriptionOf(Backend backend) {
-    return tables::kBackendDescriptions[ToIndex(backend)];
+inline constexpr std::string_view descriptionOf(Backend backend) {
+    return tables::kBackendDescriptions[toIndex(backend)];
 }
 
-inline constexpr std::span<const Backend> AllBackends() {
+inline constexpr std::span<const Backend> allBackends() {
     return std::span<const Backend>(kAllBackends.data(), kAllBackends.size());
 }
 

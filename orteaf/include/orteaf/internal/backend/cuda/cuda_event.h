@@ -8,6 +8,8 @@
  */
 #pragma once
 
+#if ORTEAF_ENABLE_CUDA
+
 #include "orteaf/internal/backend/cuda/cuda_stream.h"
 
 namespace orteaf::internal::backend::cuda {
@@ -24,7 +26,7 @@ static_assert(sizeof(CUevent_t) == sizeof(void*), "CUevent_t must be pointer-siz
  *
  * Also updates internal CUDA statistics on success.
  */
-CUevent_t create_event();
+CUevent_t createEvent();
 
 /**
  * @brief Destroy a CUDA event.
@@ -33,7 +35,7 @@ CUevent_t create_event();
  *
  * Also updates internal CUDA statistics on success.
  */
-void destroy_event(CUevent_t event);
+void destroyEvent(CUevent_t event);
 
 /**
  * @brief Record an event into a stream.
@@ -41,7 +43,7 @@ void destroy_event(CUevent_t event);
  * @param stream Opaque stream handle; nullptr is ignored.
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void record_event(CUevent_t event, CUstream_t stream);
+void recordEvent(CUevent_t event, CUstream_t stream);
 
 /**
  * @brief Query whether an event has completed.
@@ -49,7 +51,7 @@ void record_event(CUevent_t event, CUstream_t stream);
  * @return true if completed or CUDA disabled; false if not ready.
  * @throws std::system_error On unexpected CUDA driver error (via `OrteafErrc`).
  */
-bool query_event(CUevent_t event);
+bool queryEvent(CUevent_t event);
 
 /**
  * @brief Make a stream wait for an event to complete.
@@ -57,5 +59,8 @@ bool query_event(CUevent_t event);
  * @param event Opaque event handle; nullptr is ignored.
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void wait_event(CUstream_t stream, CUevent_t event);
+void waitEvent(CUstream_t stream, CUevent_t event);
+
 } // namespace orteaf::internal::backend::cuda
+
+#endif  // ORTEAF_ENABLE_CUDA

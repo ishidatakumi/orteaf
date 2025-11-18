@@ -11,22 +11,20 @@
 
 namespace cuda = orteaf::internal::backend::cuda;
 
-#if ORTEAF_ENABLE_CUDA
-
 /**
  * @brief Test that CUDA initialization succeeds.
  */
 TEST(CudaInit, InitializeSucceeds) {
-    EXPECT_NO_THROW(cuda::cuda_init());
+    EXPECT_NO_THROW(cuda::cudaInit());
 }
 
 /**
  * @brief Test that CUDA initialization is idempotent (can be called multiple times).
  */
 TEST(CudaInit, InitializeIsIdempotent) {
-    cuda::cuda_init();
-    EXPECT_NO_THROW(cuda::cuda_init());
-    EXPECT_NO_THROW(cuda::cuda_init());
+    cuda::cudaInit();
+    EXPECT_NO_THROW(cuda::cudaInit());
+    EXPECT_NO_THROW(cuda::cudaInit());
 }
 
 /**
@@ -38,8 +36,8 @@ TEST(CudaInit, InitializeIsThreadSafe) {
     
     for (int i = 0; i < num_threads; ++i) {
         threads.emplace_back([]() {
-            EXPECT_NO_THROW(cuda::cuda_init());
-            EXPECT_NO_THROW(cuda::cuda_init());
+            EXPECT_NO_THROW(cuda::cudaInit());
+            EXPECT_NO_THROW(cuda::cudaInit());
         });
     }
     
@@ -48,16 +46,5 @@ TEST(CudaInit, InitializeIsThreadSafe) {
     }
     
     // After all threads finish, initialization should still work
-    EXPECT_NO_THROW(cuda::cuda_init());
+    EXPECT_NO_THROW(cuda::cudaInit());
 }
-
-#else  // !ORTEAF_ENABLE_CUDA
-
-/**
- * @brief Test that CUDA initialization is skipped when CUDA is disabled.
- */
-TEST(CudaInit, DisabledWhenCudaNotAvailable) {
-    GTEST_SKIP() << "CUDA is not enabled in this build";
-}
-
-#endif  // ORTEAF_ENABLE_CUDA

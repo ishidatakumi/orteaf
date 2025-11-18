@@ -35,10 +35,10 @@ std::atomic<void*> g_context{nullptr};
  * @param level The log severity level.
  * @param message The log message content.
  */
-void default_sink(LogCategory category, LogLevel level, std::string_view message) {
+void defaultSink(LogCategory category, LogLevel level, std::string_view message) {
     std::fprintf(stderr, "[ORTEAF][%s][%s] %.*s\n",
-                 category_to_string(category),
-                 level_to_string(level),
+                 categoryToString(category),
+                 levelToString(level),
                  static_cast<int>(message.size()),
                  message.data());
 }
@@ -48,13 +48,13 @@ void default_sink(LogCategory category, LogLevel level, std::string_view message
 /**
  * @brief Set a custom log sink function.
  *
- * Implementation of set_log_sink() declared in log.h.
+ * Implementation of setLogSink() declared in log.h.
  * Atomically stores the sink function pointer and context using release memory ordering.
  *
  * @param sink Pointer to the log sink function, or nullptr to use default.
  * @param context Optional user-provided context pointer passed to the sink function.
  */
-void set_log_sink(LogSink sink, void* context) {
+void setLogSink(LogSink sink, void* context) {
     g_context.store(context, std::memory_order_release);
     g_sink.store(sink, std::memory_order_release);
 }
@@ -62,11 +62,11 @@ void set_log_sink(LogSink sink, void* context) {
 /**
  * @brief Reset the log sink to the default behavior.
  *
- * Implementation of reset_log_sink() declared in log.h.
- * Equivalent to calling set_log_sink(nullptr, nullptr).
+ * Implementation of resetLogSink() declared in log.h.
+ * Equivalent to calling setLogSink(nullptr, nullptr).
  */
-void reset_log_sink() {
-    set_log_sink(nullptr, nullptr);
+void resetLogSink() {
+    setLogSink(nullptr, nullptr);
 }
 
 namespace detail {
@@ -74,7 +74,7 @@ namespace detail {
 /**
  * @brief Internal function to log a message.
  *
- * Implementation of log_message() declared in log.h.
+ * Implementation of logMessage() declared in log.h.
  * Routes the message to the configured sink (if set) or the default sink.
  * Uses acquire memory ordering to read the sink and context atomically.
  *
@@ -82,12 +82,12 @@ namespace detail {
  * @param level The severity level of the log message.
  * @param message The log message content.
  */
-void log_message(LogCategory category, LogLevel level, std::string message) {
+void logMessage(LogCategory category, LogLevel level, std::string message) {
     if (auto sink = g_sink.load(std::memory_order_acquire)) {
         sink(category, level, message, g_context.load(std::memory_order_acquire));
         return;
     }
-    default_sink(category, level, message);
+    defaultSink(category, level, message);
 }
 
 }  // namespace detail

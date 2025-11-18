@@ -22,7 +22,7 @@ enum class Op : std::uint16_t {
 };
 
 /// @brief Convert an op to its generated-table index.
-constexpr std::size_t ToIndex(Op op) {
+constexpr std::size_t toIndex(Op op) {
     return static_cast<std::size_t>(op);
 }
 
@@ -60,86 +60,86 @@ using ComputePolicySpec = tables::ComputePolicySpec;
 using ShapeInferenceSpec = tables::ShapeInferenceSpec;
 using MetadataSpec = tables::MetadataSpec;
 
-constexpr bool IsValidIndex(std::size_t index) {
+constexpr bool isValidIndex(std::size_t index) {
     return index < kOpCount;
 }
 
 /// @brief Convert an index back into the enum value.
-constexpr Op FromIndex(std::size_t index) {
+constexpr Op fromIndex(std::size_t index) {
     return static_cast<Op>(index);
 }
 
 /// @brief Return the YAML identifier (e.g. `"MatMul"`).
-constexpr std::string_view IdOf(Op op) {
-    return kOpIds[ToIndex(op)];
+constexpr std::string_view idOf(Op op) {
+    return kOpIds[toIndex(op)];
 }
 
 /// @brief Return the display name.
-inline constexpr std::string_view DisplayNameOf(Op op) {
-    return tables::kOpDisplayNames[ToIndex(op)];
+inline constexpr std::string_view displayNameOf(Op op) {
+    return tables::kOpDisplayNames[toIndex(op)];
 }
 
 /// @brief Return the category string.
-inline constexpr std::string_view CategoryOf(Op op) {
-    return tables::kOpCategories[ToIndex(op)];
+inline constexpr std::string_view categoryOf(Op op) {
+    return tables::kOpCategories[toIndex(op)];
 }
 
 /// @brief Return the arity (number of inputs).
-inline constexpr std::uint32_t ArityOf(Op op) {
-    return tables::kOpArity[ToIndex(op)];
+inline constexpr std::uint32_t arityOf(Op op) {
+    return tables::kOpArity[toIndex(op)];
 }
 
 /// @brief Return the compute-policy specification.
-inline constexpr const ComputePolicySpec& ComputePolicyOf(Op op) {
-    return tables::kOpComputePolicies[ToIndex(op)];
+inline constexpr const ComputePolicySpec& computePolicyOf(Op op) {
+    return tables::kOpComputePolicies[toIndex(op)];
 }
 
 /// @brief Return the shape-inference specification.
-inline constexpr const ShapeInferenceSpec& ShapeInferenceOf(Op op) {
-    return tables::kOpShapeInference[ToIndex(op)];
+inline constexpr const ShapeInferenceSpec& shapeInferenceOf(Op op) {
+    return tables::kOpShapeInference[toIndex(op)];
 }
 
 /// @brief Return the metadata block (tags, aliases, etc.).
-inline constexpr const MetadataSpec& MetadataOf(Op op) {
-    return tables::kOpMetadata[ToIndex(op)];
+inline constexpr const MetadataSpec& metadataOf(Op op) {
+    return tables::kOpMetadata[toIndex(op)];
 }
 
 template <typename T, std::size_t N>
-constexpr std::span<const T> Slice(const std::array<T, N>& data, tables::Range range) {
+constexpr std::span<const T> slice(const std::array<T, N>& data, tables::Range range) {
     return std::span<const T>(data.data() + range.offset, range.count);
 }
 
-inline constexpr std::span<const InputSpec> InputsOf(Op op) {
-    return Slice(tables::kOpInputSpecs, tables::kOpInputRanges[ToIndex(op)]);
+inline constexpr std::span<const InputSpec> inputsOf(Op op) {
+    return slice(tables::kOpInputSpecs, tables::kOpInputRanges[toIndex(op)]);
 }
 
 /// @brief Return the list of output specs.
-inline constexpr std::span<const OutputSpec> OutputsOf(Op op) {
-    return Slice(tables::kOpOutputSpecs, tables::kOpOutputRanges[ToIndex(op)]);
+inline constexpr std::span<const OutputSpec> outputsOf(Op op) {
+    return slice(tables::kOpOutputSpecs, tables::kOpOutputRanges[toIndex(op)]);
 }
 
 /// @brief Return the list of attribute specs.
-inline constexpr std::span<const AttributeSpec> AttributesOf(Op op) {
-    return Slice(tables::kOpAttributes, tables::kOpAttributeRanges[ToIndex(op)]);
+inline constexpr std::span<const AttributeSpec> attributesOf(Op op) {
+    return slice(tables::kOpAttributes, tables::kOpAttributeRanges[toIndex(op)]);
 }
 
 /// @brief Return the metadata tags.
-inline constexpr std::span<const std::string_view> TagsOf(Op op) {
-    return Slice(tables::kOpMetadataTags, MetadataOf(op).tags);
+inline constexpr std::span<const std::string_view> tagsOf(Op op) {
+    return slice(tables::kOpMetadataTags, metadataOf(op).tags);
 }
 
 /// @brief Return the metadata aliases.
-inline constexpr std::span<const std::string_view> AliasesOf(Op op) {
-    return Slice(tables::kOpMetadataAliases, MetadataOf(op).aliases);
+inline constexpr std::span<const std::string_view> aliasesOf(Op op) {
+    return slice(tables::kOpMetadataAliases, metadataOf(op).aliases);
 }
 
 /// @brief Enumerate every op.
-inline constexpr std::span<const Op> AllOps() {
+inline constexpr std::span<const Op> allOps() {
     return std::span<const Op>(kAllOps.data(), kAllOps.size());
 }
 
 /// @brief Enumerate every op identifier.
-inline constexpr std::span<const std::string_view> AllOpIds() {
+inline constexpr std::span<const std::string_view> allOpIds() {
     return std::span<const std::string_view>(kOpIds.data(), kOpIds.size());
 }
 
