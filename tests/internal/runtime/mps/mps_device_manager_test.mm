@@ -7,15 +7,20 @@
 #include <vector>
 
 #include "orteaf/internal/architecture/architecture.h"
+#include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/runtime/manager/mps/mps_device_manager.h"
 #include "tests/internal/runtime/mps/testing/backend_ops_provider.h"
 #include "tests/internal/runtime/mps/testing/manager_test_fixture.h"
+#include "tests/internal/testing/error_assert.h"
 
 namespace architecture = orteaf::internal::architecture;
 namespace backend = orteaf::internal::backend;
 namespace base = orteaf::internal::base;
+namespace diag_error = orteaf::internal::diagnostics::error;
 namespace mps_rt = orteaf::internal::runtime::mps;
 namespace testing_mps = orteaf::tests::runtime::mps::testing;
+
+using orteaf::tests::ExpectError;
 
 #define ORTEAF_MPS_ENV_COUNT "ORTEAF_EXPECT_MPS_DEVICE_COUNT"
 #define ORTEAF_MPS_ENV_ARCH "ORTEAF_EXPECT_MPS_DEVICE_ARCH"
@@ -69,10 +74,10 @@ TYPED_TEST_SUITE(MpsDeviceManagerTypedTest, ProviderTypes);
 
 TYPED_TEST(MpsDeviceManagerTypedTest, AccessBeforeInitializationThrows) {
     auto& manager = this->manager();
-    EXPECT_THROW(manager.getDevice(base::DeviceId{0}), std::system_error);
-    EXPECT_THROW(manager.getArch(base::DeviceId{0}), std::system_error);
+    ExpectError(diag_error::OrteafErrc::InvalidState, [&] { (void)manager.getDevice(base::DeviceId{0}); });
+    ExpectError(diag_error::OrteafErrc::InvalidState, [&] { (void)manager.getArch(base::DeviceId{0}); });
     EXPECT_FALSE(manager.isAlive(base::DeviceId{0}));
-    EXPECT_THROW(static_cast<void>(manager.commandQueueManager(base::DeviceId{0})), std::system_error);
+    ExpectError(diag_error::OrteafErrc::InvalidState, [&] { static_cast<void>(manager.commandQueueManager(base::DeviceId{0})); });
     const auto snapshot = manager.debugState(base::DeviceId{0});
     EXPECT_FALSE(snapshot.in_range);
     EXPECT_FALSE(snapshot.is_alive);
@@ -231,9 +236,9 @@ TYPED_TEST(MpsDeviceManagerTypedTest, InvalidDeviceIdRejectsAccess) {
     const auto invalid = base::DeviceId{
         static_cast<std::uint32_t>(manager.getDeviceCount() + 1)};
 
-    EXPECT_THROW(manager.getDevice(invalid), std::system_error);
-    EXPECT_THROW(manager.getArch(invalid), std::system_error);
-    EXPECT_THROW(static_cast<void>(manager.commandQueueManager(invalid)), std::system_error);
+    ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] { (void)manager.getDevice(invalid); });
+    ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] { (void)manager.getArch(invalid); });
+    ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] { static_cast<void>(manager.commandQueueManager(invalid)); });
     EXPECT_FALSE(manager.isAlive(invalid));
     const auto invalid_snapshot = manager.debugState(invalid);
     EXPECT_FALSE(invalid_snapshot.in_range);
@@ -366,7 +371,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ShutdownClearsDeviceState) {
         const auto snapshot = manager.debugState(id);
         EXPECT_FALSE(snapshot.in_range);
         EXPECT_FALSE(snapshot.is_alive);
-        EXPECT_THROW(static_cast<void>(manager.commandQueueManager(id)), std::system_error);
+        ExpectError(diag_error::OrteafErrc::InvalidState, [&] { static_cast<void>(manager.commandQueueManager(id)); });
     }
 }
 
