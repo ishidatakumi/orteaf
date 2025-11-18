@@ -116,18 +116,7 @@ public:
     }
 
     base::CommandQueueId acquire() {
-        ensureInitialized();
-        if (free_list_.empty()) {
-            growStatePool(growth_chunk_size_);
-            if (free_list_.empty()) {
-                ::orteaf::internal::diagnostics::error::throwError(
-                    ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-                    "No available MPS command queues");
-            }
-        }
-
-        const std::size_t index = free_list_.back();
-        free_list_.resize(free_list_.size() - 1);
+        const std::size_t index = allocateSlot();
         State& state = states_[index];
         state.in_use = true;
         state.resetHazards();
@@ -286,6 +275,21 @@ private:
 
     const State& ensureActiveState(base::CommandQueueId id) const {
         return const_cast<MpsCommandQueueManager*>(this)->ensureActiveState(id);
+    }
+
+    std::size_t allocateSlot() {
+        ensureInitialized();
+        if (free_list_.empty()) {
+            growStatePool(growth_chunk_size_);
+            if (free_list_.empty()) {
+                ::orteaf::internal::diagnostics::error::throwError(
+                    ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+                    "No available MPS command queues");
+            }
+        }
+        const std::size_t index = free_list_.back();
+        free_list_.resize(free_list_.size() - 1);
+        return index;
     }
 
     void growStatePool(std::size_t additional_count) {
