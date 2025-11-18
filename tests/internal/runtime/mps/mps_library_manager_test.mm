@@ -2,6 +2,8 @@
 #include <gtest/gtest.h>
 
 #include <cstdlib>
+#include <limits>
+#include <optional>
 #include <string>
 #include <system_error>
 
@@ -16,6 +18,7 @@ namespace base = orteaf::internal::base;
 namespace diag_error = orteaf::internal::diagnostics::error;
 namespace mps_rt = orteaf::internal::runtime::mps;
 namespace testing_mps = orteaf::tests::runtime::mps::testing;
+using orteaf::tests::ExpectError;
 
 #define ORTEAF_MPS_ENV_LIBRARY_NAME "ORTEAF_EXPECT_MPS_LIBRARY_NAME"
 
@@ -37,16 +40,15 @@ protected:
 
     auto& adapter() { return Base::adapter(); }
 
-    std::string libraryNameOrSkip() {
+    std::optional<std::string> libraryNameFromEnv() const {
         if constexpr (Provider::is_mock) {
-            return "MockLibrary";
-        } else {
-            const char* value = std::getenv(ORTEAF_MPS_ENV_LIBRARY_NAME);
-            if (value == nullptr || *value == '\0') {
-                GTEST_SKIP() << "Set " ORTEAF_MPS_ENV_LIBRARY_NAME " to a valid library name to run";
-            }
-            return std::string{value};
+            return std::string{"MockLibrary"};
         }
+        const char* value = std::getenv(ORTEAF_MPS_ENV_LIBRARY_NAME);
+        if (value == nullptr || *value == '\0') {
+            return std::nullopt;
+        }
+        return std::string{value};
     }
 
     void initializeManager(std::size_t capacity = 0) {
@@ -82,6 +84,25 @@ TYPED_TEST(MpsLibraryManagerTypedTest, AccessBeforeInitializationThrows) {
     ExpectError(diag_error::OrteafErrc::InvalidState, [&] { (void)manager.getLibrary(base::LibraryId{0}); });
 }
 
+TYPED_TEST(MpsLibraryManagerTypedTest, InitializeRejectsNullDevice) {
+    auto& manager = this->manager();
+    ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] { manager.initialize(nullptr, 1); });
+}
+
+TYPED_TEST(MpsLibraryManagerTypedTest, InitializeRejectsCapacityAboveLimit) {
+    auto& manager = this->manager();
+    const auto device = this->adapter().device();
+    ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] {
+        manager.initialize(device, std::numeric_limits<std::size_t>::max());
+    });
+}
+
+TYPED_TEST(MpsLibraryManagerTypedTest, InitializeWithZeroCapacityIsAllowed) {
+    auto& manager = this->manager();
+    this->initializeManager(0);
+    EXPECT_EQ(manager.capacity(), 0u);
+}
+
 TYPED_TEST(MpsLibraryManagerTypedTest, InitializeSetsCapacity) {
     auto& manager = this->manager();
     this->initializeManager(3);
@@ -92,12 +113,15 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GetOrCreateAllocatesAndCachesLibrary) {
     auto& manager = this->manager();
     this->initializeManager();
 
-    const auto name = this->libraryNameOrSkip();
-    const auto key = mps_rt::LibraryKey::Named(name);
+    const auto maybe_name = this->libraryNameFromEnv();
+    if (!maybe_name.has_value()) {
+        GTEST_SKIP() << "Set " ORTEAF_MPS_ENV_LIBRARY_NAME " to a valid library name to run";
+    }
+    const auto key = mps_rt::LibraryKey::Named(*maybe_name);
     backend::mps::MPSLibrary_t expected = nullptr;
     if constexpr (TypeParam::is_mock) {
         expected = makeLibrary(0x501);
-        this->adapter().expectCreateLibraries({{name, expected}});
+        this->adapter().expectCreateLibraries({{*maybe_name, expected}});
     }
 
     const auto id0 = manager.getOrCreate(key);
@@ -112,29 +136,33 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GetOrCreateAllocatesAndCachesLibrary) {
     const auto snapshot = manager.debugState(id0);
     EXPECT_TRUE(snapshot.alive);
     EXPECT_TRUE(snapshot.handle_allocated);
-    EXPECT_EQ(snapshot.identifier, name);
+    EXPECT_EQ(snapshot.identifier, *maybe_name);
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest, ReleaseDestroysHandleAndAllowsRecreation) {
     auto& manager = this->manager();
     this->initializeManager();
-    const auto name = this->libraryNameOrSkip();
-    const auto key = mps_rt::LibraryKey::Named(name);
+    const auto maybe_name = this->libraryNameFromEnv();
+    if (!maybe_name.has_value()) {
+        GTEST_SKIP() << "Set " ORTEAF_MPS_ENV_LIBRARY_NAME " to a valid library name to run";
+    }
+    const auto key = mps_rt::LibraryKey::Named(*maybe_name);
 
     backend::mps::MPSLibrary_t first_handle = nullptr;
     backend::mps::MPSLibrary_t second_handle = nullptr;
     if constexpr (TypeParam::is_mock) {
         first_handle = makeLibrary(0x600);
         second_handle = makeLibrary(0x601);
-        this->adapter().expectCreateLibraries({{name, first_handle}, {name, second_handle}});
+        this->adapter().expectCreateLibraries({{*maybe_name, first_handle}, {*maybe_name, second_handle}});
         this->adapter().expectDestroyLibraries({first_handle});
     }
 
     const auto id = manager.getOrCreate(key);
     manager.release(id);
-    if constexpr (TypeParam::is_mock) {
-        EXPECT_THROW((void)manager.getLibrary(id), std::system_error);
-    }
+    ExpectError(diag_error::OrteafErrc::InvalidState, [&] { (void)manager.getLibrary(id); });
+    const auto released_snapshot = manager.debugState(id);
+    EXPECT_FALSE(released_snapshot.alive);
+    EXPECT_FALSE(released_snapshot.handle_allocated);
 
     const auto reacquired = manager.getOrCreate(key);
     EXPECT_NE(reacquired, base::LibraryId{});
@@ -150,5 +178,34 @@ TYPED_TEST(MpsLibraryManagerTypedTest, EmptyIdentifierIsRejected) {
     this->initializeManager();
     ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] {
         (void)manager.getOrCreate(mps_rt::LibraryKey::Named(""));
+    });
+}
+
+TYPED_TEST(MpsLibraryManagerTypedTest, ReleaseRejectsStaleId) {
+    auto& manager = this->manager();
+    this->initializeManager();
+    const auto maybe_name = this->libraryNameFromEnv();
+    if (!maybe_name.has_value()) {
+        GTEST_SKIP() << "Set " ORTEAF_MPS_ENV_LIBRARY_NAME " to a valid library name to run";
+    }
+    const auto key = mps_rt::LibraryKey::Named(*maybe_name);
+
+    backend::mps::MPSLibrary_t handle = nullptr;
+    if constexpr (TypeParam::is_mock) {
+        handle = makeLibrary(0x650);
+        this->adapter().expectCreateLibraries({{*maybe_name, handle}});
+        this->adapter().expectDestroyLibraries({handle});
+    }
+
+    const auto id = manager.getOrCreate(key);
+    manager.release(id);
+    ExpectError(diag_error::OrteafErrc::InvalidState, [&] { manager.release(id); });
+}
+
+TYPED_TEST(MpsLibraryManagerTypedTest, GetLibraryRejectsInvalidId) {
+    auto& manager = this->manager();
+    this->initializeManager();
+    ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] {
+        (void)manager.getLibrary(base::LibraryId{std::numeric_limits<std::uint32_t>::max()});
     });
 }
