@@ -162,6 +162,8 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest, GrowthChunkSizeControlsPoolE
 
     const auto id = manager.getOrCreate(key);
     EXPECT_EQ(manager.capacity(), 2u);
+    const auto snapshot = manager.debugState(id);
+    EXPECT_EQ(snapshot.growth_chunk_size, 2u);
 
     this->adapter().expectDestroyComputePipelineStates({pipeline_handle});
     this->adapter().expectDestroyFunctions({function_handle});

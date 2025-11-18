@@ -122,6 +122,8 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GrowthChunkSizeControlsPoolExpansion) {
     this->adapter().expectCreateLibraries({{"ChunkedLibrary", handle}});
     const auto id = manager.getOrCreate(key);
     EXPECT_EQ(manager.capacity(), 3u);
+    const auto snapshot = manager.debugState(id);
+    EXPECT_EQ(snapshot.growth_chunk_size, 3u);
     this->adapter().expectDestroyLibraries({handle});
     manager.release(id);
     manager.shutdown();

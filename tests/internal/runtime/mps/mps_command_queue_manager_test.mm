@@ -68,6 +68,26 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, GrowthChunkSizeRejectsZero) {
     ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] { manager.setGrowthChunkSize(0); });
 }
 
+TYPED_TEST(MpsCommandQueueManagerTypedTest, GrowthChunkSizeReflectedInDebugState) {
+    if constexpr (!TypeParam::is_mock) {
+        GTEST_SKIP() << "Mock-only test";
+        return;
+    }
+    auto& manager = this->manager();
+    manager.setGrowthChunkSize(3);
+    const auto device = this->adapter().device();
+    this->adapter().expectCreateCommandQueues({makeQueue(0x510)});
+    this->adapter().expectCreateEvents({makeEvent(0x610)});
+    manager.initialize(device, 1);
+    const auto id = manager.acquire();
+    const auto snapshot = manager.debugState(id);
+    EXPECT_EQ(snapshot.growth_chunk_size, 3u);
+    manager.release(id);
+    this->adapter().expectDestroyEvents({makeEvent(0x610)});
+    this->adapter().expectDestroyCommandQueues({makeQueue(0x510)});
+    manager.shutdown();
+}
+
 TYPED_TEST(MpsCommandQueueManagerTypedTest, InitializeCreatesConfiguredNumberOfResources) {
     auto& manager = this->manager();
     this->adapter().expectCreateCommandQueues({makeQueue(0x1), makeQueue(0x2)});
