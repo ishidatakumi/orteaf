@@ -10,8 +10,10 @@
 #include <gmock/gmock.h>
 
 #include "orteaf/internal/backend/mps/mps_command_queue.h"
+#include "orteaf/internal/backend/mps/mps_compute_pipeline_state.h"
 #include "orteaf/internal/backend/mps/mps_device.h"
 #include "orteaf/internal/backend/mps/mps_event.h"
+#include "orteaf/internal/backend/mps/mps_function.h"
 #include "orteaf/internal/backend/mps/mps_library.h"
 #include "orteaf/internal/base/strong_id.h"
 #include "orteaf/internal/architecture/architecture.h"
@@ -204,6 +206,102 @@ struct BackendMockExpectations {
         }
         for (auto handle : handles) {
             EXPECT_CALL(mock, destroyLibrary(handle)).Times(1);
+        }
+    }
+
+    static void expectCreateFunctions(
+        MpsBackendOpsMock& mock,
+        std::initializer_list<std::pair<std::string, ::orteaf::internal::backend::mps::MPSFunction_t>> expectations,
+        ::testing::Matcher<::orteaf::internal::backend::mps::MPSLibrary_t> library_matcher = ::testing::_) {
+        if (expectations.size() == 0) {
+            EXPECT_CALL(mock, createFunction(library_matcher, ::testing::_)).Times(0);
+            return;
+        }
+        struct State {
+            std::vector<::orteaf::internal::backend::mps::MPSFunction_t> handles;
+            std::vector<std::string> names;
+            std::size_t next{0};
+        };
+        auto state = std::make_shared<State>();
+        for (const auto& [name, handle] : expectations) {
+            state->names.push_back(name);
+            state->handles.push_back(handle);
+        }
+        const auto call_count = state->handles.size();
+        EXPECT_CALL(mock, createFunction(library_matcher, ::testing::_))
+            .Times(call_count)
+            .WillRepeatedly(::testing::Invoke(
+                [state](::orteaf::internal::backend::mps::MPSLibrary_t /*library*/,
+                        std::string_view requested_name) mutable {
+                    const auto index = state->next;
+                    EXPECT_LT(index, state->names.size());
+                    if (index < state->names.size()) {
+                        EXPECT_EQ(requested_name, state->names[index]);
+                    }
+                    const auto handle = state->handles[index];
+                    ++state->next;
+                    return handle;
+                }));
+    }
+
+    static void expectDestroyFunctions(
+        MpsBackendOpsMock& mock,
+        std::initializer_list<::orteaf::internal::backend::mps::MPSFunction_t> handles) {
+        if (handles.size() == 0) {
+            EXPECT_CALL(mock, destroyFunction(::testing::_)).Times(0);
+            return;
+        }
+        for (auto handle : handles) {
+            EXPECT_CALL(mock, destroyFunction(handle)).Times(1);
+        }
+    }
+
+    static void expectCreateComputePipelineStates(
+        MpsBackendOpsMock& mock,
+        std::initializer_list<std::pair<
+            ::orteaf::internal::backend::mps::MPSFunction_t,
+            ::orteaf::internal::backend::mps::MPSComputePipelineState_t>> expectations,
+        ::testing::Matcher<::orteaf::internal::backend::mps::MPSDevice_t> device_matcher = ::testing::_) {
+        if (expectations.size() == 0) {
+            EXPECT_CALL(mock, createComputePipelineState(device_matcher, ::testing::_)).Times(0);
+            return;
+        }
+        struct State {
+            std::vector<::orteaf::internal::backend::mps::MPSFunction_t> functions;
+            std::vector<::orteaf::internal::backend::mps::MPSComputePipelineState_t> pipelines;
+            std::size_t next{0};
+        };
+        auto state = std::make_shared<State>();
+        for (const auto& [function, pipeline] : expectations) {
+            state->functions.push_back(function);
+            state->pipelines.push_back(pipeline);
+        }
+        const auto call_count = state->pipelines.size();
+        EXPECT_CALL(mock, createComputePipelineState(device_matcher, ::testing::_))
+            .Times(call_count)
+            .WillRepeatedly(::testing::Invoke(
+                [state](::orteaf::internal::backend::mps::MPSDevice_t /*device*/,
+                        ::orteaf::internal::backend::mps::MPSFunction_t function) mutable {
+                    const auto index = state->next;
+                    EXPECT_LT(index, state->functions.size());
+                    if (index < state->functions.size()) {
+                        EXPECT_EQ(function, state->functions[index]);
+                    }
+                    const auto pipeline = state->pipelines[index];
+                    ++state->next;
+                    return pipeline;
+                }));
+    }
+
+    static void expectDestroyComputePipelineStates(
+        MpsBackendOpsMock& mock,
+        std::initializer_list<::orteaf::internal::backend::mps::MPSComputePipelineState_t> handles) {
+        if (handles.size() == 0) {
+            EXPECT_CALL(mock, destroyComputePipelineState(::testing::_)).Times(0);
+            return;
+        }
+        for (auto handle : handles) {
+            EXPECT_CALL(mock, destroyComputePipelineState(handle)).Times(1);
         }
     }
 };

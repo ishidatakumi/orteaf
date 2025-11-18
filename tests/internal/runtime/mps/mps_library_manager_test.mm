@@ -21,11 +21,20 @@ namespace testing_mps = orteaf::tests::runtime::mps::testing;
 using orteaf::tests::ExpectError;
 
 #define ORTEAF_MPS_ENV_LIBRARY_NAME "ORTEAF_EXPECT_MPS_LIBRARY_NAME"
+#define ORTEAF_MPS_ENV_FUNCTION_NAME "ORTEAF_EXPECT_MPS_FUNCTION_NAME"
 
 namespace {
 
 backend::mps::MPSLibrary_t makeLibrary(std::uintptr_t value) {
     return reinterpret_cast<backend::mps::MPSLibrary_t>(value);
+}
+
+backend::mps::MPSFunction_t makeFunction(std::uintptr_t value) {
+    return reinterpret_cast<backend::mps::MPSFunction_t>(value);
+}
+
+backend::mps::MPSComputePipelineState_t makePipeline(std::uintptr_t value) {
+    return reinterpret_cast<backend::mps::MPSComputePipelineState_t>(value);
 }
 
 template <class Provider>
@@ -45,6 +54,17 @@ protected:
             return std::string{"MockLibrary"};
         }
         const char* value = std::getenv(ORTEAF_MPS_ENV_LIBRARY_NAME);
+        if (value == nullptr || *value == '\0') {
+            return std::nullopt;
+        }
+        return std::string{value};
+    }
+
+    std::optional<std::string> functionNameFromEnv() const {
+        if constexpr (Provider::is_mock) {
+            return std::string{"MockFunction"};
+        }
+        const char* value = std::getenv(ORTEAF_MPS_ENV_FUNCTION_NAME);
         if (value == nullptr || *value == '\0') {
             return std::nullopt;
         }
@@ -116,6 +136,7 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GetOrCreateAllocatesAndCachesLibrary) {
     const auto maybe_name = this->libraryNameFromEnv();
     if (!maybe_name.has_value()) {
         GTEST_SKIP() << "Set " ORTEAF_MPS_ENV_LIBRARY_NAME " to a valid library name to run";
+        return;
     }
     const auto key = mps_rt::LibraryKey::Named(*maybe_name);
     backend::mps::MPSLibrary_t expected = nullptr;
@@ -145,6 +166,7 @@ TYPED_TEST(MpsLibraryManagerTypedTest, ReleaseDestroysHandleAndAllowsRecreation)
     const auto maybe_name = this->libraryNameFromEnv();
     if (!maybe_name.has_value()) {
         GTEST_SKIP() << "Set " ORTEAF_MPS_ENV_LIBRARY_NAME " to a valid library name to run";
+        return;
     }
     const auto key = mps_rt::LibraryKey::Named(*maybe_name);
 
@@ -188,6 +210,7 @@ TYPED_TEST(MpsLibraryManagerTypedTest, ReleaseRejectsStaleId) {
     const auto maybe_name = this->libraryNameFromEnv();
     if (!maybe_name.has_value()) {
         GTEST_SKIP() << "Set " ORTEAF_MPS_ENV_LIBRARY_NAME " to a valid library name to run";
+        return;
     }
     const auto key = mps_rt::LibraryKey::Named(*maybe_name);
 
@@ -209,4 +232,78 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GetLibraryRejectsInvalidId) {
     ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] {
         (void)manager.getLibrary(base::LibraryId{std::numeric_limits<std::uint32_t>::max()});
     });
+}
+
+TYPED_TEST(MpsLibraryManagerTypedTest, PipelineManagerAccessBeforeInitializationThrows) {
+    auto& manager = this->manager();
+    ExpectError(diag_error::OrteafErrc::InvalidState, [&] {
+        (void)manager.pipelineManager(base::LibraryId{0});
+    });
+}
+
+TYPED_TEST(MpsLibraryManagerTypedTest, PipelineManagerAccessAfterReleaseThrows) {
+    auto& manager = this->manager();
+    this->initializeManager();
+    const auto maybe_name = this->libraryNameFromEnv();
+    if (!maybe_name.has_value()) {
+        GTEST_SKIP() << "Set " ORTEAF_MPS_ENV_LIBRARY_NAME " to a valid library name to run";
+        return;
+    }
+    const auto key = mps_rt::LibraryKey::Named(*maybe_name);
+
+    backend::mps::MPSLibrary_t handle = nullptr;
+    if constexpr (TypeParam::is_mock) {
+        handle = makeLibrary(0x660);
+        this->adapter().expectCreateLibraries({{*maybe_name, handle}});
+        this->adapter().expectDestroyLibraries({handle});
+    }
+
+    const auto id = manager.getOrCreate(key);
+    manager.release(id);
+    ExpectError(diag_error::OrteafErrc::InvalidState, [&] {
+        (void)manager.pipelineManager(id);
+    });
+}
+
+TYPED_TEST(MpsLibraryManagerTypedTest, PipelineManagerProvidesNestedFunctionManager) {
+    auto& manager = this->manager();
+    this->initializeManager();
+
+    const auto maybe_library = this->libraryNameFromEnv();
+    if (!maybe_library.has_value()) {
+        GTEST_SKIP() << "Set " ORTEAF_MPS_ENV_LIBRARY_NAME " to a valid library name to run";
+        return;
+    }
+    const auto maybe_function = this->functionNameFromEnv();
+    if (!maybe_function.has_value()) {
+        GTEST_SKIP() << "Set " ORTEAF_MPS_ENV_FUNCTION_NAME " to a valid function name to run";
+        return;
+    }
+
+    backend::mps::MPSLibrary_t library_handle = nullptr;
+    backend::mps::MPSFunction_t function_handle = nullptr;
+    backend::mps::MPSComputePipelineState_t pipeline_handle = nullptr;
+    if constexpr (TypeParam::is_mock) {
+        library_handle = makeLibrary(0x670);
+        function_handle = makeFunction(0x770);
+        pipeline_handle = makePipeline(0x870);
+        this->adapter().expectCreateLibraries({{*maybe_library, library_handle}});
+        this->adapter().expectCreateFunctions({{*maybe_function, function_handle}});
+        this->adapter().expectCreateComputePipelineStates({{function_handle, pipeline_handle}});
+        this->adapter().expectDestroyComputePipelineStates({pipeline_handle});
+        this->adapter().expectDestroyFunctions({function_handle});
+        this->adapter().expectDestroyLibraries({library_handle});
+    }
+
+    const auto library_id = manager.getOrCreate(mps_rt::LibraryKey::Named(*maybe_library));
+    auto& pipeline_manager = manager.pipelineManager(library_id);
+    const auto pipeline_id = pipeline_manager.getOrCreate(mps_rt::FunctionKey::Named(*maybe_function));
+    if constexpr (TypeParam::is_mock) {
+        EXPECT_EQ(pipeline_manager.getPipelineState(pipeline_id), pipeline_handle);
+    } else {
+        EXPECT_NE(pipeline_manager.getPipelineState(pipeline_id), nullptr);
+    }
+    const auto snapshot = pipeline_manager.debugState(pipeline_id);
+    EXPECT_TRUE(snapshot.alive);
+    EXPECT_EQ(snapshot.identifier, *maybe_function);
 }

@@ -7,7 +7,9 @@
 #include "tests/internal/testing/static_mock.h"
 #include "orteaf/internal/runtime/backend_ops/mps/mps_backend_ops.h"
 #include "orteaf/internal/backend/mps/mps_command_queue.h"
+#include "orteaf/internal/backend/mps/mps_compute_pipeline_state.h"
 #include "orteaf/internal/backend/mps/mps_event.h"
+#include "orteaf/internal/backend/mps/mps_function.h"
 #include "orteaf/internal/backend/mps/mps_library.h"
 #include "orteaf/internal/base/strong_id.h"
 
@@ -32,6 +34,15 @@ struct MpsBackendOpsMock {
                 (::orteaf::internal::backend::mps::MPSDevice_t, std::string_view));
     MOCK_METHOD(void, destroyLibrary,
                 (::orteaf::internal::backend::mps::MPSLibrary_t));
+    MOCK_METHOD(::orteaf::internal::backend::mps::MPSFunction_t, createFunction,
+                (::orteaf::internal::backend::mps::MPSLibrary_t, std::string_view));
+    MOCK_METHOD(void, destroyFunction,
+                (::orteaf::internal::backend::mps::MPSFunction_t));
+    MOCK_METHOD(::orteaf::internal::backend::mps::MPSComputePipelineState_t, createComputePipelineState,
+                (::orteaf::internal::backend::mps::MPSDevice_t,
+                 ::orteaf::internal::backend::mps::MPSFunction_t));
+    MOCK_METHOD(void, destroyComputePipelineState,
+                (::orteaf::internal::backend::mps::MPSComputePipelineState_t));
 };
 
 using MpsBackendOpsMockRegistry = ::orteaf::tests::StaticMockRegistry<MpsBackendOpsMock>;
@@ -79,6 +90,27 @@ struct MpsBackendOpsMockAdapter {
 
     static void destroyLibrary(::orteaf::internal::backend::mps::MPSLibrary_t library) {
         MpsBackendOpsMockRegistry::get().destroyLibrary(library);
+    }
+
+    static ::orteaf::internal::backend::mps::MPSFunction_t createFunction(
+            ::orteaf::internal::backend::mps::MPSLibrary_t library,
+            std::string_view name) {
+        return MpsBackendOpsMockRegistry::get().createFunction(library, name);
+    }
+
+    static void destroyFunction(::orteaf::internal::backend::mps::MPSFunction_t function) {
+        MpsBackendOpsMockRegistry::get().destroyFunction(function);
+    }
+
+    static ::orteaf::internal::backend::mps::MPSComputePipelineState_t createComputePipelineState(
+            ::orteaf::internal::backend::mps::MPSDevice_t device,
+            ::orteaf::internal::backend::mps::MPSFunction_t function) {
+        return MpsBackendOpsMockRegistry::get().createComputePipelineState(device, function);
+    }
+
+    static void destroyComputePipelineState(
+            ::orteaf::internal::backend::mps::MPSComputePipelineState_t pipeline_state) {
+        MpsBackendOpsMockRegistry::get().destroyComputePipelineState(pipeline_state);
     }
 };
 

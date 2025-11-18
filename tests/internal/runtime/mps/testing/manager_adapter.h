@@ -69,6 +69,32 @@ public:
         }
     }
 
+    void expectCreateFunctions(
+        std::initializer_list<std::pair<std::string, ::orteaf::internal::backend::mps::MPSFunction_t>> expectations,
+        ::testing::Matcher<::orteaf::internal::backend::mps::MPSLibrary_t> matcher = ::testing::_) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            BackendMockExpectations::expectCreateFunctions(mock, expectations, matcher);
+        } else {
+            (void)expectations;
+            (void)matcher;
+        }
+    }
+
+    void expectCreateComputePipelineStates(
+        std::initializer_list<std::pair<
+            ::orteaf::internal::backend::mps::MPSFunction_t,
+            ::orteaf::internal::backend::mps::MPSComputePipelineState_t>> expectations,
+        ::testing::Matcher<::orteaf::internal::backend::mps::MPSDevice_t> matcher = ::testing::_) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            BackendMockExpectations::expectCreateComputePipelineStates(mock, expectations, matcher);
+        } else {
+            (void)expectations;
+            (void)matcher;
+        }
+    }
+
     void expectDestroyCommandQueues(
         std::initializer_list<::orteaf::internal::backend::mps::MPSCommandQueue_t> handles) {
         if constexpr (Provider::is_mock) {
@@ -94,6 +120,26 @@ public:
         if constexpr (Provider::is_mock) {
             auto& mock = Provider::mock(*context_);
             BackendMockExpectations::expectDestroyLibraries(mock, handles);
+        } else {
+            (void)handles;
+        }
+    }
+
+    void expectDestroyFunctions(
+        std::initializer_list<::orteaf::internal::backend::mps::MPSFunction_t> handles) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            BackendMockExpectations::expectDestroyFunctions(mock, handles);
+        } else {
+            (void)handles;
+        }
+    }
+
+    void expectDestroyComputePipelineStates(
+        std::initializer_list<::orteaf::internal::backend::mps::MPSComputePipelineState_t> handles) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            BackendMockExpectations::expectDestroyComputePipelineStates(mock, handles);
         } else {
             (void)handles;
         }
