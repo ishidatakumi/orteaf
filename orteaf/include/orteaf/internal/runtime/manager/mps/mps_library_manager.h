@@ -50,6 +50,11 @@ class MpsLibraryManager {
 public:
     void initialize(::orteaf::internal::backend::mps::MPSDevice_t device, std::size_t capacity) {
         shutdown();
+        if (device == nullptr) {
+            ::orteaf::internal::diagnostics::error::throwError(
+                ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+                "MPS library manager requires a valid device");
+        }
         device_ = device;
         if (capacity > kMaxStateCount) {
             ::orteaf::internal::diagnostics::error::throwError(
@@ -269,4 +274,3 @@ private:
 };
 
 }  // namespace orteaf::internal::runtime::mps
-
