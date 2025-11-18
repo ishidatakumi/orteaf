@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 namespace architecture = orteaf::internal::architecture;
 
+#if ORTEAF_ENABLE_MPS
 /// Manual test hook: set ORTEAF_EXPECT_MPS_ARCH=m4 (etc) and optionally ORTEAF_EXPECT_MPS_DEVICE_INDEX.
 TEST(MpsDetect, ManualEnvironmentCheck) {
     const char* expected_env = std::getenv("ORTEAF_EXPECT_MPS_ARCH");
@@ -45,3 +46,14 @@ TEST(MpsDetect, DeviceIndexOutOfRangeFallsBackToGeneric) {
     const auto arch = architecture::detectMpsArchitectureForDeviceId(device_id);
     EXPECT_EQ(arch, architecture::Architecture::mps_generic);
 }
+#else
+TEST(MpsDetect, DetectMpsArchitectureIsGenericWhenMpsDisabled) {
+    const auto arch = architecture::detectMpsArchitecture("m3", "Apple");
+    EXPECT_EQ(arch, architecture::Architecture::mps_generic);
+}
+
+TEST(MpsDetect, DetectMpsArchitectureForDeviceIdIsGenericWhenMpsDisabled) {
+    const auto arch = architecture::detectMpsArchitectureForDeviceId(::orteaf::internal::base::DeviceId{0});
+    EXPECT_EQ(arch, architecture::Architecture::mps_generic);
+}
+#endif

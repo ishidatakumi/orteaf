@@ -11,6 +11,7 @@
 namespace architecture = orteaf::internal::architecture;
 namespace base = orteaf::internal::base;
 
+#if ORTEAF_ENABLE_CUDA
 /// Manual test hook: set ORTEAF_EXPECT_CUDA_ARCH=sm80 and optionally ORTEAF_EXPECT_CUDA_DEVICE_INDEX.
 TEST(CudaDetect, ManualEnvironmentCheck) {
     const char* expected_env = std::getenv("ORTEAF_EXPECT_CUDA_ARCH");
@@ -45,3 +46,14 @@ TEST(CudaDetect, DeviceIndexOutOfRangeFallsBackToGeneric) {
         base::DeviceId{std::numeric_limits<std::uint32_t>::max()});
     EXPECT_EQ(arch, architecture::Architecture::cuda_generic);
 }
+#else
+TEST(CudaDetect, DetectCudaArchitectureIsGenericWhenCudaDisabled) {
+    const auto arch = architecture::detectCudaArchitecture(80, "NVIDIA");
+    EXPECT_EQ(arch, architecture::Architecture::cuda_generic);
+}
+
+TEST(CudaDetect, DetectCudaArchitectureForDeviceIdIsGenericWhenCudaDisabled) {
+    const auto arch = architecture::detectCudaArchitectureForDeviceId(base::DeviceId{0});
+    EXPECT_EQ(arch, architecture::Architecture::cuda_generic);
+}
+#endif
