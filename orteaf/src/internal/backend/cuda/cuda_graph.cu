@@ -8,7 +8,7 @@
 #include "orteaf/internal/backend/cuda/cuda_graph.h"
 #include "orteaf/internal/backend/cuda/cuda_check.h"
 #include "orteaf/internal/backend/cuda/cuda_objc_bridge.h"
-#include "orteaf/internal/diagnostics/error/error_impl.h"
+#include "orteaf/internal/diagnostics/error/error.h"
 #include <cuda.h>
 
 namespace orteaf::internal::backend::cuda {
