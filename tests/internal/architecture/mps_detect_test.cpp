@@ -47,9 +47,9 @@ TEST(MpsDetect, DeviceIndexOutOfRangeFallsBackToGeneric) {
     EXPECT_EQ(arch, architecture::Architecture::mps_generic);
 }
 #else
-TEST(MpsDetect, DetectMpsArchitectureIsGenericWhenMpsDisabled) {
+TEST(MpsDetect, DetectMpsArchitectureStillMatchesMetadataWhenMpsDisabled) {
     const auto arch = architecture::detectMpsArchitecture("m3", "Apple");
-    EXPECT_EQ(arch, architecture::Architecture::mps_generic);
+    EXPECT_EQ(arch, architecture::Architecture::mps_m3);
 }
 
 TEST(MpsDetect, DetectMpsArchitectureForDeviceIdIsGenericWhenMpsDisabled) {

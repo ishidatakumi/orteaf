@@ -47,9 +47,9 @@ TEST(CudaDetect, DeviceIndexOutOfRangeFallsBackToGeneric) {
     EXPECT_EQ(arch, architecture::Architecture::cuda_generic);
 }
 #else
-TEST(CudaDetect, DetectCudaArchitectureIsGenericWhenCudaDisabled) {
+TEST(CudaDetect, DetectCudaArchitectureStillMatchesMetadataWhenCudaDisabled) {
     const auto arch = architecture::detectCudaArchitecture(80, "NVIDIA");
-    EXPECT_EQ(arch, architecture::Architecture::cuda_generic);
+    EXPECT_EQ(arch, architecture::Architecture::cuda_sm80);
 }
 
 TEST(CudaDetect, DetectCudaArchitectureForDeviceIdIsGenericWhenCudaDisabled) {
