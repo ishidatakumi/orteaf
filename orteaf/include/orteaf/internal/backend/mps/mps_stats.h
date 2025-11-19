@@ -113,6 +113,18 @@ public:
         #endif
         return 0;
     }
+
+    /**
+     * @brief Get the number of currently active fences.
+     */
+    uint64_t activeFences() const noexcept {
+        #ifdef ORTEAF_STATS_LEVEL_MPS_VALUE
+            #if ORTEAF_STATS_LEVEL_MPS_VALUE <= 4
+                return active_fences_.load(std::memory_order_relaxed);
+            #endif
+        #endif
+        return 0;
+    }
     
     /**
      * @brief Get the number of currently active streams.
@@ -238,6 +250,28 @@ public:
             #endif
         #endif
     }
+
+    /**
+     * @brief Update statistics when a fence is created.
+     */
+    void updateCreateFence() noexcept {
+        #ifdef ORTEAF_STATS_LEVEL_MPS_VALUE
+            #if ORTEAF_STATS_LEVEL_MPS_VALUE <= 4
+                active_fences_.fetch_add(1, std::memory_order_relaxed);
+            #endif
+        #endif
+    }
+
+    /**
+     * @brief Update statistics when a fence is destroyed.
+     */
+    void updateDestroyFence() noexcept {
+        #ifdef ORTEAF_STATS_LEVEL_MPS_VALUE
+            #if ORTEAF_STATS_LEVEL_MPS_VALUE <= 4
+                active_fences_.fetch_sub(1, std::memory_order_relaxed);
+            #endif
+        #endif
+    }
     
     /**
      * @brief Update statistics when an MPS command queue is created.
@@ -279,6 +313,7 @@ public:
         oss << "  Current Allocated Bytes: " << currentAllocatedBytes() << "\n";
         oss << "  Peak Allocated Bytes: " << peakAllocatedBytes() << "\n";
         oss << "  Active Events: " << activeEvents() << "\n";
+        oss << "  Active Fences: " << activeFences() << "\n";
         oss << "  Active Streams: " << activeStreams() << "\n";
     #endif
 #else
@@ -303,6 +338,7 @@ private:
         std::atomic<uint64_t> current_allocated_bytes_{0};
         std::atomic<uint64_t> peak_allocated_bytes_{0};
         std::atomic<uint64_t> active_events_{0};
+        std::atomic<uint64_t> active_fences_{0};
         std::atomic<uint64_t> active_streams_{0};
     #endif
 #endif
@@ -360,6 +396,14 @@ inline void updateCreateCommandQueue() {
 
 inline void updateDestroyCommandQueue() {
     statsInstance().updateDestroyCommandQueue();
+}
+
+inline void updateCreateFence() {
+    statsInstance().updateCreateFence();
+}
+
+inline void updateDestroyFence() {
+    statsInstance().updateDestroyFence();
 }
 
 } // namespace orteaf::internal::backend::mps

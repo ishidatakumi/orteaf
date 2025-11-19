@@ -11,6 +11,7 @@
 #include "orteaf/internal/backend/mps/mps_function.h"
 #include "orteaf/internal/backend/mps/mps_heap.h"
 #include "orteaf/internal/backend/mps/mps_library.h"
+#include "orteaf/internal/backend/mps/mps_fence.h"
 #include "orteaf/internal/backend/mps/mps_string.h"
 #include "orteaf/internal/base/strong_id.h"
 
@@ -47,6 +48,14 @@ struct MpsBackendOps {
 
     static void destroyEvent(::orteaf::internal::backend::mps::MPSEvent_t event) {
         ::orteaf::internal::backend::mps::destroyEvent(event);
+    }
+
+    static ::orteaf::internal::backend::mps::MPSFence_t createFence(::orteaf::internal::backend::mps::MPSDevice_t device) {
+        return ::orteaf::internal::backend::mps::createFence(device);
+    }
+
+    static void destroyFence(::orteaf::internal::backend::mps::MPSFence_t fence) {
+        ::orteaf::internal::backend::mps::destroyFence(fence);
     }
 
     static ::orteaf::internal::backend::mps::MPSLibrary_t createLibraryWithName(

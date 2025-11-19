@@ -12,6 +12,7 @@
 #include "orteaf/internal/backend/mps/mps_function.h"
 #include "orteaf/internal/backend/mps/mps_heap.h"
 #include "orteaf/internal/backend/mps/mps_library.h"
+#include "orteaf/internal/backend/mps/mps_fence.h"
 #include "orteaf/internal/base/strong_id.h"
 
 namespace orteaf::tests::runtime::mps {
@@ -31,6 +32,10 @@ struct MpsBackendOpsMock {
                 (::orteaf::internal::backend::mps::MPSDevice_t));
     MOCK_METHOD(void, destroyEvent,
                 (::orteaf::internal::backend::mps::MPSEvent_t));
+    MOCK_METHOD(::orteaf::internal::backend::mps::MPSFence_t, createFence,
+                (::orteaf::internal::backend::mps::MPSDevice_t));
+    MOCK_METHOD(void, destroyFence,
+                (::orteaf::internal::backend::mps::MPSFence_t));
     MOCK_METHOD(::orteaf::internal::backend::mps::MPSLibrary_t, createLibraryWithName,
                 (::orteaf::internal::backend::mps::MPSDevice_t, std::string_view));
     MOCK_METHOD(void, destroyLibrary,
@@ -106,6 +111,15 @@ struct MpsBackendOpsMockAdapter {
 
     static void destroyEvent(::orteaf::internal::backend::mps::MPSEvent_t event) {
         MpsBackendOpsMockRegistry::get().destroyEvent(event);
+    }
+
+    static ::orteaf::internal::backend::mps::MPSFence_t createFence(
+            ::orteaf::internal::backend::mps::MPSDevice_t device) {
+        return MpsBackendOpsMockRegistry::get().createFence(device);
+    }
+
+    static void destroyFence(::orteaf::internal::backend::mps::MPSFence_t fence) {
+        MpsBackendOpsMockRegistry::get().destroyFence(fence);
     }
 
     static ::orteaf::internal::backend::mps::MPSLibrary_t createLibraryWithName(

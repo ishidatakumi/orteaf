@@ -11,6 +11,7 @@
 #include "orteaf/internal/backend/mps/mps_function.h"
 #include "orteaf/internal/backend/mps/mps_heap.h"
 #include "orteaf/internal/backend/mps/mps_library.h"
+#include "orteaf/internal/backend/mps/mps_fence.h"
 #include "orteaf/internal/base/strong_id.h"
 
 namespace orteaf::internal::runtime::backend_ops::mps {
@@ -32,6 +33,7 @@ concept MpsRuntimeBackendOps = requires(
     ::orteaf::internal::backend::mps::MPSComputePipelineState_t pipeline_state,
     ::orteaf::internal::backend::mps::MPSHeapDescriptor_t heap_descriptor,
     ::orteaf::internal::backend::mps::MPSHeap_t heap,
+    ::orteaf::internal::backend::mps::MPSFence_t fence,
     std::string_view library_name,
     std::string_view function_name,
     ::orteaf::internal::base::DeviceId device_id) {
@@ -48,6 +50,9 @@ concept MpsRuntimeBackendOps = requires(
     { BackendOps::createEvent(device) }
         -> std::same_as<::orteaf::internal::backend::mps::MPSEvent_t>;
     { BackendOps::destroyEvent(event) } -> std::same_as<void>;
+    { BackendOps::createFence(device) }
+        -> std::same_as<::orteaf::internal::backend::mps::MPSFence_t>;
+    { BackendOps::destroyFence(fence) } -> std::same_as<void>;
     { BackendOps::createLibraryWithName(device, library_name) }
         -> std::same_as<::orteaf::internal::backend::mps::MPSLibrary_t>;
     { BackendOps::destroyLibrary(library) } -> std::same_as<void>;

@@ -16,6 +16,7 @@
 #include "orteaf/internal/backend/mps/mps_function.h"
 #include "orteaf/internal/backend/mps/mps_heap.h"
 #include "orteaf/internal/backend/mps/mps_library.h"
+#include "orteaf/internal/backend/mps/mps_fence.h"
 #include "orteaf/internal/base/strong_id.h"
 #include "orteaf/internal/architecture/architecture.h"
 #include "tests/internal/runtime/mps/testing/backend_mock.h"
@@ -160,6 +161,43 @@ struct BackendMockExpectations {
         ::testing::InSequence seq;
         for (auto handle : handles) {
             EXPECT_CALL(mock, destroyEvent(handle)).Times(1);
+        }
+    }
+
+    static void expectCreateFences(
+        MpsBackendOpsMock& mock,
+        std::initializer_list<::orteaf::internal::backend::mps::MPSFence_t> handles,
+        ::testing::Matcher<::orteaf::internal::backend::mps::MPSDevice_t> device_matcher = ::testing::_) {
+        if (handles.size() == 0) {
+            EXPECT_CALL(mock, createFence(device_matcher)).Times(0);
+            return;
+        }
+        struct State {
+            std::vector<::orteaf::internal::backend::mps::MPSFence_t> values;
+            std::size_t next{0};
+        };
+        auto state = std::make_shared<State>();
+        state->values.assign(handles.begin(), handles.end());
+        const auto call_count = state->values.size();
+        EXPECT_CALL(mock, createFence(device_matcher))
+            .Times(call_count)
+            .WillRepeatedly(::testing::Invoke(
+                [state](::orteaf::internal::backend::mps::MPSDevice_t /*device*/) mutable {
+                    const auto handle = state->values[state->next];
+                    ++state->next;
+                    return handle;
+                }));
+    }
+
+    static void expectDestroyFences(
+        MpsBackendOpsMock& mock,
+        std::initializer_list<::orteaf::internal::backend::mps::MPSFence_t> handles) {
+        if (handles.size() == 0) {
+            EXPECT_CALL(mock, destroyFence(::testing::_)).Times(0);
+            return;
+        }
+        for (auto handle : handles) {
+            EXPECT_CALL(mock, destroyFence(handle)).Times(1);
         }
     }
 
