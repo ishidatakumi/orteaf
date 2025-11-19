@@ -275,10 +275,9 @@ private:
     std::size_t library_initial_capacity_{0};
 };
 
-inline MpsDeviceManager<> MpsDeviceManagerInstance{};
-
 inline MpsDeviceManager<>& GetMpsDeviceManager() {
-    return MpsDeviceManagerInstance;
+    static MpsDeviceManager<> instance{};
+    return instance;
 }
 
 } // namespace orteaf::internal::runtime::mps
