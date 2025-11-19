@@ -11,6 +11,7 @@
 
 #include "tests/internal/runtime/mps/testing/backend_mock_expectations.h"
 #include "orteaf/internal/backend/mps/mps_device.h"
+#include "orteaf/internal/backend/mps/mps_heap.h"
 
 namespace orteaf::tests::runtime::mps::testing {
 
@@ -142,6 +143,141 @@ public:
             BackendMockExpectations::expectDestroyComputePipelineStates(mock, handles);
         } else {
             (void)handles;
+        }
+    }
+
+    void expectCreateHeaps(
+        std::initializer_list<::orteaf::internal::backend::mps::MPSHeap_t> handles,
+        ::testing::Matcher<::orteaf::internal::backend::mps::MPSDevice_t> device_matcher = ::testing::_,
+        ::testing::Matcher<::orteaf::internal::backend::mps::MPSHeapDescriptor_t> descriptor_matcher = ::testing::_) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            BackendMockExpectations::expectCreateHeaps(mock, handles, device_matcher, descriptor_matcher);
+        } else {
+            (void)handles;
+            (void)device_matcher;
+            (void)descriptor_matcher;
+        }
+    }
+
+    void expectDestroyHeaps(
+        std::initializer_list<::orteaf::internal::backend::mps::MPSHeap_t> handles) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            BackendMockExpectations::expectDestroyHeaps(mock, handles);
+        } else {
+            (void)handles;
+        }
+    }
+
+    void expectCreateHeapsInOrder(
+        std::initializer_list<std::pair<
+            ::orteaf::internal::backend::mps::MPSHeapDescriptor_t,
+            ::orteaf::internal::backend::mps::MPSHeap_t>> expectations,
+        ::testing::Matcher<::orteaf::internal::backend::mps::MPSDevice_t> device_matcher = ::testing::_) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            BackendMockExpectations::expectCreateHeapsInOrder(mock, expectations, device_matcher);
+        } else {
+            (void)expectations;
+            (void)device_matcher;
+        }
+    }
+
+    void expectCreateHeapDescriptors(
+        std::initializer_list<::orteaf::internal::backend::mps::MPSHeapDescriptor_t> handles) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            BackendMockExpectations::expectCreateHeapDescriptors(mock, handles);
+        } else {
+            (void)handles;
+        }
+    }
+
+    void expectDestroyHeapDescriptors(
+        std::initializer_list<::orteaf::internal::backend::mps::MPSHeapDescriptor_t> handles) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            BackendMockExpectations::expectDestroyHeapDescriptors(mock, handles);
+        } else {
+            (void)handles;
+        }
+    }
+
+    void expectSetHeapDescriptorSize(
+        std::initializer_list<std::pair<
+            ::orteaf::internal::backend::mps::MPSHeapDescriptor_t, std::size_t>> expectations) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            ORTEAF_EXPECT_SET_HEAP_DESCRIPTOR_VALUES(
+                mock, setHeapDescriptorSize, expectations);
+        } else {
+            (void)expectations;
+        }
+    }
+
+    void expectSetHeapDescriptorResourceOptions(
+        std::initializer_list<std::pair<
+            ::orteaf::internal::backend::mps::MPSHeapDescriptor_t,
+            ::orteaf::internal::backend::mps::MPSResourceOptions_t>> expectations) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            ORTEAF_EXPECT_SET_HEAP_DESCRIPTOR_VALUES(
+                mock, setHeapDescriptorResourceOptions, expectations);
+        } else {
+            (void)expectations;
+        }
+    }
+
+    void expectSetHeapDescriptorStorageMode(
+        std::initializer_list<std::pair<
+            ::orteaf::internal::backend::mps::MPSHeapDescriptor_t,
+            ::orteaf::internal::backend::mps::MPSStorageMode_t>> expectations) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            ORTEAF_EXPECT_SET_HEAP_DESCRIPTOR_VALUES(
+                mock, setHeapDescriptorStorageMode, expectations);
+        } else {
+            (void)expectations;
+        }
+    }
+
+    void expectSetHeapDescriptorCPUCacheMode(
+        std::initializer_list<std::pair<
+            ::orteaf::internal::backend::mps::MPSHeapDescriptor_t,
+            ::orteaf::internal::backend::mps::MPSCPUCacheMode_t>> expectations) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            ORTEAF_EXPECT_SET_HEAP_DESCRIPTOR_VALUES(
+                mock, setHeapDescriptorCPUCacheMode, expectations);
+        } else {
+            (void)expectations;
+        }
+    }
+
+    void expectSetHeapDescriptorHazardTrackingMode(
+        std::initializer_list<std::pair<
+            ::orteaf::internal::backend::mps::MPSHeapDescriptor_t,
+            ::orteaf::internal::backend::mps::MPSHazardTrackingMode_t>> expectations) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            ORTEAF_EXPECT_SET_HEAP_DESCRIPTOR_VALUES(
+                mock, setHeapDescriptorHazardTrackingMode, expectations);
+        } else {
+            (void)expectations;
+        }
+    }
+
+    void expectSetHeapDescriptorType(
+        std::initializer_list<std::pair<
+            ::orteaf::internal::backend::mps::MPSHeapDescriptor_t,
+            ::orteaf::internal::backend::mps::MPSHeapType_t>> expectations) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            ORTEAF_EXPECT_SET_HEAP_DESCRIPTOR_VALUES(
+                mock, setHeapDescriptorType, expectations);
+        } else {
+            (void)expectations;
         }
     }
 

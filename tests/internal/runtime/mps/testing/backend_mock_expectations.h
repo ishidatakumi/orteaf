@@ -14,6 +14,7 @@
 #include "orteaf/internal/backend/mps/mps_device.h"
 #include "orteaf/internal/backend/mps/mps_event.h"
 #include "orteaf/internal/backend/mps/mps_function.h"
+#include "orteaf/internal/backend/mps/mps_heap.h"
 #include "orteaf/internal/backend/mps/mps_library.h"
 #include "orteaf/internal/base/strong_id.h"
 #include "orteaf/internal/architecture/architecture.h"
@@ -304,6 +305,110 @@ struct BackendMockExpectations {
             EXPECT_CALL(mock, destroyComputePipelineState(handle)).Times(1);
         }
     }
+
+    static void expectCreateHeaps(
+        MpsBackendOpsMock& mock,
+        std::initializer_list<::orteaf::internal::backend::mps::MPSHeap_t> handles,
+        ::testing::Matcher<::orteaf::internal::backend::mps::MPSDevice_t> device_matcher = ::testing::_,
+        ::testing::Matcher<::orteaf::internal::backend::mps::MPSHeapDescriptor_t> descriptor_matcher = ::testing::_) {
+        if (handles.size() == 0) {
+            EXPECT_CALL(mock, createHeap(device_matcher, descriptor_matcher)).Times(0);
+            return;
+        }
+        struct State {
+            std::vector<::orteaf::internal::backend::mps::MPSHeap_t> values;
+            std::size_t next{0};
+        };
+        auto state = std::make_shared<State>();
+        state->values.assign(handles.begin(), handles.end());
+        const auto call_count = state->values.size();
+        EXPECT_CALL(mock, createHeap(device_matcher, descriptor_matcher))
+            .Times(call_count)
+            .WillRepeatedly(::testing::Invoke(
+                [state](::orteaf::internal::backend::mps::MPSDevice_t,
+                        ::orteaf::internal::backend::mps::MPSHeapDescriptor_t) mutable {
+                    const auto handle = state->values[state->next];
+                    ++state->next;
+                    return handle;
+                }));
+    }
+
+    static void expectCreateHeapsInOrder(
+        MpsBackendOpsMock& mock,
+        std::initializer_list<std::pair<
+            ::orteaf::internal::backend::mps::MPSHeapDescriptor_t,
+            ::orteaf::internal::backend::mps::MPSHeap_t>> expectations,
+        ::testing::Matcher<::orteaf::internal::backend::mps::MPSDevice_t> device_matcher = ::testing::_) {
+        if (expectations.size() == 0) {
+            EXPECT_CALL(mock, createHeap(device_matcher, ::testing::_)).Times(0);
+            return;
+        }
+        ::testing::InSequence seq;
+        for (const auto& [descriptor, handle] : expectations) {
+            EXPECT_CALL(mock, createHeap(device_matcher, descriptor))
+                .WillOnce(::testing::Return(handle));
+        }
+    }
+
+    static void expectDestroyHeaps(
+        MpsBackendOpsMock& mock,
+        std::initializer_list<::orteaf::internal::backend::mps::MPSHeap_t> handles) {
+        if (handles.size() == 0) {
+            EXPECT_CALL(mock, destroyHeap(::testing::_)).Times(0);
+            return;
+        }
+        for (auto handle : handles) {
+            EXPECT_CALL(mock, destroyHeap(handle)).Times(1);
+        }
+    }
+
+    static void expectCreateHeapDescriptors(
+        MpsBackendOpsMock& mock,
+        std::initializer_list<::orteaf::internal::backend::mps::MPSHeapDescriptor_t> handles) {
+        if (handles.size() == 0) {
+            EXPECT_CALL(mock, createHeapDescriptor()).Times(0);
+            return;
+        }
+        struct State {
+            std::vector<::orteaf::internal::backend::mps::MPSHeapDescriptor_t> values;
+            std::size_t next{0};
+        };
+        auto state = std::make_shared<State>();
+        state->values.assign(handles.begin(), handles.end());
+        const auto call_count = state->values.size();
+        EXPECT_CALL(mock, createHeapDescriptor())
+            .Times(call_count)
+            .WillRepeatedly(::testing::Invoke(
+                [state]() mutable {
+                    const auto handle = state->values[state->next];
+                    ++state->next;
+                    return handle;
+                }));
+    }
+
+    static void expectDestroyHeapDescriptors(
+        MpsBackendOpsMock& mock,
+        std::initializer_list<::orteaf::internal::backend::mps::MPSHeapDescriptor_t> handles) {
+        if (handles.size() == 0) {
+            EXPECT_CALL(mock, destroyHeapDescriptor(::testing::_)).Times(0);
+            return;
+        }
+        for (auto handle : handles) {
+            EXPECT_CALL(mock, destroyHeapDescriptor(handle)).Times(1);
+        }
+    }
+
 };
+
+#define ORTEAF_EXPECT_SET_HEAP_DESCRIPTOR_VALUES(mock, MethodName, expectations) \
+    do { \
+        if ((expectations).size() == 0) { \
+            EXPECT_CALL(mock, MethodName(::testing::_, ::testing::_)).Times(0); \
+        } else { \
+            for (const auto& [descriptor, value] : (expectations)) { \
+                EXPECT_CALL(mock, MethodName(descriptor, value)).Times(1); \
+            } \
+        } \
+    } while (0)
 
 }  // namespace orteaf::tests::runtime::mps
