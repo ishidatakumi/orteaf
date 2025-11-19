@@ -12,6 +12,7 @@
 #include "tests/internal/runtime/mps/testing/backend_mock_expectations.h"
 #include "orteaf/internal/backend/mps/mps_device.h"
 #include "orteaf/internal/backend/mps/mps_heap.h"
+#include "orteaf/internal/backend/mps/mps_fence.h"
 
 namespace orteaf::tests::runtime::mps::testing {
 
@@ -52,6 +53,18 @@ public:
         if constexpr (Provider::is_mock) {
             auto& mock = Provider::mock(*context_);
             BackendMockExpectations::expectCreateEvents(mock, handles, matcher);
+        } else {
+            (void)handles;
+            (void)matcher;
+        }
+    }
+
+    void expectCreateFences(
+        std::initializer_list<::orteaf::internal::backend::mps::MPSFence_t> handles,
+        ::testing::Matcher<::orteaf::internal::backend::mps::MPSDevice_t> matcher = ::testing::_) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            BackendMockExpectations::expectCreateFences(mock, handles, matcher);
         } else {
             (void)handles;
             (void)matcher;
@@ -111,6 +124,16 @@ public:
         if constexpr (Provider::is_mock) {
             auto& mock = Provider::mock(*context_);
             BackendMockExpectations::expectDestroyEvents(mock, handles);
+        } else {
+            (void)handles;
+        }
+    }
+
+    void expectDestroyFences(
+        std::initializer_list<::orteaf::internal::backend::mps::MPSFence_t> handles) {
+        if constexpr (Provider::is_mock) {
+            auto& mock = Provider::mock(*context_);
+            BackendMockExpectations::expectDestroyFences(mock, handles);
         } else {
             (void)handles;
         }
