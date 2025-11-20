@@ -28,6 +28,7 @@ void MpsFencePool::initialize(
 #endif
   free_list_.clear();
   free_list_.reserve(initial_capacity);
+  active_count_ = 0;
   if (initial_capacity > 0) {
     growFreeList(initial_capacity);
   }
@@ -36,7 +37,7 @@ void MpsFencePool::initialize(
 void MpsFencePool::shutdown() {
   if (!initialized_) {
     free_list_.clear();
-    active_handles_.clear();
+    active_count_ = 0;
     device_ = nullptr;
     ops_ = nullptr;
 #if ORTEAF_ENABLE_TEST
@@ -44,7 +45,7 @@ void MpsFencePool::shutdown() {
 #endif
     return;
   }
-  if (!active_handles_.empty()) {
+  if (active_count_ != 0) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "Cannot shutdown MPS fence pool while fences are in use");
@@ -53,7 +54,7 @@ void MpsFencePool::shutdown() {
     ops_->destroyFence(free_list_[i]);
   }
   free_list_.clear();
-  active_handles_.clear();
+  active_count_ = 0;
   device_ = nullptr;
   ops_ = nullptr;
 #if ORTEAF_ENABLE_TEST
@@ -62,32 +63,31 @@ void MpsFencePool::shutdown() {
   initialized_ = false;
 }
 
-::orteaf::internal::backend::mps::MPSFence_t MpsFencePool::acquireFence() {
+MpsFencePool::Handle MpsFencePool::acquireFence() {
   ensureInitialized();
   if (free_list_.empty()) {
     growFreeList(growth_chunk_size_);
   }
   auto handle = free_list_.back();
   free_list_.resize(free_list_.size() - 1);
-  active_handles_.insert(handle);
-  return handle;
+  ++active_count_;
+  return Handle{this, handle};
 }
 
-void MpsFencePool::releaseFence(
-    ::orteaf::internal::backend::mps::MPSFence_t fence) {
-  ensureInitialized();
+void MpsFencePool::release(FenceHandle fence) {
   if (fence == nullptr) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "Cannot release null fence to MPS fence pool");
   }
-  const auto erased = active_handles_.erase(fence);
-  if (erased == 0) {
+  ensureInitialized();
+  if (active_count_ == 0) {
     ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
-        "Fence handle does not belong to this pool or is already released");
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "No active fences to release");
   }
   free_list_.pushBack(fence);
+  --active_count_;
 }
 
 void MpsFencePool::ensureInitialized() const {
