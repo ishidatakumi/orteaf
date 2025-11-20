@@ -9,8 +9,7 @@
 #include "orteaf/internal/base/heap_vector.h"
 #include "orteaf/internal/base/strong_id.h"
 #include "orteaf/internal/diagnostics/error/error.h"
-#include "orteaf/internal/runtime/backend_ops/mps/mps_backend_ops.h"
-#include "orteaf/internal/runtime/backend_ops/mps/mps_backend_ops_concepts.h"
+#include "orteaf/internal/runtime/backend_ops/mps/mps_slow_ops.h"
 
 namespace orteaf::internal::runtime::mps {
 
@@ -54,12 +53,9 @@ struct HeapDescriptorKeyHasher {
   }
 };
 
-template <class BackendOps =
-              ::orteaf::internal::runtime::backend_ops::mps::MpsBackendOps>
-  requires ::orteaf::internal::runtime::backend_ops::mps::MpsRuntimeBackendOps<
-      BackendOps>
 class MpsHeapManager {
 public:
+  using BackendOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
   void setGrowthChunkSize(std::size_t chunk) {
     if (chunk == 0) {
       ::orteaf::internal::diagnostics::error::throwError(
@@ -72,12 +68,17 @@ public:
   std::size_t growthChunkSize() const noexcept { return growth_chunk_size_; }
 
   void initialize(::orteaf::internal::backend::mps::MPSDevice_t device,
-                  std::size_t capacity) {
+                  BackendOps *ops, std::size_t capacity) {
     shutdown();
     if (device == nullptr) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
           "MPS heap manager requires a valid device");
+    }
+    if (ops == nullptr) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+          "MPS heap manager requires valid ops");
     }
     if (capacity > kMaxStateCount) {
       ::orteaf::internal::diagnostics::error::throwError(
@@ -85,6 +86,7 @@ public:
           "Requested MPS heap capacity exceeds supported limit");
     }
     device_ = device;
+    ops_ = ops;
     states_.clear();
     free_list_.clear();
     key_to_index_.clear();
@@ -104,7 +106,7 @@ public:
     for (std::size_t i = 0; i < states_.size(); ++i) {
       State &state = states_[i];
       if (state.alive) {
-        BackendOps::destroyHeap(state.heap);
+        ops_->destroyHeap(state.heap);
         state.reset();
       }
     }
@@ -112,6 +114,7 @@ public:
     free_list_.clear();
     key_to_index_.clear();
     device_ = nullptr;
+    ops_ = nullptr;
     initialized_ = false;
   }
 
@@ -137,7 +140,7 @@ public:
   void release(base::HeapId id) {
     State &state = ensureAliveState(id);
     key_to_index_.erase(state.key);
-    BackendOps::destroyHeap(state.heap);
+    ops_->destroyHeap(state.heap);
     state.reset();
     ++state.generation;
     free_list_.pushBack(indexFromId(id));
@@ -305,7 +308,7 @@ private:
 
   ::orteaf::internal::backend::mps::MPSHeap_t
   createHeap(const HeapDescriptorKey &key) {
-    auto descriptor = BackendOps::createHeapDescriptor();
+    auto descriptor = ops_->createHeapDescriptor();
     if (descriptor == nullptr) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
@@ -313,23 +316,24 @@ private:
     }
     struct DescriptorGuard {
       ::orteaf::internal::backend::mps::MPSHeapDescriptor_t handle{nullptr};
+      BackendOps *ops{nullptr};
       ~DescriptorGuard() {
-        if (handle != nullptr) {
-          BackendOps::destroyHeapDescriptor(handle);
+        if (handle != nullptr && ops != nullptr) {
+          ops->destroyHeapDescriptor(handle);
         }
       }
     };
-    DescriptorGuard guard{descriptor};
-    BackendOps::setHeapDescriptorSize(descriptor, key.size_bytes);
-    BackendOps::setHeapDescriptorResourceOptions(descriptor,
+    DescriptorGuard guard{descriptor, ops_};
+    ops_->setHeapDescriptorSize(descriptor, key.size_bytes);
+    ops_->setHeapDescriptorResourceOptions(descriptor,
                                                  key.resource_options);
-    BackendOps::setHeapDescriptorStorageMode(descriptor, key.storage_mode);
-    BackendOps::setHeapDescriptorCPUCacheMode(descriptor, key.cpu_cache_mode);
-    BackendOps::setHeapDescriptorHazardTrackingMode(descriptor,
+    ops_->setHeapDescriptorStorageMode(descriptor, key.storage_mode);
+    ops_->setHeapDescriptorCPUCacheMode(descriptor, key.cpu_cache_mode);
+    ops_->setHeapDescriptorHazardTrackingMode(descriptor,
                                                     key.hazard_tracking_mode);
-    BackendOps::setHeapDescriptorType(descriptor, key.heap_type);
-    auto heap = BackendOps::createHeap(device_, descriptor);
-    BackendOps::destroyHeapDescriptor(descriptor);
+    ops_->setHeapDescriptorType(descriptor, key.heap_type);
+    auto heap = ops_->createHeap(device_, descriptor);
+    ops_->destroyHeapDescriptor(descriptor);
     guard.handle = nullptr;
     if (heap == nullptr) {
       ::orteaf::internal::diagnostics::error::throwError(
@@ -346,6 +350,7 @@ private:
   std::size_t growth_chunk_size_{1};
   bool initialized_{false};
   ::orteaf::internal::backend::mps::MPSDevice_t device_{nullptr};
+  BackendOps *ops_{nullptr};
 };
 
 } // namespace orteaf::internal::runtime::mps

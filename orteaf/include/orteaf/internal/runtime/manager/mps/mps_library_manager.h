@@ -47,13 +47,10 @@ struct LibraryKeyHasher {
   }
 };
 
-template <class BackendOps =
-              ::orteaf::internal::runtime::backend_ops::mps::MpsBackendOps>
-  requires ::orteaf::internal::runtime::backend_ops::mps::MpsRuntimeBackendOps<
-      BackendOps>
 class MpsLibraryManager {
 public:
-  using PipelineManager = MpsComputePipelineStateManager<BackendOps>;
+  using BackendOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using PipelineManager = MpsComputePipelineStateManager;
 
   void setGrowthChunkSize(std::size_t chunk) {
     if (chunk == 0) {
@@ -67,14 +64,20 @@ public:
   std::size_t growthChunkSize() const noexcept { return growth_chunk_size_; }
 
   void initialize(::orteaf::internal::backend::mps::MPSDevice_t device,
-                  std::size_t capacity) {
+                  BackendOps *ops, std::size_t capacity) {
     shutdown();
     if (device == nullptr) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
           "MPS library manager requires a valid device");
     }
+    if (ops == nullptr) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+          "MPS library manager requires valid ops");
+    }
     device_ = device;
+    ops_ = ops;
     if (capacity > kMaxStateCount) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
@@ -100,7 +103,7 @@ public:
       State &state = states_[i];
       if (state.alive) {
         state.pipeline_manager.shutdown();
-        BackendOps::destroyLibrary(state.handle);
+        ops_->destroyLibrary(state.handle);
         state.reset();
       }
     }
@@ -108,6 +111,7 @@ public:
     free_list_.clear();
     key_to_index_.clear();
     device_ = nullptr;
+    ops_ = nullptr;
     initialized_ = false;
   }
 
@@ -124,7 +128,7 @@ public:
     State &state = states_[index];
     state.handle = createLibrary(key);
     state.key = key;
-    state.pipeline_manager.initialize(device_, state.handle, 0);
+    state.pipeline_manager.initialize(device_, state.handle, ops_, 0);
     state.alive = true;
     const auto id = encodeId(index, state.generation);
     key_to_index_.emplace(state.key, index);
@@ -135,7 +139,7 @@ public:
     State &state = ensureAliveState(id);
     key_to_index_.erase(state.key);
     state.pipeline_manager.shutdown();
-    BackendOps::destroyLibrary(state.handle);
+    ops_->destroyLibrary(state.handle);
     state.reset();
     ++state.generation;
     free_list_.pushBack(indexFromId(id));
@@ -303,7 +307,7 @@ private:
   createLibrary(const LibraryKey &key) {
     switch (key.kind) {
     case LibraryKeyKind::kNamed:
-      return BackendOps::createLibraryWithName(device_, key.identifier);
+      return ops_->createLibraryWithName(device_, key.identifier);
     }
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
@@ -316,6 +320,7 @@ private:
   std::size_t growth_chunk_size_{1};
   bool initialized_{false};
   ::orteaf::internal::backend::mps::MPSDevice_t device_{nullptr};
+  BackendOps *ops_{nullptr};
 };
 
 } // namespace orteaf::internal::runtime::mps

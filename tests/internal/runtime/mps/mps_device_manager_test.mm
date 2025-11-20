@@ -52,7 +52,7 @@ protected:
   using Base =
       testing_mps::RuntimeManagerFixture<Provider, mps_rt::MpsDeviceManager>;
 
-  mps_rt::MpsDeviceManager<typename Provider::BackendOps> &manager() {
+  mps_rt::MpsDeviceManager &manager() {
     return Base::manager();
   }
 
@@ -136,7 +136,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, InitializeMarksManagerInitialized) {
     expected_count = 1;
   }
 
-  manager.initialize();
+  manager.initialize(this->getOps());
 
   const auto state = manager.debugState();
   EXPECT_TRUE(state.initialized);
@@ -225,7 +225,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetArchMatchesReportedArchitecture) {
     expected_arch_env = std::getenv(ORTEAF_MPS_ENV_ARCH);
   }
 
-  manager.initialize();
+  manager.initialize(this->getOps());
   const auto count = manager.getDeviceCount();
   if (count == 0u) {
     GTEST_SKIP() << "No MPS devices available";
@@ -266,7 +266,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, InvalidDeviceIdRejectsAccess) {
   });
   this->adapter().expectReleaseDevices({device0});
 
-  manager.initialize();
+  manager.initialize(this->getOps());
   const auto invalid =
       base::DeviceId{static_cast<std::uint32_t>(manager.getDeviceCount() + 1)};
 
@@ -299,7 +299,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, IsAliveReflectsReportedDeviceCount) {
     this->adapter().expectReleaseDevices({device0, device1});
   }
 
-  manager.initialize();
+  manager.initialize(this->getOps());
 
   const std::size_t count = manager.getDeviceCount();
   if (const char *expected_env = std::getenv(ORTEAF_MPS_ENV_COUNT);
@@ -350,7 +350,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ReinitializeReleasesPreviousDevices) {
       {base::DeviceId{1}, architecture::Architecture::mps_m4},
   });
 
-  manager.initialize();
+  manager.initialize(this->getOps());
   const auto initial_count = manager.getDeviceCount();
   if (initial_count == 0u) {
     manager.shutdown();
@@ -369,7 +369,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ReinitializeReleasesPreviousDevices) {
       {base::DeviceId{1}, architecture::Architecture::mps_m3},
   });
 
-  manager.initialize();
+  manager.initialize(this->getOps());
   const auto reinit_count = manager.getDeviceCount();
   EXPECT_EQ(reinit_count, initial_count);
   if constexpr (TypeParam::is_mock) {
@@ -396,7 +396,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ShutdownClearsDeviceState) {
     this->adapter().expectReleaseDevices({device0, device1});
   }
 
-  manager.initialize();
+  manager.initialize(this->getOps());
   const auto count = manager.getDeviceCount();
   if (count == 0u) {
     GTEST_SKIP() << "No MPS devices available";
@@ -446,7 +446,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
   this->adapter().expectDestroyCommandQueues(
       {makeQueue(0x900), makeQueue(0x901), makeQueue(0x902), makeQueue(0x903)});
 
-  manager.initialize();
+  manager.initialize(this->getOps());
   const auto count = manager.getDeviceCount();
   if (count == 0u) {
     GTEST_SKIP() << "No MPS devices available";
@@ -534,7 +534,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
   });
   this->adapter().expectReleaseDevices({device0});
 
-  manager.initialize();
+  manager.initialize(this->getOps());
   const auto count = manager.getDeviceCount();
   if (count == 0u) {
     GTEST_SKIP() << "No MPS devices available";

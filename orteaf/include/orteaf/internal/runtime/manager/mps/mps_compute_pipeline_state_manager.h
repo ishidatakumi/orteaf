@@ -15,8 +15,7 @@
 #include "orteaf/internal/base/heap_vector.h"
 #include "orteaf/internal/base/strong_id.h"
 #include "orteaf/internal/diagnostics/error/error.h"
-#include "orteaf/internal/runtime/backend_ops/mps/mps_backend_ops.h"
-#include "orteaf/internal/runtime/backend_ops/mps/mps_backend_ops_concepts.h"
+#include "orteaf/internal/runtime/backend_ops/mps/mps_slow_ops.h"
 
 namespace orteaf::internal::runtime::mps {
 
@@ -47,10 +46,9 @@ struct FunctionKeyHasher {
     }
 };
 
-template <class BackendOps = ::orteaf::internal::runtime::backend_ops::mps::MpsBackendOps>
-requires ::orteaf::internal::runtime::backend_ops::mps::MpsRuntimeBackendOps<BackendOps>
 class MpsComputePipelineStateManager {
 public:
+    using BackendOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
     void setGrowthChunkSize(std::size_t chunk) {
         if (chunk == 0) {
             ::orteaf::internal::diagnostics::error::throwError(
@@ -64,12 +62,18 @@ public:
 
     void initialize(::orteaf::internal::backend::mps::MPSDevice_t device,
                     ::orteaf::internal::backend::mps::MPSLibrary_t library,
+                    BackendOps *ops,
                     std::size_t capacity) {
         shutdown();
         if (device == nullptr || library == nullptr) {
             ::orteaf::internal::diagnostics::error::throwError(
                 ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
                 "MPS compute pipeline state manager requires a valid device and library");
+        }
+        if (ops == nullptr) {
+            ::orteaf::internal::diagnostics::error::throwError(
+                ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+                "MPS compute pipeline state manager requires valid ops");
         }
         if (capacity > kMaxStateCount) {
             ::orteaf::internal::diagnostics::error::throwError(
@@ -78,6 +82,7 @@ public:
         }
         device_ = device;
         library_ = library;
+        ops_ = ops;
         states_.clear();
         free_list_.clear();
         key_to_index_.clear();
@@ -102,6 +107,7 @@ public:
         key_to_index_.clear();
         device_ = nullptr;
         library_ = nullptr;
+        ops_ = nullptr;
         initialized_ = false;
     }
 
@@ -117,15 +123,15 @@ public:
         const std::size_t index = allocateSlot();
         State& state = states_[index];
         state.key = key;
-        state.function = BackendOps::createFunction(library_, key.identifier);
+        state.function = ops_->createFunction(library_, key.identifier);
         if (state.function == nullptr) {
             ::orteaf::internal::diagnostics::error::throwError(
                 ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
                 "Failed to create MPS function for compute pipeline");
         }
-        state.pipeline_state = BackendOps::createComputePipelineState(device_, state.function);
+        state.pipeline_state = ops_->createComputePipelineState(device_, state.function);
         if (state.pipeline_state == nullptr) {
-            BackendOps::destroyFunction(state.function);
+            ops_->destroyFunction(state.function);
             state.function = nullptr;
             ::orteaf::internal::diagnostics::error::throwError(
                 ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
@@ -217,11 +223,11 @@ private:
 
     void destroyState(State& state) {
         if (state.pipeline_state != nullptr) {
-            BackendOps::destroyComputePipelineState(state.pipeline_state);
+            ops_->destroyComputePipelineState(state.pipeline_state);
             state.pipeline_state = nullptr;
         }
         if (state.function != nullptr) {
-            BackendOps::destroyFunction(state.function);
+            ops_->destroyFunction(state.function);
             state.function = nullptr;
         }
         state.alive = false;
@@ -309,6 +315,7 @@ private:
     bool initialized_{false};
     ::orteaf::internal::backend::mps::MPSDevice_t device_{nullptr};
     ::orteaf::internal::backend::mps::MPSLibrary_t library_{nullptr};
+    BackendOps *ops_{nullptr};
 };
 
 }  // namespace orteaf::internal::runtime::mps

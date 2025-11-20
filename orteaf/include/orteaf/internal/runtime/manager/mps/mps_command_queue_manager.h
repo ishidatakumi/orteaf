@@ -11,8 +11,7 @@
 #include "orteaf/internal/base/heap_vector.h"
 #include "orteaf/internal/base/strong_id.h"
 #include "orteaf/internal/diagnostics/error/error.h"
-#include "orteaf/internal/runtime/backend_ops/mps/mps_backend_ops.h"
-#include "orteaf/internal/runtime/backend_ops/mps/mps_backend_ops_concepts.h"
+#include "orteaf/internal/runtime/backend_ops/mps/mps_slow_ops.h"
 
 namespace orteaf::internal::runtime::mps {
 
@@ -23,12 +22,10 @@ namespace orteaf::internal::runtime::mps {
  * BackendOps. For now we only provide the API surface required by the unit
  * tests so the project builds; behaviour is intentionally minimal.
  */
-template <class BackendOps =
-              ::orteaf::internal::runtime::backend_ops::mps::MpsBackendOps>
-  requires ::orteaf::internal::runtime::backend_ops::mps::MpsRuntimeBackendOps<
-      BackendOps>
 class MpsCommandQueueManager {
 public:
+  using BackendOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+
   void setGrowthChunkSize(std::size_t chunk) {
     if (chunk == 0) {
       ::orteaf::internal::diagnostics::error::throwError(
@@ -41,9 +38,15 @@ public:
   std::size_t growthChunkSize() const noexcept { return growth_chunk_size_; }
 
   void initialize(::orteaf::internal::backend::mps::MPSDevice_t device,
-                  std::size_t capacity) {
+                  BackendOps *ops, std::size_t capacity) {
     shutdown();
+    if (ops == nullptr) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+          "MPS command queue manager requires valid ops");
+    }
     device_ = device;
+    ops_ = ops;
 
     if (capacity == 0) {
       initialized_ = true;
@@ -63,8 +66,8 @@ public:
 
     for (std::size_t index = 0; index < capacity; ++index) {
       State state{};
-      state.command_queue = BackendOps::createCommandQueue(device_);
-      state.event = BackendOps::createEvent(device_);
+      state.command_queue = ops_->createCommandQueue(device_);
+      state.event = ops_->createEvent(device_);
       state.resetHazards();
       state.generation = 0;
       state.in_use = false;
@@ -82,11 +85,12 @@ public:
     }
 
     for (std::size_t i = 0; i < states_.size(); ++i) {
-      states_[i].destroy();
+      states_[i].destroy(ops_);
     }
     states_.clear();
     free_list_.clear();
     device_ = nullptr;
+    ops_ = nullptr;
     initialized_ = false;
   }
 
@@ -132,7 +136,7 @@ public:
           "Cannot release unused queues while queues are in use");
     }
     for (std::size_t i = 0; i < states_.size(); ++i) {
-      states_[i].destroy();
+      states_[i].destroy(ops_);
     }
     states_.clear();
     free_list_.clear();
@@ -206,13 +210,13 @@ private:
       completed_serial = 0;
     }
 
-    void destroy() noexcept {
+    void destroy(BackendOps *ops) noexcept {
       if (event != nullptr) {
-        BackendOps::destroyEvent(event);
+        ops->destroyEvent(event);
         event = nullptr;
       }
       if (command_queue != nullptr) {
-        BackendOps::destroyCommandQueue(command_queue);
+        ops->destroyCommandQueue(command_queue);
         command_queue = nullptr;
       }
       resetHazards();
@@ -266,8 +270,8 @@ private:
 
     for (std::size_t i = 0; i < additional_count; ++i) {
       State state{};
-      state.command_queue = BackendOps::createCommandQueue(device_);
-      state.event = BackendOps::createEvent(device_);
+      state.command_queue = ops_->createCommandQueue(device_);
+      state.event = ops_->createEvent(device_);
       state.resetHazards();
       state.generation = 0;
       state.in_use = false;
@@ -330,6 +334,7 @@ private:
   std::size_t growth_chunk_size_{1};
   bool initialized_{false};
   ::orteaf::internal::backend::mps::MPSDevice_t device_{nullptr};
+  BackendOps *ops_{nullptr};
 };
 
 } // namespace orteaf::internal::runtime::mps

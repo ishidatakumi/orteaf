@@ -29,16 +29,13 @@ struct RealBackendOpsProvider {
   static constexpr bool is_mock = false;
 
   struct Context {
-    // MpsSlowOpsImpl is stateless, so we can just instantiate it.
-    // Or if it needs to be a singleton, we handle it here.
-    // For now, let's assume we can just create one.
     BackendOps ops;
   };
 
   static void setUp(Context &) {}
   static void tearDown(Context &) {}
 
-  static BackendOps &getOps(Context &ctx) { return ctx.ops; }
+  static BackendOps *getOps(Context &ctx) { return &ctx.ops; }
 };
 
 // Mock provider uses MpsBackendOpsMock
@@ -53,7 +50,7 @@ struct MockBackendOpsProvider {
   static void setUp(Context &) {}
   static void tearDown(Context &) {}
 
-  static BackendOps &getOps(Context &ctx) { return ctx.mock; }
+  static BackendOps *getOps(Context &ctx) { return &ctx.mock; }
   static BackendOps &mock(Context &ctx) { return ctx.mock; }
 };
 

@@ -45,10 +45,17 @@ public:
         return library_initial_capacity_;
     }
 
-    void initialize() {
+    void initialize(BackendOps *ops) {
         shutdown();
 
-        const int device_count = BackendOps::getDeviceCount();
+        if (ops == nullptr) {
+            ::orteaf::internal::diagnostics::error::throwError(
+                ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+                "MPS device manager requires valid ops");
+        }
+        ops_ = ops;
+
+        const int device_count = ops_->getDeviceCount();
         if (device_count <= 0) {
             initialized_ = true;
             return;
@@ -58,20 +65,20 @@ public:
 
         for (int i = 0; i < device_count; ++i) {
             auto& state = states_[i];
-            state.reset();
+            state.reset(ops_);
 
-            const auto device = BackendOps::getDevice(static_cast<::orteaf::internal::backend::mps::MPSInt_t>(i));
+            const auto device = ops_->getDevice(static_cast<::orteaf::internal::backend::mps::MPSInt_t>(i));
             state.device = device;
             state.is_alive = device != nullptr;
 
             const ::orteaf::internal::base::DeviceId device_id{static_cast<std::uint32_t>(i)};
             state.arch = state.is_alive
-                ? BackendOps::detectArchitecture(device_id)
+                ? ops_->detectArchitecture(device_id)
                 : ::orteaf::internal::architecture::Architecture::mps_generic;
             if (state.is_alive) {
-                state.command_queue_manager.initialize(device, command_queue_initial_capacity_);
-                state.heap_manager.initialize(device, heap_initial_capacity_);
-                state.library_manager.initialize(device, library_initial_capacity_);
+                state.command_queue_manager.initialize(device, ops_, command_queue_initial_capacity_);
+                state.heap_manager.initialize(device, ops_, heap_initial_capacity_);
+                state.library_manager.initialize(device, ops_, library_initial_capacity_);
             } else {
                 state.command_queue_manager.shutdown();
                 state.heap_manager.shutdown();
@@ -88,9 +95,10 @@ public:
             return;
         }
         for (std::size_t i = 0; i < states_.size(); ++i) {
-            states_[i].reset();
+            states_[i].reset(ops_);
         }
         states_.clear();
+        ops_ = nullptr;
         initialized_ = false;
     }
 
@@ -108,37 +116,37 @@ public:
         return state.arch;
     }
 
-    ::orteaf::internal::runtime::mps::MpsCommandQueueManager<BackendOps>& commandQueueManager(
+    ::orteaf::internal::runtime::mps::MpsCommandQueueManager& commandQueueManager(
         ::orteaf::internal::base::DeviceId id) {
         State& state = ensureValidState(id);
         return state.command_queue_manager;
     }
 
-    const ::orteaf::internal::runtime::mps::MpsCommandQueueManager<BackendOps>& commandQueueManager(
+    const ::orteaf::internal::runtime::mps::MpsCommandQueueManager& commandQueueManager(
         ::orteaf::internal::base::DeviceId id) const {
         const State& state = ensureValid(id);
         return state.command_queue_manager;
     }
 
-    ::orteaf::internal::runtime::mps::MpsHeapManager<BackendOps>& heapManager(
+    ::orteaf::internal::runtime::mps::MpsHeapManager& heapManager(
         ::orteaf::internal::base::DeviceId id) {
         State& state = ensureValidState(id);
         return state.heap_manager;
     }
 
-    const ::orteaf::internal::runtime::mps::MpsHeapManager<BackendOps>& heapManager(
+    const ::orteaf::internal::runtime::mps::MpsHeapManager& heapManager(
         ::orteaf::internal::base::DeviceId id) const {
         const State& state = ensureValid(id);
         return state.heap_manager;
     }
 
-    ::orteaf::internal::runtime::mps::MpsLibraryManager<BackendOps>& libraryManager(
+    ::orteaf::internal::runtime::mps::MpsLibraryManager& libraryManager(
         ::orteaf::internal::base::DeviceId id) {
         State& state = ensureValidState(id);
         return state.library_manager;
     }
 
-    const ::orteaf::internal::runtime::mps::MpsLibraryManager<BackendOps>& libraryManager(
+    const ::orteaf::internal::runtime::mps::MpsLibraryManager& libraryManager(
         ::orteaf::internal::base::DeviceId id) const {
         const State& state = ensureValid(id);
         return state.library_manager;
@@ -194,9 +202,9 @@ private:
         ::orteaf::internal::architecture::Architecture arch{
             ::orteaf::internal::architecture::Architecture::mps_generic};
         bool is_alive{false};
-        ::orteaf::internal::runtime::mps::MpsCommandQueueManager<BackendOps> command_queue_manager{};
-        ::orteaf::internal::runtime::mps::MpsHeapManager<BackendOps> heap_manager{};
-        ::orteaf::internal::runtime::mps::MpsLibraryManager<BackendOps> library_manager{};
+        ::orteaf::internal::runtime::mps::MpsCommandQueueManager command_queue_manager{};
+        ::orteaf::internal::runtime::mps::MpsHeapManager heap_manager{};
+        ::orteaf::internal::runtime::mps::MpsLibraryManager library_manager{};
 
         State() = default;
         State(const State&) = delete;
@@ -208,22 +216,22 @@ private:
 
         State& operator=(State&& other) noexcept {
             if (this != &other) {
-                reset();
+                reset(nullptr);
                 moveFrom(std::move(other));
             }
             return *this;
         }
 
         ~State() {
-            reset();
+            reset(nullptr);
         }
 
-        void reset() noexcept {
+        void reset(BackendOps *ops) noexcept {
             command_queue_manager.shutdown();
             heap_manager.shutdown();
             library_manager.shutdown();
-            if (device != nullptr) {
-                BackendOps::releaseDevice(device);
+            if (device != nullptr && ops != nullptr) {
+                ops->releaseDevice(device);
             }
             device = nullptr;
             arch = ::orteaf::internal::architecture::Architecture::mps_generic;
@@ -273,10 +281,11 @@ private:
     std::size_t command_queue_initial_capacity_{0};
     std::size_t heap_initial_capacity_{0};
     std::size_t library_initial_capacity_{0};
+    BackendOps *ops_{nullptr};
 };
 
-inline MpsDeviceManager<>& GetMpsDeviceManager() {
-    static MpsDeviceManager<> instance{};
+inline MpsDeviceManager& GetMpsDeviceManager() {
+    static MpsDeviceManager instance{};
     return instance;
 }
 
