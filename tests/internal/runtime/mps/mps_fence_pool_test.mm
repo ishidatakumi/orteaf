@@ -64,9 +64,6 @@ TYPED_TEST(MpsFencePoolTypedTest, InitializeRejectsNullDevice) {
 TYPED_TEST(MpsFencePoolTypedTest, OperationsBeforeInitializationThrow) {
     auto& pool = this->pool();
     ExpectError(diag_error::OrteafErrc::InvalidState, [&] { (void)pool.acquireFence(); });
-    ExpectError(diag_error::OrteafErrc::InvalidState, [&] {
-        pool.releaseFence(reinterpret_cast<backend::mps::MPSFence_t>(0x1));
-    });
 }
 
 TYPED_TEST(MpsFencePoolTypedTest, InitializePreallocatesFences) {
@@ -79,11 +76,11 @@ TYPED_TEST(MpsFencePoolTypedTest, InitializePreallocatesFences) {
     EXPECT_EQ(pool.availableCount(), 2u);
     auto first = pool.acquireFence();
     auto second = pool.acquireFence();
-    EXPECT_NE(first, nullptr);
-    EXPECT_NE(second, nullptr);
+    EXPECT_NE(first.get(), nullptr);
+    EXPECT_NE(second.get(), nullptr);
     EXPECT_EQ(pool.availableCount(), 0u);
-    pool.releaseFence(first);
-    pool.releaseFence(second);
+    first.release();
+    second.release();
     if constexpr (TypeParam::is_mock) {
         this->adapter().expectDestroyFences({makeFence(0x100), makeFence(0x101)});
     }
@@ -102,7 +99,7 @@ TYPED_TEST(MpsFencePoolTypedTest, GrowChunkAllocatesInBlocks) {
         this->adapter().expectCreateFences({makeFence(0x200), makeFence(0x201)});
     }
     auto first = pool.acquireFence();
-    EXPECT_NE(first, nullptr);
+    EXPECT_NE(first.get(), nullptr);
     EXPECT_EQ(pool.availableCount(), 1u);
     auto second = pool.acquireFence();
     EXPECT_EQ(pool.availableCount(), 0u);
@@ -110,44 +107,14 @@ TYPED_TEST(MpsFencePoolTypedTest, GrowChunkAllocatesInBlocks) {
         this->adapter().expectCreateFences({makeFence(0x202), makeFence(0x203)});
     }
     auto third = pool.acquireFence();
-    EXPECT_NE(third, nullptr);
+    EXPECT_NE(third.get(), nullptr);
     EXPECT_EQ(pool.availableCount(), 1u);
-    pool.releaseFence(first);
-    pool.releaseFence(second);
-    pool.releaseFence(third);
+    first.release();
+    second.release();
+    third.release();
     if constexpr (TypeParam::is_mock) {
         this->adapter().expectDestroyFences({makeFence(0x200), makeFence(0x201), makeFence(0x202), makeFence(0x203)});
     }
-    pool.shutdown();
-}
-
-TYPED_TEST(MpsFencePoolTypedTest, ReleaseRejectsUnknownFence) {
-    auto& pool = this->pool();
-    const auto device = this->adapter().device();
-    if constexpr (TypeParam::is_mock) {
-        this->adapter().expectCreateFences({makeFence(0x300)});
-    }
-    pool.initialize(device, this->getOps(), 1);
-    auto handle = pool.acquireFence();
-    pool.releaseFence(handle);
-    ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] { pool.releaseFence(handle); });
-    ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] {
-        pool.releaseFence(reinterpret_cast<backend::mps::MPSFence_t>(0x1234));
-    });
-    if constexpr (TypeParam::is_mock) {
-        this->adapter().expectDestroyFences({makeFence(0x300)});
-    }
-    pool.shutdown();
-}
-
-TYPED_TEST(MpsFencePoolTypedTest, ReleaseRejectsNullFence) {
-    auto& pool = this->pool();
-    const auto device = this->adapter().device();
-    if constexpr (TypeParam::is_mock) {
-        this->adapter().expectCreateFences({});
-    }
-    pool.initialize(device, this->getOps(), 0);
-    ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] { pool.releaseFence(nullptr); });
     pool.shutdown();
 }
 
@@ -160,7 +127,7 @@ TYPED_TEST(MpsFencePoolTypedTest, ShutdownRejectsInUseFences) {
     pool.initialize(device, this->getOps(), 1);
     auto handle = pool.acquireFence();
     ExpectError(diag_error::OrteafErrc::InvalidState, [&] { pool.shutdown(); });
-    pool.releaseFence(handle);
+    handle.release();
     if constexpr (TypeParam::is_mock) {
         this->adapter().expectDestroyFences({makeFence(0x350)});
     }
@@ -181,9 +148,48 @@ TYPED_TEST(MpsFencePoolTypedTest, DebugStateReflectsCounts) {
     EXPECT_EQ(snapshot.available_count, 1u);
     EXPECT_EQ(snapshot.in_use_count, 1u);
     EXPECT_EQ(snapshot.total_created, 2u);
-    pool.releaseFence(handle);
+    handle.release();
     if constexpr (TypeParam::is_mock) {
         this->adapter().expectDestroyFences({makeFence(0x360), makeFence(0x361)});
+    }
+    pool.shutdown();
+}
+
+TYPED_TEST(MpsFencePoolTypedTest, MovedFromHandleIsInactive) {
+    auto& pool = this->pool();
+    const auto device = this->adapter().device();
+    if constexpr (TypeParam::is_mock) {
+        this->adapter().expectCreateFences({makeFence(0x410)});
+    }
+    pool.initialize(device, this->getOps(), 1);
+    auto h1 = pool.acquireFence();
+    auto h2 = std::move(h1);
+    ExpectError(diag_error::OrteafErrc::InvalidState, [&] { (void)h1.get(); });
+    EXPECT_NE(h2.get(), nullptr);
+    h2.release();
+    if constexpr (TypeParam::is_mock) {
+        this->adapter().expectDestroyFences({makeFence(0x410)});
+    }
+    pool.shutdown();
+}
+
+TYPED_TEST(MpsFencePoolTypedTest, DestructionReturnsHandleToPool) {
+    auto& pool = this->pool();
+    const auto device = this->adapter().device();
+    if constexpr (TypeParam::is_mock) {
+        this->adapter().expectCreateFences({makeFence(0x420)});
+    }
+    pool.initialize(device, this->getOps(), 1);
+    {
+        auto h = pool.acquireFence();
+        EXPECT_EQ(pool.availableCount(), 0u);
+        EXPECT_EQ(pool.inUseCount(), 1u);
+        EXPECT_NE(h.get(), nullptr);
+    }
+    EXPECT_EQ(pool.availableCount(), 1u);
+    EXPECT_EQ(pool.inUseCount(), 0u);
+    if constexpr (TypeParam::is_mock) {
+        this->adapter().expectDestroyFences({makeFence(0x420)});
     }
     pool.shutdown();
 }
