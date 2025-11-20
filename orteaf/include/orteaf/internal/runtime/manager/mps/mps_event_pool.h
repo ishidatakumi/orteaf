@@ -115,6 +115,12 @@ public:
 #endif
 
 private:
+    // Pool instances must remain immobile while handles exist.
+    MpsEventPool(const MpsEventPool&) = delete;
+    MpsEventPool& operator=(const MpsEventPool&) = delete;
+    MpsEventPool(MpsEventPool&&) = delete;
+    MpsEventPool& operator=(MpsEventPool&&) = delete;
+
     void ensureInitialized() const;
 
     void growFreeList(std::size_t count);
