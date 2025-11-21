@@ -11,7 +11,7 @@
 #include "orteaf/internal/base/heap_vector.h"
 #include "orteaf/internal/base/strong_id.h"
 #include "orteaf/internal/diagnostics/error/error.h"
-#include "orteaf/internal/runtime/backend_ops/mps/mps_slow_ops.h"
+#include "orteaf/internal/backend/mps/mps_slow_ops.h"
 
 namespace orteaf::internal::runtime::mps {
 
