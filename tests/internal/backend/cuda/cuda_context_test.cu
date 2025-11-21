@@ -32,7 +32,7 @@ protected:
         }
     }
 
-    cuda::CUdevice_t device_ = 0;
+    cuda::CUdevice_t device_{0};
     cuda::CUcontext_t context_ = nullptr;
 };
 
