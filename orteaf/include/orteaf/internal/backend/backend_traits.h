@@ -9,6 +9,7 @@
 #include <orteaf/internal/backend/cpu/cpu_buffer_handle.h>
 #include <orteaf/internal/backend/cuda/cuda_device.h>
 #if ORTEAF_ENABLE_CUDA
+#include <orteaf/internal/backend/cuda/cuda_stream.h>
 #include <orteaf/internal/backend/cuda/cuda_buffer_handle.h>
 #endif
 
@@ -36,7 +37,7 @@ struct BackendTraits<Backend::CPU> {
 template <>
 struct BackendTraits<Backend::CUDA> {
     using BufferHandle = cuda::CudaBufferHandle;
-    using Stream = CUstream_t;           // TODO: refine if a wrapper type exists
+    using Stream = cuda::CUstream_t;     // CUDA stream handle
     using Device = cuda::CUdevice_t;     // opaque CUDA device handle
 };
 #endif  // ORTEAF_ENABLE_CUDA
