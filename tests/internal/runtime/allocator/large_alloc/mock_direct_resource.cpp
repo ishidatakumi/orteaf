@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 #include <string>
 
-#include "tests/internal/runtime/allocator/testing/mock_cpu_resource.h"
+#include "tests/internal/runtime/allocator/testing/mock_resource.h"
 
 using ::testing::_;
 using ::testing::Return;
