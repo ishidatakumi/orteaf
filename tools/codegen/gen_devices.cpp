@@ -276,7 +276,7 @@ ArchitectureCatalog ParseArchitectureCatalog(const fs::path& architecture_yaml_p
     ArchitectureCatalog catalog;
 
     for (const auto& backend_id : backends.ids) {
-        catalog.local_index[backend_id]["generic"] = 0;
+        catalog.local_index[backend_id]["Generic"] = 0;
     }
 
     const auto architectures_node = root["architectures"];
@@ -286,7 +286,7 @@ ArchitectureCatalog ParseArchitectureCatalog(const fs::path& architecture_yaml_p
 
     std::unordered_map<std::string, std::uint16_t> next_local_index;
     for (const auto& backend_id : backends.ids) {
-        next_local_index[backend_id] = 1;  // 0 reserved for generic
+        next_local_index[backend_id] = 1;  // 0 reserved for Generic
     }
 
     for (std::size_t i = 0; i < architectures_node.size(); ++i) {

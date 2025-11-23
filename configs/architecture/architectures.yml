@@ -1,63 +1,63 @@
 schema_version: "1.0"
 
 architectures:
-  - id: "sm80"
+  - id: "Sm80"
     display_name: "CUDA SM80"
-    backend: "cuda"
+    backend: "Cuda"
     metadata:
       description: "Ampere 世代 GPU (A100 など) 向け最適化"
       detect:
         vendor: "nvidia"
         compute_capability: 80
 
-  - id: "sm86"
+  - id: "Sm86"
     display_name: "CUDA SM86"
-    backend: "cuda"
+    backend: "Cuda"
     metadata:
       description: "Ampere 世代 GPU (RTX 30 シリーズ) 向け最適化"
       detect:
         vendor: "nvidia"
         compute_capability: 86
 
-  - id: "sm90"
+  - id: "Sm90"
     display_name: "CUDA SM90"
-    backend: "cuda"
+    backend: "Cuda"
     metadata:
       description: "Hopper 世代 GPU (H100 など) 向け最適化"
       detect:
         vendor: "nvidia"
         compute_capability: 90
 
-  - id: "m2"
+  - id: "M2"
     display_name: "Apple M2 GPU"
-    backend: "mps"
+    backend: "Mps"
     metadata:
       description: "Apple Silicon M2 世代 GPU 向け最適化"
       detect:
         vendor: "apple"
         metal_family: "m2"
 
-  - id: "m3"
+  - id: "M3"
     display_name: "Apple M3 GPU"
-    backend: "mps"
+    backend: "Mps"
     metadata:
       description: "Apple Silicon M3 世代 GPU 向け最適化"
       detect:
         vendor: "apple"
         metal_family: "m3"
 
-  - id: "m4"
+  - id: "M4"
     display_name: "Apple M4 GPU"
-    backend: "mps"
+    backend: "Mps"
     metadata:
       description: "Apple Silicon M4 世代 GPU 向け最適化"
       detect:
         vendor: "apple"
         metal_family: "m4"
 
-  - id: "zen4"
+  - id: "Zen4"
     display_name: "Zen 4 AVX512"
-    backend: "cpu"
+    backend: "Cpu"
     metadata:
       description: "Zen 4 / AVX-512 対応 CPU 向け最適化"
       detect:
@@ -65,9 +65,9 @@ architectures:
         family: 25
         features: ["avx512"]
 
-  - id: "skylake"
+  - id: "Skylake"
     display_name: "Skylake AVX512"
-    backend: "cpu"
+    backend: "Cpu"
     metadata:
       description: "Intel Skylake-X / AVX-512 対応 CPU 向け最適化"
       detect:
@@ -76,18 +76,18 @@ architectures:
         model: [85]
         features: ["avx512"]
 
-  - id: "apple_m4_pro"
+  - id: "AppleM4Pro"
     display_name: "Apple M4 Pro"
-    backend: "cpu"
+    backend: "Cpu"
     metadata:
       description: "Apple Silicon M4 Pro アーキテクチャ (Avalanche/Blizzard) 向け最適化"
       detect:
         vendor: "apple"
         machine_ids: ["Mac15,4", "Mac15,6", "Mac15,7", "Mac16,6", "Mac16,7", "Mac16,8"]
 
-  - id: "intel_comet_lake"
+  - id: "IntelCometLake"
     display_name: "Intel Comet Lake"
-    backend: "cpu"
+    backend: "Cpu"
     metadata:
       description: "Comet Lake ファミリ (Core i9-10850K など) 向けの AVX2 最適化"
       detect:

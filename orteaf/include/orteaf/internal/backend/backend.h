@@ -59,7 +59,7 @@ constexpr Backend fromIndex(std::size_t index) {
     return static_cast<Backend>(index);
 }
 
-/// @brief Return the YAML identifier (e.g. `"cuda"`).
+/// @brief Return the YAML identifier (e.g. `"Cuda"`).
 constexpr std::string_view idOf(Backend backend) {
     return kBackendIds[toIndex(backend)];
 }

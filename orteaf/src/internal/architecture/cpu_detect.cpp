@@ -309,14 +309,14 @@ bool matchesDetectSpec(std::size_t index, const CpuInfo& info) {
 Architecture detectCpuArchitecture() {
     const CpuInfo info = collectCpuInfo();
     const std::size_t count = tables::kArchitectureCount;
-    Architecture fallback = Architecture::cpu_generic;
+    Architecture fallback = Architecture::CpuGeneric;
 
     for (std::size_t index = 0; index < count; ++index) {
         const Architecture arch = kAllArchitectures[index];
         if (localIndexOf(arch) == 0) {
             continue; // skip generic, reserve as fallback
         }
-        if (backendOf(arch) != backend::Backend::cpu) {
+        if (backendOf(arch) != backend::Backend::Cpu) {
             continue;
         }
         if (!matchesDetectSpec(index, info)) {

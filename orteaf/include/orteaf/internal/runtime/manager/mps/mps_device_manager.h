@@ -96,7 +96,7 @@ public:
         bool is_alive{false};
         bool has_device{false};
         ::orteaf::internal::architecture::Architecture arch{
-            ::orteaf::internal::architecture::Architecture::mps_generic};
+            ::orteaf::internal::architecture::Architecture::MpsGeneric};
     };
 
     DebugState debugState() const {
@@ -110,7 +110,7 @@ private:
     struct State {
         ::orteaf::internal::backend::mps::MPSDevice_t device{nullptr};
         ::orteaf::internal::architecture::Architecture arch{
-            ::orteaf::internal::architecture::Architecture::mps_generic};
+            ::orteaf::internal::architecture::Architecture::MpsGeneric};
         bool is_alive{false};
         ::orteaf::internal::runtime::mps::MpsCommandQueueManager command_queue_manager{};
         ::orteaf::internal::runtime::mps::MpsHeapManager heap_manager{};
