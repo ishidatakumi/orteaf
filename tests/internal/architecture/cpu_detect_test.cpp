@@ -8,7 +8,7 @@
 namespace architecture = orteaf::internal::architecture;
 namespace backend = orteaf::internal::backend;
 
-/// Manual test hook: set ORTEAF_EXPECT_CPU_ARCH=zen4 (or other ID) to assert your environment.
+/// Manual test hook: set ORTEAF_EXPECT_CPU_ARCH=Zen4 (or other ID) to assert your environment.
 TEST(CpuDetect, ManualEnvironmentCheck) {
     const char* expected_env = std::getenv("ORTEAF_EXPECT_CPU_ARCH");
     if (!expected_env) {
@@ -22,11 +22,11 @@ TEST(CpuDetect, ManualEnvironmentCheck) {
 
 TEST(CpuDetect, ReportsCpuBackendArchitecture) {
     const auto arch = architecture::detectCpuArchitecture();
-    EXPECT_EQ(architecture::backendOf(arch), backend::Backend::cpu);
+    EXPECT_EQ(architecture::backendOf(arch), backend::Backend::Cpu);
     EXPECT_GE(static_cast<std::uint16_t>(arch), 0);
 }
 
 TEST(CpuDetect, GenericIsAlwaysValid) {
-    constexpr auto generic = architecture::Architecture::cpu_generic;
+    constexpr auto generic = architecture::Architecture::CpuGeneric;
     EXPECT_TRUE(architecture::isValidIndex(static_cast<std::size_t>(generic)));
 }

@@ -67,14 +67,14 @@ Architecture detectMpsArchitecture(std::string_view metal_family, std::string_vi
     const auto metal_lower = toLowerCopy(metal_family);
     const auto vendor_lower = toLowerCopy(vendor_hint);
     const auto count = tables::kArchitectureCount;
-    Architecture fallback = Architecture::mps_generic;
+    Architecture fallback = Architecture::MpsGeneric;
 
     for (std::size_t index = 0; index < count; ++index) {
         const Architecture arch = kAllArchitectures[index];
         if (localIndexOf(arch) == 0) {
             continue;
         }
-        if (backendOf(arch) != backend::Backend::mps) {
+        if (backendOf(arch) != backend::Backend::Mps) {
             continue;
         }
 
@@ -106,13 +106,13 @@ Architecture detectMpsArchitectureForDeviceId(::orteaf::internal::base::DeviceId
     try {
         int count = backend::mps::getDeviceCount();
         if (count <= 0 || device_index >= static_cast<std::uint32_t>(count)) {
-            return Architecture::mps_generic;
+            return Architecture::MpsGeneric;
         }
 
         backend::mps::MPSDevice_t device =
             backend::mps::getDevice(static_cast<backend::mps::MPSInt_t>(device_index));
         if (device == nullptr) {
-            return Architecture::mps_generic;
+            return Architecture::MpsGeneric;
         }
 
         ScopedDevice guard(device);
@@ -124,13 +124,13 @@ Architecture detectMpsArchitectureForDeviceId(::orteaf::internal::base::DeviceId
         return detectMpsArchitecture(metal_family, vendor);
     } catch (const std::system_error& err) {
         if (err.code() == backend_unavailable) {
-            return Architecture::mps_generic;
+            return Architecture::MpsGeneric;
         }
         throw;
     }
 #else
     (void)device_id;
-    return Architecture::mps_generic;
+    return Architecture::MpsGeneric;
 #endif
 }
 

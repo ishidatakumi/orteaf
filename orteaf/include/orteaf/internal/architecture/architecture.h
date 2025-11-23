@@ -10,7 +10,7 @@
 
 namespace orteaf::internal::architecture {
 
-/// @brief Enumerates per-backend optimization architectures (Generic, sm90, etc.).
+/// @brief Enumerates per-backend optimization architectures (Generic, Sm90, etc.).
 ///
 /// The generator serializes architectures as `(backend, local_index)` pairs. Local
 /// index `0` is automatically reserved for the Generic entry and can be used as a

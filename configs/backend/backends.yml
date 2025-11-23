@@ -1,19 +1,19 @@
 schema_version: "1.0"
 
 backends:
-  - id: "cuda"
+  - id: "Cuda"
     display_name: "CUDA"
     module_path: "@orteaf/internal/backend/cuda"
     metadata:
       description: "NVIDIA CUDA 実装"
 
-  - id: "mps"
+  - id: "Mps"
     display_name: "MPS"
     module_path: "@orteaf/internal/backend/mps"
     metadata:
       description: "macOS/iOS 向け Metal Performance Shaders 実装"
 
-  - id: "cpu"
+  - id: "Cpu"
     display_name: "CPU"
     module_path: "@orteaf/internal/backend/cpu"
     metadata:

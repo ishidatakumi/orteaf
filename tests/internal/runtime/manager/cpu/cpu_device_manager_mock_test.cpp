@@ -50,17 +50,17 @@ TEST_F(CpuDeviceManagerMockTest, InitializesWithBackendArch) {
     EXPECT_EQ(manager_.getDeviceCount(), 0u);
 
     EXPECT_CALL(mock_, detectArchitecture())
-        .WillOnce(::testing::Return(architecture::Architecture::cpu_zen4));
+        .WillOnce(::testing::Return(architecture::Architecture::CpuZen4));
     manager_.initializeDevices();
 
     EXPECT_EQ(manager_.getDeviceCount(), 1u);
-    EXPECT_EQ(manager_.getArch(base::DeviceId{0}), architecture::Architecture::cpu_zen4);
+    EXPECT_EQ(manager_.getArch(base::DeviceId{0}), architecture::Architecture::CpuZen4);
     EXPECT_TRUE(manager_.isAlive(base::DeviceId{0}));
 }
 
 TEST_F(CpuDeviceManagerMockTest, DoubleInitializeDoesNotRedetect) {
     EXPECT_CALL(mock_, detectArchitecture())
-        .WillOnce(::testing::Return(architecture::Architecture::cpu_zen4));
+        .WillOnce(::testing::Return(architecture::Architecture::CpuZen4));
     manager_.initializeDevices();
 
     manager_.initializeDevices();  // no additional expectation
@@ -69,7 +69,7 @@ TEST_F(CpuDeviceManagerMockTest, DoubleInitializeDoesNotRedetect) {
 
 TEST_F(CpuDeviceManagerMockTest, ShutdownClearsState) {
     EXPECT_CALL(mock_, detectArchitecture())
-        .WillOnce(::testing::Return(architecture::Architecture::cpu_zen4));
+        .WillOnce(::testing::Return(architecture::Architecture::CpuZen4));
     manager_.initializeDevices();
     manager_.shutdown();
 
@@ -80,7 +80,7 @@ TEST_F(CpuDeviceManagerMockTest, ShutdownClearsState) {
 
 TEST_F(CpuDeviceManagerMockTest, InvalidDeviceIdThrows) {
     EXPECT_CALL(mock_, detectArchitecture())
-        .WillOnce(::testing::Return(architecture::Architecture::cpu_zen4));
+        .WillOnce(::testing::Return(architecture::Architecture::CpuZen4));
     manager_.initializeDevices();
 
     EXPECT_THROW(manager_.getArch(base::DeviceId{1}), std::system_error);

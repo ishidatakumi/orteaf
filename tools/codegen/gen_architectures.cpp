@@ -449,7 +449,10 @@ GeneratedData GenerateOutputs(const std::vector<BackendInfo>& backends,
         if (duplicate_it != by_backend.end()) {
             const auto& entries = duplicate_it->second;
             if (std::any_of(entries.begin(), entries.end(), [](const ArchitectureInput& input) {
-                    return input.id == "generic";
+                    std::string lower = input.id;
+                    std::transform(lower.begin(), lower.end(), lower.begin(),
+                                   [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
+                    return lower == "generic";
                 })) {
                 std::ostringstream oss;
                 oss << "Backend '" << backend.id
@@ -458,16 +461,16 @@ GeneratedData GenerateOutputs(const std::vector<BackendInfo>& backends,
             }
         }
 
-        auto make_enum_name = [](const std::string& backend_id, const std::string& arch_id) {
-            std::ostringstream oss;
-            oss << backend_id << '_' << arch_id;
-            return oss.str();
-        };
+    auto make_enum_name = [](const std::string& backend_id, const std::string& arch_id) {
+        std::ostringstream oss;
+        oss << backend_id << arch_id;
+        return oss.str();
+    };
 
         // Auto-insert generic entry (local index 0).
         ResolvedArchitecture generic;
-        generic.enum_name = make_enum_name(backend.id, "generic");
-        generic.architecture_id = "generic";
+        generic.enum_name = make_enum_name(backend.id, "Generic");
+        generic.architecture_id = "Generic";
         generic.display_name = "Generic " + backend.display_name;
         generic.description = "Backend-wide fallback architecture for " + backend.display_name;
         generic.backend_index = backend_index;

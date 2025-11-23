@@ -84,7 +84,7 @@ private:
      * @brief Local storage for the detected CPU device information.
      */
     struct State {
-        ::orteaf::internal::architecture::Architecture arch{::orteaf::internal::architecture::Architecture::cpu_generic};
+        ::orteaf::internal::architecture::Architecture arch{::orteaf::internal::architecture::Architecture::CpuGeneric};
         bool is_alive{false};
     };
 

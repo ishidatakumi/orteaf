@@ -130,7 +130,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, InitializeMarksManagerInitialized) {
     this->adapter().expectGetDeviceCount(1);
     this->adapter().expectGetDevices({{0, device0}});
     this->adapter().expectDetectArchitectures({
-        {base::DeviceId{0}, architecture::Architecture::mps_m3},
+        {base::DeviceId{0}, architecture::Architecture::MpsM3},
     });
     this->adapter().expectReleaseDevices({device0});
     expected_count = 1;
@@ -169,8 +169,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetDeviceReturnsRegisteredHandle) {
       {1, expected_handles[1]},
   });
   this->adapter().expectDetectArchitectures({
-      {base::DeviceId{0}, architecture::Architecture::mps_m3},
-      {base::DeviceId{1}, architecture::Architecture::mps_m4},
+      {base::DeviceId{0}, architecture::Architecture::MpsM3},
+      {base::DeviceId{1}, architecture::Architecture::MpsM4},
   });
   this->adapter().expectReleaseDevices(
       {expected_handles[0], expected_handles[1]});
@@ -193,13 +193,13 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetDeviceReturnsRegisteredHandle) {
     if constexpr (TypeParam::is_mock) {
       EXPECT_EQ(device, expected_handles[idx]);
       const auto expected_arch = (idx == 0)
-                                     ? architecture::Architecture::mps_m3
-                                     : architecture::Architecture::mps_m4;
+                                     ? architecture::Architecture::MpsM3
+                                     : architecture::Architecture::MpsM4;
       EXPECT_EQ(snapshot.arch, expected_arch);
     } else {
       EXPECT_NE(device, nullptr);
       if (expected_count >= 0 && idx == 0) {
-        EXPECT_NE(snapshot.arch, architecture::Architecture::mps_generic);
+        EXPECT_NE(snapshot.arch, architecture::Architecture::MpsGeneric);
       }
     }
   }
@@ -217,8 +217,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetArchMatchesReportedArchitecture) {
     this->adapter().expectGetDeviceCount(2);
     this->adapter().expectGetDevices({{0, device0}, {1, device1}});
     this->adapter().expectDetectArchitectures({
-        {base::DeviceId{0}, architecture::Architecture::mps_m4},
-        {base::DeviceId{1}, architecture::Architecture::mps_m3},
+        {base::DeviceId{0}, architecture::Architecture::MpsM4},
+        {base::DeviceId{1}, architecture::Architecture::MpsM3},
     });
     this->adapter().expectReleaseDevices({device0, device1});
   } else {
@@ -237,8 +237,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetArchMatchesReportedArchitecture) {
     EXPECT_TRUE(snapshot.in_range);
     if constexpr (TypeParam::is_mock) {
       const auto expected_arch = (idx == 0)
-                                     ? architecture::Architecture::mps_m4
-                                     : architecture::Architecture::mps_m3;
+                                     ? architecture::Architecture::MpsM4
+                                     : architecture::Architecture::MpsM3;
       EXPECT_EQ(arch, expected_arch);
       EXPECT_EQ(snapshot.arch, expected_arch);
       EXPECT_TRUE(snapshot.has_device);
@@ -262,7 +262,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, InvalidDeviceIdRejectsAccess) {
   this->adapter().expectGetDeviceCount(1);
   this->adapter().expectGetDevices({{0, device0}});
   this->adapter().expectDetectArchitectures({
-      {base::DeviceId{0}, architecture::Architecture::mps_m3},
+      {base::DeviceId{0}, architecture::Architecture::MpsM3},
   });
   this->adapter().expectReleaseDevices({device0});
 
@@ -293,8 +293,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, IsAliveReflectsReportedDeviceCount) {
     this->adapter().expectGetDeviceCount(2);
     this->adapter().expectGetDevices({{0, device0}, {1, device1}});
     this->adapter().expectDetectArchitectures({
-        {base::DeviceId{0}, architecture::Architecture::mps_m3},
-        {base::DeviceId{1}, architecture::Architecture::mps_m4},
+        {base::DeviceId{0}, architecture::Architecture::MpsM3},
+        {base::DeviceId{1}, architecture::Architecture::MpsM4},
     });
     this->adapter().expectReleaseDevices({device0, device1});
   }
@@ -346,8 +346,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ReinitializeReleasesPreviousDevices) {
   this->adapter().expectGetDeviceCount(2);
   this->adapter().expectGetDevices({{0, first0}, {1, first1}});
   this->adapter().expectDetectArchitectures({
-      {base::DeviceId{0}, architecture::Architecture::mps_m3},
-      {base::DeviceId{1}, architecture::Architecture::mps_m4},
+      {base::DeviceId{0}, architecture::Architecture::MpsM3},
+      {base::DeviceId{1}, architecture::Architecture::MpsM4},
   });
 
   manager.initialize(this->getOps());
@@ -365,8 +365,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ReinitializeReleasesPreviousDevices) {
   this->adapter().expectGetDeviceCount(2);
   this->adapter().expectGetDevices({{0, second0}, {1, second1}});
   this->adapter().expectDetectArchitectures({
-      {base::DeviceId{0}, architecture::Architecture::mps_m4},
-      {base::DeviceId{1}, architecture::Architecture::mps_m3},
+      {base::DeviceId{0}, architecture::Architecture::MpsM4},
+      {base::DeviceId{1}, architecture::Architecture::MpsM3},
   });
 
   manager.initialize(this->getOps());
@@ -390,8 +390,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ShutdownClearsDeviceState) {
     this->adapter().expectGetDeviceCount(2);
     this->adapter().expectGetDevices({{0, device0}, {1, device1}});
     this->adapter().expectDetectArchitectures({
-        {base::DeviceId{0}, architecture::Architecture::mps_m3},
-        {base::DeviceId{1}, architecture::Architecture::mps_m4},
+        {base::DeviceId{0}, architecture::Architecture::MpsM3},
+        {base::DeviceId{1}, architecture::Architecture::MpsM4},
     });
     this->adapter().expectReleaseDevices({device0, device1});
   }
@@ -429,8 +429,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
   this->adapter().expectGetDeviceCount(2);
   this->adapter().expectGetDevices({{0, device0}, {1, device1}});
   this->adapter().expectDetectArchitectures({
-      {base::DeviceId{0}, architecture::Architecture::mps_m3},
-      {base::DeviceId{1}, architecture::Architecture::mps_m4},
+      {base::DeviceId{0}, architecture::Architecture::MpsM3},
+      {base::DeviceId{1}, architecture::Architecture::MpsM4},
   });
   this->adapter().expectCreateCommandQueues(
       {makeQueue(0x900), makeQueue(0x901)}, ::testing::Eq(device0));
@@ -500,7 +500,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
   this->adapter().expectGetDeviceCount(1);
   this->adapter().expectGetDevices({{0, device0}});
   this->adapter().expectDetectArchitectures({
-      {base::DeviceId{0}, architecture::Architecture::mps_m3},
+      {base::DeviceId{0}, architecture::Architecture::MpsM3},
   });
   this->adapter().expectReleaseDevices({device0});
 
@@ -530,7 +530,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
   this->adapter().expectGetDeviceCount(1);
   this->adapter().expectGetDevices({{0, device0}});
   this->adapter().expectDetectArchitectures({
-      {base::DeviceId{0}, architecture::Architecture::mps_m3},
+      {base::DeviceId{0}, architecture::Architecture::MpsM3},
   });
   this->adapter().expectReleaseDevices({device0});
 

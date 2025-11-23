@@ -37,7 +37,7 @@ TEST_F(CpuDeviceManagerTest, ShutdownClearsState) {
 
 #define ORTEAF_CPU_ENV_VAR "ORTEAF_EXPECT_CPU_MANAGER_ARCH"
 
-/// Manual test hook: set ORTEAF_EXPECT_CPU_MANAGER_ARCH=apple_m4_pro (など) で検証。
+/// Manual test hook: set ORTEAF_EXPECT_CPU_MANAGER_ARCH=AppleM4Pro (など) で検証。
 TEST_F(CpuDeviceManagerTest, ManualEnvironmentCheck) {
     const char* expected_env = std::getenv(ORTEAF_CPU_ENV_VAR);
     if (!expected_env) {

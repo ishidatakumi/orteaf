@@ -35,7 +35,7 @@ void MpsDeviceManager::initialize(BackendOps *ops) {
         static_cast<std::uint32_t>(i)};
     state.arch = state.is_alive
                      ? ops_->detectArchitecture(device_id)
-                     : ::orteaf::internal::architecture::Architecture::mps_generic;
+                     : ::orteaf::internal::architecture::Architecture::MpsGeneric;
     if (state.is_alive) {
       state.command_queue_manager.initialize(device, ops_,
                                              command_queue_initial_capacity_);
@@ -140,7 +140,7 @@ void MpsDeviceManager::State::reset(BackendOps *ops) noexcept {
     ops->releaseDevice(device);
   }
   device = nullptr;
-  arch = ::orteaf::internal::architecture::Architecture::mps_generic;
+  arch = ::orteaf::internal::architecture::Architecture::MpsGeneric;
   is_alive = false;
 }
 

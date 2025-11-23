@@ -26,7 +26,7 @@ struct BackendTraits;
 
 // CPU
 template <>
-struct BackendTraits<Backend::cpu> {
+struct BackendTraits<Backend::Cpu> {
     using BufferView = cpu::CpuBufferView;
     using Stream = void*;      // placeholder; adjust when stream type is defined
     using Device = int;        // placeholder; adjust when device abstraction is defined
@@ -36,7 +36,7 @@ struct BackendTraits<Backend::cpu> {
 // CUDA
 #if ORTEAF_ENABLE_CUDA
 template <>
-struct BackendTraits<Backend::cuda> {
+struct BackendTraits<Backend::Cuda> {
     using BufferView = cuda::CudaBufferView;
     using Stream = cuda::CUstream_t;     // CUDA stream handle
     using Device = cuda::CUdevice_t;     // opaque CUDA device handle
@@ -47,7 +47,7 @@ struct BackendTraits<Backend::cuda> {
 // MPS
 #if ORTEAF_ENABLE_MPS
 template <>
-struct BackendTraits<Backend::mps> {
+struct BackendTraits<Backend::Mps> {
     using BufferView = mps::MpsBufferView;
     using Stream = mps::MPSCommandQueue_t;    // command queue as stream token
     using Device = mps::MPSDevice_t;          // opaque Metal device handle

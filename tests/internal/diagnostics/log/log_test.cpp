@@ -43,7 +43,12 @@ TEST(DiagnosticsLog, TraceIsCompiledOutWhenDisabled) {
 
     log::resetLogSink();
 
+#if ORTEAF_CORE_TRACE_ENABLED
+    ASSERT_EQ(capture.messages.size(), 1u);
+    EXPECT_EQ(capture.messages[0], "trace message");
+#else
     EXPECT_TRUE(capture.messages.empty());
+#endif
 }
 
 #if GTEST_HAS_DEATH_TEST

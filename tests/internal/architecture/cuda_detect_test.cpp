@@ -12,7 +12,7 @@ namespace architecture = orteaf::internal::architecture;
 namespace base = orteaf::internal::base;
 
 #if ORTEAF_ENABLE_CUDA
-/// Manual test hook: set ORTEAF_EXPECT_CUDA_ARCH=sm80 and optionally ORTEAF_EXPECT_CUDA_DEVICE_INDEX.
+/// Manual test hook: set ORTEAF_EXPECT_CUDA_ARCH=Sm80 and optionally ORTEAF_EXPECT_CUDA_DEVICE_INDEX.
 TEST(CudaDetect, ManualEnvironmentCheck) {
     const char* expected_env = std::getenv("ORTEAF_EXPECT_CUDA_ARCH");
     if (!expected_env) {
@@ -25,7 +25,7 @@ TEST(CudaDetect, ManualEnvironmentCheck) {
     }
 
     const auto arch = architecture::detectCudaArchitectureForDeviceId(base::DeviceId{device_index});
-    ASSERT_NE(arch, architecture::Architecture::cuda_generic)
+    ASSERT_NE(arch, architecture::Architecture::CudaGeneric)
         << "Generic fallback indicates CUDA backend is disabled or device index "
         << device_index << " is unavailable.";
     EXPECT_STREQ(expected_env, architecture::idOf(arch).data());
@@ -33,27 +33,27 @@ TEST(CudaDetect, ManualEnvironmentCheck) {
 
 TEST(CudaDetect, MatchesSm80ViaComputeCapability) {
     const auto arch = architecture::detectCudaArchitecture(80, "NVIDIA");
-    EXPECT_EQ(arch, architecture::Architecture::cuda_sm80);
+    EXPECT_EQ(arch, architecture::Architecture::CudaSm80);
 }
 
 TEST(CudaDetect, FallsBackToGenericIfNoMatch) {
     const auto arch = architecture::detectCudaArchitecture(999, "nvidia");
-    EXPECT_EQ(arch, architecture::Architecture::cuda_generic);
+    EXPECT_EQ(arch, architecture::Architecture::CudaGeneric);
 }
 
 TEST(CudaDetect, DeviceIndexOutOfRangeFallsBackToGeneric) {
     const auto arch = architecture::detectCudaArchitectureForDeviceId(
         base::DeviceId{std::numeric_limits<std::uint32_t>::max()});
-    EXPECT_EQ(arch, architecture::Architecture::cuda_generic);
+    EXPECT_EQ(arch, architecture::Architecture::CudaGeneric);
 }
 #else
 TEST(CudaDetect, DetectCudaArchitectureStillMatchesMetadataWhenCudaDisabled) {
     const auto arch = architecture::detectCudaArchitecture(80, "NVIDIA");
-    EXPECT_EQ(arch, architecture::Architecture::cuda_sm80);
+    EXPECT_EQ(arch, architecture::Architecture::CudaSm80);
 }
 
 TEST(CudaDetect, DetectCudaArchitectureForDeviceIdIsGenericWhenCudaDisabled) {
     const auto arch = architecture::detectCudaArchitectureForDeviceId(base::DeviceId{0});
-    EXPECT_EQ(arch, architecture::Architecture::cuda_generic);
+    EXPECT_EQ(arch, architecture::Architecture::CudaGeneric);
 }
 #endif

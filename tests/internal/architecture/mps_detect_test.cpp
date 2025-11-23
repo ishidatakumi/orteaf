@@ -10,7 +10,7 @@
 namespace architecture = orteaf::internal::architecture;
 
 #if ORTEAF_ENABLE_MPS
-/// Manual test hook: set ORTEAF_EXPECT_MPS_ARCH=m4 (etc) and optionally ORTEAF_EXPECT_MPS_DEVICE_INDEX.
+/// Manual test hook: set ORTEAF_EXPECT_MPS_ARCH=M4 (etc) and optionally ORTEAF_EXPECT_MPS_DEVICE_INDEX.
 TEST(MpsDetect, ManualEnvironmentCheck) {
     const char* expected_env = std::getenv("ORTEAF_EXPECT_MPS_ARCH");
     if (!expected_env) {
@@ -24,7 +24,7 @@ TEST(MpsDetect, ManualEnvironmentCheck) {
     const ::orteaf::internal::base::DeviceId device_id(device_index);
 
     const auto arch = architecture::detectMpsArchitectureForDeviceId(device_id);
-    ASSERT_NE(arch, architecture::Architecture::mps_generic)
+    ASSERT_NE(arch, architecture::Architecture::MpsGeneric)
         << "Generic fallback indicates Metal backend disabled or no device at index "
         << device_index;
     std::cout << "arch: " << architecture::idOf(arch).data() << std::endl;
@@ -33,27 +33,27 @@ TEST(MpsDetect, ManualEnvironmentCheck) {
 
 TEST(MpsDetect, MatchesMetalFamily) {
     const auto arch = architecture::detectMpsArchitecture("m3", "Apple");
-    EXPECT_EQ(arch, architecture::Architecture::mps_m3);
+    EXPECT_EQ(arch, architecture::Architecture::MpsM3);
 }
 
 TEST(MpsDetect, FallsBackToGenericWhenUnknown) {
     const auto arch = architecture::detectMpsArchitecture("unknown_family", "apple");
-    EXPECT_EQ(arch, architecture::Architecture::mps_generic);
+    EXPECT_EQ(arch, architecture::Architecture::MpsGeneric);
 }
 
 TEST(MpsDetect, DeviceIndexOutOfRangeFallsBackToGeneric) {
     const ::orteaf::internal::base::DeviceId device_id(std::numeric_limits<std::uint32_t>::max());
     const auto arch = architecture::detectMpsArchitectureForDeviceId(device_id);
-    EXPECT_EQ(arch, architecture::Architecture::mps_generic);
+    EXPECT_EQ(arch, architecture::Architecture::MpsGeneric);
 }
 #else
 TEST(MpsDetect, DetectMpsArchitectureStillMatchesMetadataWhenMpsDisabled) {
     const auto arch = architecture::detectMpsArchitecture("m3", "Apple");
-    EXPECT_EQ(arch, architecture::Architecture::mps_m3);
+    EXPECT_EQ(arch, architecture::Architecture::MpsM3);
 }
 
 TEST(MpsDetect, DetectMpsArchitectureForDeviceIdIsGenericWhenMpsDisabled) {
     const auto arch = architecture::detectMpsArchitectureForDeviceId(::orteaf::internal::base::DeviceId{0});
-    EXPECT_EQ(arch, architecture::Architecture::mps_generic);
+    EXPECT_EQ(arch, architecture::Architecture::MpsGeneric);
 }
 #endif

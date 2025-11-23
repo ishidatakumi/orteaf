@@ -46,14 +46,14 @@ bool matchesVendor(std::string_view required, std::string_view actual_lower) {
 Architecture detectCudaArchitecture(int compute_capability, std::string_view vendor_hint) {
     const auto vendor_lower = toLowerCopy(vendor_hint);
     const auto count = tables::kArchitectureCount;
-    Architecture fallback = Architecture::cuda_generic;
+    Architecture fallback = Architecture::CudaGeneric;
 
     for (std::size_t index = 0; index < count; ++index) {
         const Architecture arch = kAllArchitectures[index];
         if (localIndexOf(arch) == 0) {
             continue;
         }
-        if (backendOf(arch) != backend::Backend::cuda) {
+        if (backendOf(arch) != backend::Backend::Cuda) {
             continue;
         }
 
@@ -88,12 +88,12 @@ Architecture detectCudaArchitectureForDeviceId(::orteaf::internal::base::DeviceI
     try {
         int count = backend::cuda::getDeviceCount();
         if (count <= 0 || device_index >= static_cast<std::uint32_t>(count)) {
-            return Architecture::cuda_generic;
+            return Architecture::CudaGeneric;
         }
 
         CUdevice_t device = backend::cuda::getDevice(device_index);
         if (!device) {
-            return Architecture::cuda_generic;
+            return Architecture::CudaGeneric;
         }
 
         ComputeCapability capability = backend::cuda::getComputeCapability(device);
@@ -106,13 +106,13 @@ Architecture detectCudaArchitectureForDeviceId(::orteaf::internal::base::DeviceI
     } catch (const std::system_error& err) {
         if (err.code() == backend_unavailable) {
             // CUDA driver not ready on this environment; pretend it's generic.
-            return Architecture::cuda_generic;
+            return Architecture::CudaGeneric;
         }
         throw;
     }
 #else
     (void)device_id;
-    return Architecture::cuda_generic;
+    return Architecture::CudaGeneric;
 #endif
 }
 

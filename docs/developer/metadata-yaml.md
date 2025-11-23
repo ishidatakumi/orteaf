@@ -109,7 +109,7 @@ backend kernels that rely on the affected IDs.
 schema_version: "1.0"
 
 backends:
-  - id: "cuda"
+  - id: "Cuda"
     display_name: "CUDA"
     module_path: "@orteaf/internal/backend/cuda"
     metadata:
@@ -133,14 +133,14 @@ implementation.
 schema_version: "1.0"
 
 architectures:
-  - id: "sm90"
+  - id: "Sm90"
     display_name: "CUDA SM90"
-    backend: "cuda"
+    backend: "Cuda"
     metadata:
       description: "Optimized kernels for Hopper GPUs"
 ```
 
-Do not list the `generic` architecture in YAML; the generator injects it and
+Do not list the `Generic` architecture in YAML; the generator injects it and
 assigns local index `0` for each backend. The remaining entries appear in the
 order they are written, so keep the list sorted if that matters for humans.
 
@@ -157,10 +157,10 @@ order they are written, so keep the list sorted if that matters for humans.
 schema_version: "1.0"
 
 devices:
-  - id: "cuda_h100_pcie_80gb"
+  - id: "CudaH100Pcie80GB"
     display_name: "H100 PCIe (80GB)"
-    backend: "cuda"            # -> backends.yml
-    architecture: "sm90"       # -> architectures.yml
+    backend: "Cuda"            # -> backends.yml
+    architecture: "Sm90"       # -> architectures.yml
     memory:
       max_bytes: 85899345920
       shared_bytes: 229376

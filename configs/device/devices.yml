@@ -1,10 +1,10 @@
 schema_version: "1.0"
 
 devices:
-  - id: "cuda_generic"
+  - id: "CudaGeneric"
     display_name: "Generic CUDA Device"
-    backend: "cuda"
-    architecture: "generic"
+    backend: "Cuda"
+    architecture: "Generic"
     memory:
       max_bytes: 4294967296   # 4 GiB
       shared_bytes: 49152
@@ -15,10 +15,10 @@ devices:
       tensor_cores: "false"
     notes: "フォールバック用のCUDAデバイス定義"
 
-  - id: "cuda_h100_pcie_80gb"
+  - id: "CudaH100Pcie80GB"
     display_name: "H100 PCIe (80GB)"
-    backend: "cuda"
-    architecture: "sm90"
+    backend: "Cuda"
+    architecture: "Sm90"
     memory:
       max_bytes: 85899345920   # 80 GiB
       shared_bytes: 229376
@@ -30,10 +30,10 @@ devices:
       pcie_bandwidth_gbps: "128"
     notes: "CUDA 12.2 以上の環境を推奨"
 
-  - id: "cuda_rtx_3070"
+  - id: "CudaRtx3070"
     display_name: "GeForce RTX 3070"
-    backend: "cuda"
-    architecture: "sm86"
+    backend: "Cuda"
+    architecture: "Sm86"
     memory:
       max_bytes: 8589934592    # 8 GiB
       shared_bytes: 102400
@@ -45,10 +45,10 @@ devices:
       memory_type: "GDDR6"
     notes: "Desktop Ampere GPU"
 
-  - id: "mps_generic"
+  - id: "MpsGeneric"
     display_name: "Generic MPS Device"
-    backend: "mps"
-    architecture: "generic"
+    backend: "Mps"
+    architecture: "Generic"
     memory:
       max_bytes: 2147483648   # 2 GiB
     supported_dtypes: ["F32"]
@@ -56,10 +56,10 @@ devices:
     capabilities:
       metal_version: "3.0"
 
-  - id: "mps_m3_max_40c"
+  - id: "MpsM3Max40c"
     display_name: "M3 Max (40-core GPU)"
-    backend: "mps"
-    architecture: "m3"
+    backend: "Mps"
+    architecture: "M3"
     memory:
       max_bytes: 34359738368   # 32 GiB
     supported_dtypes: ["F32", "F16"]
@@ -68,10 +68,10 @@ devices:
       metal_version: "3.1"
       supports_attention: "true"
 
-  - id: "mps_m4_pro"
+  - id: "MpsM4Pro"
     display_name: "M4 Pro (Integrated GPU)"
-    backend: "mps"
-    architecture: "m4"
+    backend: "Mps"
+    architecture: "M4"
     memory:
       max_bytes: 25769803776   # 24 GiB
     supported_dtypes: ["F32", "F16"]
@@ -81,10 +81,10 @@ devices:
       neural_engine_accel: "true"
     notes: "Apple Silicon M4 Pro unified memory GPU"
 
-  - id: "cpu_generic"
+  - id: "CpuGeneric"
     display_name: "Generic CPU"
-    backend: "cpu"
-    architecture: "generic"
+    backend: "Cpu"
+    architecture: "Generic"
     memory:
       max_bytes: 17179869184   # 16 GiB
     supported_dtypes: ["F32", "F64", "I32", "I64"]
@@ -92,10 +92,10 @@ devices:
     capabilities:
       isa: "SSE4.2"
 
-  - id: "cpu_zen4"
+  - id: "CpuZen4"
     display_name: "Zen 4 (AVX-512)"
-    backend: "cpu"
-    architecture: "zen4"
+    backend: "Cpu"
+    architecture: "Zen4"
     memory:
       max_bytes: 34359738368   # 32 GiB
     supported_dtypes: ["F32", "F64", "F16"]
