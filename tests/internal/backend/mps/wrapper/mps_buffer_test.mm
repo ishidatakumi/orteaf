@@ -63,7 +63,7 @@ protected:
  * @brief Test that buffer creation succeeds.
  */
 TEST_F(MpsBufferTest, CreateBufferSucceeds) {
-    mps::MPSBuffer_t buffer = mps::createBuffer(heap_, 1024, 0);
+    mps::MPSBuffer_t buffer = mps::createBuffer(heap_, 1024);
     EXPECT_NE(buffer, nullptr);
     
     mps::destroyBuffer(buffer);
@@ -75,7 +75,7 @@ TEST_F(MpsBufferTest, CreateBufferSucceeds) {
 TEST_F(MpsBufferTest, CreateBufferNullptrHeapThrows) {
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::NullPointer,
-        [] { mps::createBuffer(nullptr, 1024, 0); });
+        [] { mps::createBuffer(nullptr, 1024); });
 }
 
 /**
@@ -84,14 +84,14 @@ TEST_F(MpsBufferTest, CreateBufferNullptrHeapThrows) {
 TEST_F(MpsBufferTest, CreateBufferZeroSizeThrows) {
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
-        [&] { mps::createBuffer(heap_, 0, 0); });
+        [&] { mps::createBuffer(heap_, 0); });
 }
 
 /**
  * @brief Test that buffer destruction works.
  */
 TEST_F(MpsBufferTest, DestroyBufferSucceeds) {
-    mps::MPSBuffer_t buffer = mps::createBuffer(heap_, 1024, 0);
+    mps::MPSBuffer_t buffer = mps::createBuffer(heap_, 1024);
     ASSERT_NE(buffer, nullptr);
     
     EXPECT_NO_THROW(mps::destroyBuffer(buffer));
@@ -108,8 +108,8 @@ TEST_F(MpsBufferTest, DestroyBufferNullptrIsIgnored) {
  * @brief Test that multiple buffers can be created.
  */
 TEST_F(MpsBufferTest, CreateMultipleBuffers) {
-    mps::MPSBuffer_t buffer1 = mps::createBuffer(heap_, 256, 0);
-    mps::MPSBuffer_t buffer2 = mps::createBuffer(heap_, 512, 0);
+    mps::MPSBuffer_t buffer1 = mps::createBuffer(heap_, 256);
+    mps::MPSBuffer_t buffer2 = mps::createBuffer(heap_, 512);
     
     EXPECT_NE(buffer1, nullptr);
     EXPECT_NE(buffer2, nullptr);
@@ -123,7 +123,7 @@ TEST_F(MpsBufferTest, CreateMultipleBuffers) {
  * @brief Test that buffer contents can be accessed.
  */
 TEST_F(MpsBufferTest, GetBufferContentsSucceeds) {
-    mps::MPSBuffer_t buffer = mps::createBuffer(heap_, 1024, 0);
+    mps::MPSBuffer_t buffer = mps::createBuffer(heap_, 1024);
     ASSERT_NE(buffer, nullptr);
     
     const void* contents = mps::getBufferContentsConst(buffer);

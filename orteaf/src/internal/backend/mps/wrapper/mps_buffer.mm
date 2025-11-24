@@ -37,6 +37,38 @@ MPSBuffer_t createBuffer(MPSHeap_t heap, size_t size, MPSBufferUsage_t usage) {
     return (MPSBuffer_t)opaqueFromObjcRetained(objc_buffer);
 }
 
+MPSBuffer_t createBuffer(MPSHeap_t heap, size_t size, size_t offset, MPSBufferUsage_t usage) {
+    if (heap == nullptr) {
+        using namespace orteaf::internal::diagnostics::error;
+        throwError(OrteafErrc::NullPointer, "createBuffer: heap cannot be nullptr");
+    }
+    if (size == 0) {
+        using namespace orteaf::internal::diagnostics::error;
+        throwError(OrteafErrc::InvalidParameter, "createBuffer: size cannot be 0");
+    }
+    id<MTLHeap> objc_heap = objcFromOpaqueNoown<id<MTLHeap>>(heap);
+    MTLResourceOptions objc_usage = static_cast<MTLResourceOptions>(usage);
+
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 110000
+    if ([objc_heap respondsToSelector:@selector(newBufferWithLength:options:offset:)]) {
+        id<MTLBuffer> objc_buffer = [objc_heap newBufferWithLength:size options:objc_usage offset:offset];
+        if (objc_buffer == nil) {
+            using namespace orteaf::internal::diagnostics::error;
+            throwError(OrteafErrc::OperationFailed, "createBuffer: heap allocation failed");
+        }
+        return (MPSBuffer_t)opaqueFromObjcRetained(objc_buffer);
+    }
+#endif
+
+    // Fallback: no offset support on this platform; attempt regular allocation
+    id<MTLBuffer> objc_buffer = [objc_heap newBufferWithLength:size options:objc_usage];
+    if (objc_buffer == nil) {
+        using namespace orteaf::internal::diagnostics::error;
+        throwError(OrteafErrc::OperationFailed, "createBuffer (offset): heap allocation failed");
+    }
+    return (MPSBuffer_t)opaqueFromObjcRetained(objc_buffer);
+}
+
 /**
  * @copydoc orteaf::internal::backend::mps::destroyBuffer
  */

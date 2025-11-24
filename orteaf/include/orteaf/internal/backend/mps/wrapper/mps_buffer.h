@@ -28,6 +28,16 @@ static_assert(sizeof(MPSBuffer_t) == sizeof(void*), "MPSBuffer must be pointer-s
 MPSBuffer_t createBuffer(MPSHeap_t heap, size_t size, MPSBufferUsage_t usage = kMPSDefaultBufferUsage);
 
 /**
+ * @brief Create a new Metal buffer at an explicit heap offset.
+ * @param heap Opaque Metal heap handle
+ * @param size Buffer length in bytes
+ * @param offset Byte offset into the heap; must satisfy the heap's alignment rules
+ * @param usage Resource options bitmask (defaults to 0)
+ * @return Opaque buffer handle, or nullptr when unavailable/disabled.
+ */
+MPSBuffer_t createBuffer(MPSHeap_t heap, size_t size, size_t offset, MPSBufferUsage_t usage = kMPSDefaultBufferUsage);
+
+/**
  * @brief Destroy a Metal buffer; ignores nullptr.
  */
 void destroyBuffer(MPSBuffer_t buffer);

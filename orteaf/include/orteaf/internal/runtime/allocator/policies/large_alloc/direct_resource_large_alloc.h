@@ -35,7 +35,7 @@ public:
             return {};
         }
 
-        BufferView buffer = Resource::allocate(size, alignment);
+        BufferView buffer = Resource::allocate(size, alignment, device_, stream_);
         if (buffer.empty()) {
             return {};
         }
@@ -68,7 +68,7 @@ public:
             return;
         }
 
-        Resource::deallocate(entry.view, size, alignment);
+        Resource::deallocate(entry.view, size, alignment, device_, stream_);
 #if ORTEAF_CORE_DEBUG_ENABLED
         ORTEAF_LOG_DEBUG_IF(Core,
                             entry.size != size || entry.alignment != alignment,
