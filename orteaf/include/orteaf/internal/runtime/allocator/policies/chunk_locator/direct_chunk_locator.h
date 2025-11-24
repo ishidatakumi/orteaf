@@ -31,17 +31,12 @@ public:
         stream_ = stream;
     }
 
-    // チャンクを登録し、BufferId を返す（上位ビットは large 判定用に 0 のまま）。
-    BufferId addChunk(BufferView base, std::size_t size, std::size_t block_size) {
+    // チャンクを登録し、対応する MemoryBlock を返す（上位ビットは large 判定用に 0 のまま）。
+    MemoryBlock addChunk(BufferView base, std::size_t size, std::size_t block_size) {
         std::lock_guard<std::mutex> lock(mutex_);
         const std::size_t slot = reserveSlot();
         chunks_[slot] = ChunkInfo{base, size, block_size, 0u, 0u, true};
-        return encodeId(slot);
-    }
-
-    // チャンク配下のブロックに紐づく MemoryBlock を作る際のヘルパー。
-    MemoryBlock makeBlock(BufferId id, BufferView view) const {
-        return MemoryBlock{id, view};
+        return MemoryBlock{encodeId(slot), base};
     }
 
     void incrementUsed(BufferId id) {

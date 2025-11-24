@@ -34,7 +34,8 @@ TEST(DirectChunkLocator, ReleaseChunkCallsResourceWhenFree) {
     policy.initialize(device, /*context=*/0, stream);
 
     CpuView view{reinterpret_cast<void*>(0x10), 0, 256};
-    BufferId id = policy.addChunk(view, 256, 64);
+    auto block = policy.addChunk(view, 256, 64);
+    BufferId id = block.id;
 
     NiceMock<MockCpuResourceImpl> impl;
     MockCpuResource::set(&impl);
@@ -53,7 +54,8 @@ TEST(DirectChunkLocator, ReleaseChunkSkipsWhenInUse) {
     policy.initialize(device, /*context=*/0, stream);
 
     CpuView view{reinterpret_cast<void*>(0x20), 0, 128};
-    BufferId id = policy.addChunk(view, 128, 32);
+    auto block = policy.addChunk(view, 128, 32);
+    BufferId id = block.id;
     policy.incrementUsed(id);
 
     NiceMock<MockCpuResourceImpl> impl;
@@ -73,7 +75,8 @@ TEST(DirectChunkLocator, PendingBlocksPreventRelease) {
     policy.initialize(/*device=*/2, /*context=*/0, /*stream=*/nullptr);
 
     CpuView view{reinterpret_cast<void*>(0x30), 0, 64};
-    BufferId id = policy.addChunk(view, 64, 16);
+    auto block = policy.addChunk(view, 64, 16);
+    BufferId id = block.id;
     policy.incrementPending(id);
 
     NiceMock<MockCpuResourceImpl> impl;
@@ -93,9 +96,9 @@ TEST(DirectChunkLocator, FindBlockSizeReturnsRegisteredValue) {
     policy.initialize(/*device=*/3, /*context=*/0, /*stream=*/nullptr);
 
     CpuView view{reinterpret_cast<void*>(0x40), 0, 512};
-    BufferId id = policy.addChunk(view, 512, 128);
+    auto block = policy.addChunk(view, 512, 128);
 
-    EXPECT_EQ(policy.findBlockSize(id), 128u);
+    EXPECT_EQ(policy.findBlockSize(block.id), 128u);
 }
 
 }  // namespace
