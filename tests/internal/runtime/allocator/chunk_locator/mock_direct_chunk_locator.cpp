@@ -36,7 +36,7 @@ TEST(DirectChunkLocator, ReleaseChunkCallsResourceWhenFree) {
     CpuView view{reinterpret_cast<void*>(0x10), 0, 256};
     BufferId id = policy.addChunk(view, 256, 64);
 
-    NiceMock<MockChunkResourceImpl> impl;
+    NiceMock<MockCpuResourceImpl> impl;
     MockCpuResource::set(&impl);
     EXPECT_CALL(impl, deallocate(view, 256, 0, device, stream)).Times(1);
 
@@ -56,7 +56,7 @@ TEST(DirectChunkLocator, ReleaseChunkSkipsWhenInUse) {
     BufferId id = policy.addChunk(view, 128, 32);
     policy.incrementUsed(id);
 
-    NiceMock<MockChunkResourceImpl> impl;
+    NiceMock<MockCpuResourceImpl> impl;
     MockCpuResource::set(&impl);
     EXPECT_CALL(impl, deallocate(_, _, _, _, _)).Times(1);
 
@@ -76,7 +76,7 @@ TEST(DirectChunkLocator, PendingBlocksPreventRelease) {
     BufferId id = policy.addChunk(view, 64, 16);
     policy.incrementPending(id);
 
-    NiceMock<MockChunkResourceImpl> impl;
+    NiceMock<MockCpuResourceImpl> impl;
     MockCpuResource::set(&impl);
     EXPECT_CALL(impl, deallocate(_, _, _, _, _)).Times(1);
 
