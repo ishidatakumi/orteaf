@@ -210,7 +210,7 @@ public:
         slot.pending = 0;
 
         if (!slot.mapped_flag) {
-            slot.mapped = resource_->map(slot.region, config_.device, config_.context, config_.stream);
+            slot.mapped = resource_->map(slot.region, config_.stream);
             slot.mapped_flag = true;
         }
 
@@ -233,7 +233,7 @@ public:
         if (getState(slot) != State::InUse) return false;
         if (slot.pending > 0 || slot.used > 0) return false;
 
-        resource_->unmap(slot.region, layer.chunk_size, config_.device, config_.context, config_.stream);
+        resource_->unmap(slot.region, layer.chunk_size, config_.stream);
         resetSlot(slot);
         layer.free_list.pushBack(slot_index);
 
@@ -510,7 +510,7 @@ private:
         const std::size_t chunk_size = root_layer.chunk_size;
         std::size_t remaining = (bytes == 0) ? chunk_size : bytes;
 
-        HeapRegion base_region = resource_->reserve(remaining, config_.device, config_.stream);
+        HeapRegion base_region = resource_->reserve(remaining, config_.stream);
         std::size_t offset = 0;
 
         while (remaining > 0) {
