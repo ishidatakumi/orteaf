@@ -7,6 +7,7 @@
 #include "orteaf/internal/backend/backend_traits.h"
 #include "orteaf/internal/backend/cpu/cpu_buffer_view.h"
 #include "tests/internal/runtime/allocator/testing/mock_resource.h"
+#include "tests/internal/testing/error_assert.h"
 
 using ::testing::_;
 using ::testing::NiceMock;
@@ -61,12 +62,14 @@ TEST(DirectChunkLocator, InitializeFailsWithNullResource) {
     cfg.context = 0;
     cfg.stream = nullptr;
 
-    EXPECT_THROW(policy.initialize(cfg, nullptr), std::system_error);
+    orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::NullPointer,
+                               [&] { policy.initialize(cfg, nullptr); });
 }
 
 TEST(DirectChunkLocator, AddChunkBeforeInitializeThrows) {
     Policy policy;
-    EXPECT_THROW(policy.addChunk(64, 1), std::system_error);
+    orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+                               [&] { policy.addChunk(64, 1); });
 }
 
 TEST(DirectChunkLocator, ReleaseChunkSkipsWhenInUse) {

@@ -10,6 +10,7 @@
 #include "orteaf/internal/backend/backend.h"
 #include "orteaf/internal/backend/backend_traits.h"
 #include "tests/internal/runtime/allocator/testing/mock_resource.h"
+#include "tests/internal/testing/error_assert.h"
 
 using ::testing::_;
 using ::testing::NiceMock;
@@ -120,7 +121,8 @@ TEST(HierarchicalChunkLocator, InitializeFailsWithNullResource) {
     Policy policy;
     MockCpuResource resource;
     typename Policy::Config cfg{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {128}, /*initial_bytes=*/128, /*region_multiplier=*/1};
-    EXPECT_THROW(policy.initialize(cfg, nullptr), std::system_error);
+    orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::NullPointer,
+                               [&] { policy.initialize(cfg, nullptr); });
 }
 
 TEST(HierarchicalChunkLocator, InitializeCanBeCalledTwice) {
@@ -169,13 +171,14 @@ TEST(HierarchicalChunkLocator, InitializeFailsWhenReserveThrows) {
             throw std::system_error(std::make_error_code(std::errc::invalid_argument));
         });
 
-    EXPECT_THROW(policy.initialize(cfg, &resource), std::system_error);
+    orteaf::tests::ExpectException<std::system_error>([&] { policy.initialize(cfg, &resource); });
     MockCpuResource::reset();
 }
 
 TEST(HierarchicalChunkLocator, AllocateWithoutInitializeThrows) {
     Policy policy;
-    EXPECT_THROW(policy.addChunk(64, 1), std::system_error);
+    orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::OutOfMemory,
+                               [&] { policy.addChunk(64, 1); });
 }
 
 TEST(HierarchicalChunkLocator, AddChunkFailsWhenMapThrows) {
@@ -198,7 +201,7 @@ TEST(HierarchicalChunkLocator, AddChunkFailsWhenMapThrows) {
         });
 
     policy.initialize(cfg, &resource);
-    EXPECT_THROW(policy.addChunk(128, 1), std::system_error);
+    orteaf::tests::ExpectException<std::system_error>([&] { policy.addChunk(128, 1); });
 
     MockCpuResource::reset();
 }
@@ -207,7 +210,8 @@ TEST(HierarchicalChunkLocator, LevelsMustBeNonIncreasing) {
     Policy policy;
     MockCpuResource resource;
     typename Policy::Config cfg{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {128, 256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
-    EXPECT_THROW(policy.initialize(cfg, &resource), std::system_error);
+    orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
+                               [&] { policy.initialize(cfg, &resource); });
 }
 
 TEST(HierarchicalChunkLocator, ThresholdValidationFailsForInvalidValues) {
@@ -216,19 +220,23 @@ TEST(HierarchicalChunkLocator, ThresholdValidationFailsForInvalidValues) {
 
     // threshold がシステム最小より小さい
     typename Policy::Config cfg_small{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {128}, /*initial_bytes=*/128, /*region_multiplier=*/1, /*threshold=*/alignof(double) / 2};
-    EXPECT_THROW(policy.initialize(cfg_small, &resource), std::system_error);
+    orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
+                               [&] { policy.initialize(cfg_small, &resource); });
 
     // threshold が非2の冪乗
     typename Policy::Config cfg_non_pow2{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {128}, /*initial_bytes=*/128, /*region_multiplier=*/1, /*threshold=*/24};
-    EXPECT_THROW(policy.initialize(cfg_non_pow2, &resource), std::system_error);
+    orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
+                               [&] { policy.initialize(cfg_non_pow2, &resource); });
 
     // threshold 以下のレベルが 2 の冪乗でない
     typename Policy::Config cfg_below{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {96, 48, 24}, /*initial_bytes=*/96, /*region_multiplier=*/1, /*threshold=*/32};
-    EXPECT_THROW(policy.initialize(cfg_below, &resource), std::system_error);
+    orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
+                               [&] { policy.initialize(cfg_below, &resource); });
 
     // threshold より大きいレベルが threshold で割り切れない
     typename Policy::Config cfg_above{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {192, 96, 48}, /*initial_bytes=*/192, /*region_multiplier=*/1, /*threshold=*/64};
-    EXPECT_THROW(policy.initialize(cfg_above, &resource), std::system_error);
+    orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
+                               [&] { policy.initialize(cfg_above, &resource); });
 
     // 妥当な threshold 設定では初期化が成功する
     typename Policy::Config cfg_ok{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {256, 128, 64}, /*initial_bytes=*/256, /*region_multiplier=*/1, /*threshold=*/64};
@@ -329,7 +337,8 @@ TEST(HierarchicalChunkLocator, LargeIdThrowsInDebug) {
 
     policy.initialize(cfg, &resource);
     ::orteaf::internal::base::BufferId bad{static_cast<::orteaf::internal::base::BufferId::underlying_type>(1u << 31)};
-    EXPECT_THROW(policy.releaseChunk(bad), std::system_error);
+    orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
+                               [&] { policy.releaseChunk(bad); });
     MockCpuResource::reset();
 }
 #endif
@@ -665,7 +674,8 @@ TEST_F(HierarchicalChunkLocatorTest, AddChunkFailsWhenRequestExceedsAllLayers) {
     policy_.initialize(cfg, &resource_);
 
     // 最大層よりも大きいサイズを要求
-    EXPECT_THROW(policy_.addChunk(512, 1), std::system_error);
+    orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::OutOfMemory,
+                               [&] { policy_.addChunk(512, 1); });
 }
 
 // ============================================================================
@@ -768,7 +778,8 @@ TEST_F(HierarchicalChunkLocatorTest, EmptyLevelsWithZeroInitialBytes) {
     policy_.initialize(cfg, &resource_);
 
     // 割り当て要求は失敗する（適切な層がない）
-    EXPECT_THROW(policy_.addChunk(64, 1), std::system_error);
+    orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::OutOfMemory,
+                               [&] { policy_.addChunk(64, 1); });
 }
 
 // ============================================================================
