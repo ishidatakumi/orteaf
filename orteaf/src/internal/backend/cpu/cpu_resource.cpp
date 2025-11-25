@@ -51,7 +51,7 @@ CpuResource::BufferView CpuResource::map(HeapRegion region, Device /*device*/,
     return BufferView{base, 0, region.size()};
 }
 
-void CpuResource::unmap(HeapRegion region,
+void CpuResource::unmap(HeapRegion region, std::size_t /*size*/,
                         Device /*device*/, Context /*context*/, Stream /*stream*/) {
     if (!region) return;
     void* base = region.data();

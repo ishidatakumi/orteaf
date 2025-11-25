@@ -25,6 +25,7 @@ using Device = Traits::Device;
 using Context = Traits::Context;
 using Stream = Traits::Stream;
 using BufferView = Traits::BufferView;
+using HeapRegion = Traits::HeapRegion;
 using BufferId = ::orteaf::internal::base::BufferId;
 using ::orteaf::internal::runtime::allocator::testing::MockCpuResource;
 using ::orteaf::internal::runtime::allocator::testing::MockCpuResourceImpl;
@@ -32,6 +33,10 @@ using ::orteaf::internal::runtime::allocator::testing::MockCpuResourceImpl;
 namespace {
 
 using Policy = policies::HierarchicalChunkLocator<MockCpuResource, Backend::Cpu>;
+
+static BufferView MapReturn(HeapRegion region, Device, Context, Stream) {
+    return BufferView{region.data(), 0, region.size()};
+}
 
 template <typename Entry>
 void AppendSpanEntry(std::ostringstream& os, const Entry& e) {
@@ -103,8 +108,10 @@ TEST(HierarchicalChunkLocator, InitializeReservesRootAndReusesBlocks) {
     void* base = reinterpret_cast<void*>(0x1800);
     EXPECT_CALL(impl, reserve(256, device, stream))
         .Times(1)
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl, map(_, device, context, stream)).Times(2).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl, map(_, device, context, stream))
+        .Times(2)
+        .WillRepeatedly(::testing::Invoke(MapReturn));
     EXPECT_CALL(impl, unmap(_, _, device, context, stream)).Times(2);
 
     policy.initialize(cfg, &resource);
@@ -140,8 +147,8 @@ TEST(HierarchicalChunkLocator, InitializeCanBeCalledTwice) {
     void* base2 = reinterpret_cast<void*>(0x2200);
     EXPECT_CALL(impl, reserve(256, device, stream))
         .Times(2)
-        .WillOnce(Return(BufferView{base1, 0, 256}))
-        .WillOnce(Return(BufferView{base2, 0, 256}));
+        .WillOnce(Return(HeapRegion{base1, 256}))
+        .WillOnce(Return(HeapRegion{base2, 256}));
 
     policy.initialize(cfg, &resource);
     auto b1 = policy.addChunk(256, 1);
@@ -167,7 +174,7 @@ TEST(HierarchicalChunkLocator, InitializeFailsWhenReserveThrows) {
     MockCpuResource::set(&impl);
 
     EXPECT_CALL(impl, reserve(256, device, stream))
-        .WillOnce([](std::size_t, Device, Stream) -> BufferView {
+        .WillOnce([](std::size_t, Device, Stream) -> HeapRegion {
             throw std::system_error(std::make_error_code(std::errc::invalid_argument));
         });
 
@@ -194,9 +201,9 @@ TEST(HierarchicalChunkLocator, AddChunkFailsWhenMapThrows) {
 
     void* base = reinterpret_cast<void*>(0x1400);
     EXPECT_CALL(impl, reserve(256, device, stream))
-        .WillOnce(Return(BufferView{base, 0, 256}));
+        .WillOnce(Return(HeapRegion{base, 256}));
     EXPECT_CALL(impl, map(_, device, context, stream))
-        .WillOnce([](BufferView, Device, Context, Stream) -> BufferView {
+        .WillOnce([](HeapRegion, Device, Context, Stream) -> BufferView {
             throw std::system_error(std::make_error_code(std::errc::bad_message));
         });
 
@@ -258,10 +265,10 @@ TEST(HierarchicalChunkLocator, ReusesSpanWithoutExtraReserve) {
     EXPECT_CALL(impl, reserve(562, device, stream))
         .Times(1)
         .WillOnce([&](std::size_t, Device, Stream) {
-            return BufferView{base, 0, 256};
+            return HeapRegion{base, 562};
         });
 
-    EXPECT_CALL(impl, map(_, device, context, stream)).Times(4).WillRepeatedly(ReturnArg<0>());
+    EXPECT_CALL(impl, map(_, device, context, stream)).Times(4).WillRepeatedly(::testing::Invoke(MapReturn));
     EXPECT_CALL(impl, unmap(_, _, device, context, stream)).Times(4);
 
     policy.initialize(cfg, &resource);
@@ -292,9 +299,9 @@ TEST(HierarchicalChunkLocator, SplitMergeAndReuseAcrossLayers) {
     void* base = reinterpret_cast<void*>(0x2000);
     EXPECT_CALL(impl, reserve(512, device, stream))
         .Times(1)
-        .WillOnce(Return(BufferView{base, 0, 512}));
+        .WillOnce(Return(HeapRegion{base, 512}));
 
-    EXPECT_CALL(impl, map(_, device, context, stream)).Times(6).WillRepeatedly(ReturnArg<0>());
+    EXPECT_CALL(impl, map(_, device, context, stream)).Times(6).WillRepeatedly(::testing::Invoke(MapReturn));
     EXPECT_CALL(impl, unmap(_, _, device, context, stream)).Times(6);
 
     policy.initialize(cfg, &resource);
@@ -333,7 +340,7 @@ TEST(HierarchicalChunkLocator, LargeIdThrowsInDebug) {
     NiceMock<MockCpuResourceImpl> impl;
     MockCpuResource::set(&impl);
     EXPECT_CALL(impl, reserve(256, device, stream))
-        .WillOnce(Return(BufferView{reinterpret_cast<void*>(0x3000), 0, 256}));
+        .WillOnce(Return(HeapRegion{reinterpret_cast<void*>(0x3000), 256}));
 
     policy.initialize(cfg, &resource);
     ::orteaf::internal::base::BufferId bad{static_cast<::orteaf::internal::base::BufferId::underlying_type>(1u << 31)};
@@ -352,8 +359,9 @@ TEST_F(HierarchicalChunkLocatorTest, FindChunkSizeReturnsCorrectSize) {
 
     void* base = reinterpret_cast<void*>(0x4000);
     EXPECT_CALL(impl_, reserve(512, device_, stream_))
-        .WillRepeatedly(Return(BufferView{base, 0, 512}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillRepeatedly(Return(HeapRegion{base, 512}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_))
+        .WillRepeatedly(::testing::Invoke(MapReturn));
 
     policy_.initialize(cfg, &resource_);
 
@@ -375,7 +383,7 @@ TEST_F(HierarchicalChunkLocatorTest, FindChunkSizeReturnsZeroForInvalidId) {
 
     void* base = reinterpret_cast<void*>(0x4000);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
+        .WillOnce(Return(HeapRegion{base, 256}));
 
     policy_.initialize(cfg, &resource_);
 
@@ -389,8 +397,12 @@ TEST_F(HierarchicalChunkLocatorTest, IsAliveReflectsSlotState) {
 
     void* base = reinterpret_cast<void*>(0x4A00);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(1).WillOnce(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_))
+        .Times(1)
+        .WillOnce([](HeapRegion region, Device, Context, Stream) {
+            return BufferView{region.data(), 0, region.size()};
+        });
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
@@ -414,8 +426,8 @@ TEST_F(HierarchicalChunkLocatorTest, IncrementAndDecrementUsed) {
 
     void* base = reinterpret_cast<void*>(0x5000);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(1).WillOnce(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(1).WillOnce(::testing::Invoke(MapReturn));
     // 最後の releaseChunk 成功時に unmap が1回呼ばれる
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
@@ -444,8 +456,8 @@ TEST_F(HierarchicalChunkLocatorTest, DecrementUsedDoesNotUnderflow) {
 
     void* base = reinterpret_cast<void*>(0x5100);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
@@ -468,8 +480,8 @@ TEST_F(HierarchicalChunkLocatorTest, IncrementAndDecrementPending) {
 
     void* base = reinterpret_cast<void*>(0x6000);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(1).WillOnce(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(1).WillOnce(::testing::Invoke(MapReturn));
     // 最後の releaseChunk 成功時に unmap が1回呼ばれる
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
@@ -494,8 +506,8 @@ TEST_F(HierarchicalChunkLocatorTest, DecrementPendingDoesNotUnderflow) {
 
     void* base = reinterpret_cast<void*>(0x6100);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
@@ -518,8 +530,8 @@ TEST_F(HierarchicalChunkLocatorTest, DecrementPendingAndUsed) {
 
     void* base = reinterpret_cast<void*>(0x7000);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
@@ -543,8 +555,8 @@ TEST_F(HierarchicalChunkLocatorTest, DecrementPendingAndUsedMultipleTimes) {
 
     void* base = reinterpret_cast<void*>(0x7100);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
@@ -571,8 +583,8 @@ TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsWhenUsedRemains) {
 
     void* base = reinterpret_cast<void*>(0x8000);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
     policy_.initialize(cfg, &resource_);
     auto b = policy_.addChunk(256, 1);
@@ -586,8 +598,8 @@ TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsWhenPendingRemains) {
 
     void* base = reinterpret_cast<void*>(0x8100);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
     policy_.initialize(cfg, &resource_);
     auto b = policy_.addChunk(256, 1);
@@ -601,8 +613,8 @@ TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsForInvalidState) {
 
     void* base = reinterpret_cast<void*>(0x8200);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
@@ -620,7 +632,7 @@ TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsForInvalidId) {
 
     void* base = reinterpret_cast<void*>(0x8300);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
+        .WillOnce(Return(HeapRegion{base, 256}));
 
     policy_.initialize(cfg, &resource_);
 
@@ -638,8 +650,8 @@ TEST_F(HierarchicalChunkLocatorTest, PickLayerSelectsSmallestSufficientLayer) {
 
     void* base = reinterpret_cast<void*>(0x9000);
     EXPECT_CALL(impl_, reserve(1024, device_, stream_))
-        .WillRepeatedly(Return(BufferView{base, 0, 1024}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillRepeatedly(Return(HeapRegion{base, 1024}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
     policy_.initialize(cfg, &resource_);
 
@@ -669,7 +681,7 @@ TEST_F(HierarchicalChunkLocatorTest, AddChunkFailsWhenRequestExceedsAllLayers) {
 
     void* base = reinterpret_cast<void*>(0x9100);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
+        .WillOnce(Return(HeapRegion{base, 256}));
 
     policy_.initialize(cfg, &resource_);
 
@@ -692,8 +704,8 @@ TEST_F(HierarchicalChunkLocatorTest, RegionMultiplierAllocatesMultipleChunks) {
     // initial_bytes=0 時は levels[0]=256 が initial になる
     // その後 addRegion は chunk_size * region_multiplier = 256 * 4 = 1024
     EXPECT_CALL(impl_, reserve(_, device_, stream_))
-        .WillRepeatedly(Return(BufferView{base, 0, 1024}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillRepeatedly(Return(HeapRegion{base, 1024}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
     policy_.initialize(cfg, &resource_);
 
@@ -715,8 +727,8 @@ TEST_F(HierarchicalChunkLocatorTest, RegionMultiplierZeroDefaultsToOne) {
     void* base = reinterpret_cast<void*>(0xA100);
     // region_multiplier=0 は 1 にデフォルトされるので 256 バイト確保
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
     policy_.initialize(cfg, &resource_);
     auto b1 = policy_.addChunk(256, 1);
@@ -732,7 +744,7 @@ TEST_F(HierarchicalChunkLocatorTest, IncrementUsedOnInvalidIdDoesNothing) {
 
     void* base = reinterpret_cast<void*>(0xB000);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
+        .WillOnce(Return(HeapRegion{base, 256}));
 
     policy_.initialize(cfg, &resource_);
 
@@ -750,8 +762,8 @@ TEST_F(HierarchicalChunkLocatorTest, OperationsOnFreedSlotDoNothing) {
 
     void* base = reinterpret_cast<void*>(0xB100);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
@@ -792,8 +804,8 @@ TEST_F(HierarchicalChunkLocatorTest, SnapshotReturnsCorrectState) {
 
     void* base = reinterpret_cast<void*>(0xC000);
     EXPECT_CALL(impl_, reserve(512, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 512}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 512}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
     policy_.initialize(cfg, &resource_);
 
@@ -819,9 +831,9 @@ TEST_F(HierarchicalChunkLocatorTest, ValidatePassesOnValidState) {
 
     void* base = reinterpret_cast<void*>(0xC100);
     EXPECT_CALL(impl_, reserve(512, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 512}));
+        .WillOnce(Return(HeapRegion{base, 512}));
     // 128バイトチャンク2つを割り当てるために map が2回呼ばれる
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(2).WillRepeatedly(ReturnArg<0>());
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(2).WillRepeatedly(::testing::Invoke(MapReturn));
     // 2つのチャンクを解放するので unmap が2回呼ばれる
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(2);
 
@@ -850,9 +862,9 @@ TEST_F(HierarchicalChunkLocatorTest, MultipleRegionsAreAddedWhenExhausted) {
     void* base1 = reinterpret_cast<void*>(0xD000);
     void* base2 = reinterpret_cast<void*>(0xD100);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base1, 0, 256}))
-        .WillOnce(Return(BufferView{base2, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base1, 256}))
+        .WillOnce(Return(HeapRegion{base2, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
     policy_.initialize(cfg, &resource_);
 
@@ -874,8 +886,8 @@ TEST_F(HierarchicalChunkLocatorTest, ZeroSizeAllocationUsesSmallestLayer) {
 
     void* base = reinterpret_cast<void*>(0xE000);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
     policy_.initialize(cfg, &resource_);
 
@@ -889,8 +901,8 @@ TEST_F(HierarchicalChunkLocatorTest, ExactSizeMatchSelectsCorrectLayer) {
 
     void* base = reinterpret_cast<void*>(0xE100);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillRepeatedly(Return(BufferView{base, 0, 256}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillRepeatedly(Return(HeapRegion{base, 256}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
     policy_.initialize(cfg, &resource_);
 
@@ -908,8 +920,8 @@ TEST_F(HierarchicalChunkLocatorTest, SingleLayerConfiguration) {
 
     void* base = reinterpret_cast<void*>(0xE200);
     EXPECT_CALL(impl_, reserve(1024, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 1024}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 1024}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
@@ -928,9 +940,9 @@ TEST_F(HierarchicalChunkLocatorTest, DeepSplitAcrossMultipleLayers) {
 
     void* base = reinterpret_cast<void*>(0xF000);
     EXPECT_CALL(impl_, reserve(1024, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 1024}));
+        .WillOnce(Return(HeapRegion{base, 1024}));
     // 8つの128バイトチャンクを割り当てるために map が8回呼ばれる
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(8).WillRepeatedly(ReturnArg<0>());
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(8).WillRepeatedly(::testing::Invoke(MapReturn));
     // 8つのチャンクを解放するので unmap が8回呼ばれる
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(8);
 
@@ -958,9 +970,9 @@ TEST_F(HierarchicalChunkLocatorTest, PartialMergeDoesNotOccur) {
 
     void* base = reinterpret_cast<void*>(0xF100);
     EXPECT_CALL(impl_, reserve(512, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 512}));
+        .WillOnce(Return(HeapRegion{base, 512}));
     // 2つの256バイトチャンクを割り当てるために map が2回呼ばれる
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(2).WillRepeatedly(ReturnArg<0>());
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(2).WillRepeatedly(::testing::Invoke(MapReturn));
     // 2つのチャンクを解放するので unmap が2回呼ばれる
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(2);
 
@@ -994,9 +1006,9 @@ TEST_F(HierarchicalChunkLocatorTest, AlternatingAllocFreePattern) {
 
     void* base = reinterpret_cast<void*>(0xF200);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
+        .WillOnce(Return(HeapRegion{base, 256}));
     // 10回の割り当て・解放を繰り返すので map/unmap が各10回呼ばれる
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(10).WillRepeatedly(ReturnArg<0>());
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(10).WillRepeatedly(::testing::Invoke(MapReturn));
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(10);
 
     policy_.initialize(cfg, &resource_);
@@ -1021,9 +1033,9 @@ TEST_F(HierarchicalChunkLocatorTest, ConcurrentIncrementDecrement) {
 
     void* base = reinterpret_cast<void*>(0x10000);
     EXPECT_CALL(impl_, reserve(256, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 256}));
+        .WillOnce(Return(HeapRegion{base, 256}));
     // チャンク1つを割り当てるために map が1回呼ばれる
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(1).WillOnce(ReturnArg<0>());
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).Times(1).WillOnce(::testing::Invoke(MapReturn));
     // 最後に releaseChunk で unmap が1回呼ばれる
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
@@ -1075,8 +1087,8 @@ TEST_F(HierarchicalChunkLocatorTest, InitialBytesLargerThanChunkSize) {
 
     void* base = reinterpret_cast<void*>(0x11000);
     EXPECT_CALL(impl_, reserve(1024, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 1024}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 1024}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
     policy_.initialize(cfg, &resource_);
 
@@ -1098,8 +1110,8 @@ TEST_F(HierarchicalChunkLocatorTest, InitialBytesZeroUsesChunkSize) {
     void* base = reinterpret_cast<void*>(0x11100);
     // initial_bytes=0 の場合、最大チャンクサイズ（512）が使われる
     EXPECT_CALL(impl_, reserve(512, device_, stream_))
-        .WillOnce(Return(BufferView{base, 0, 512}));
-    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
+        .WillOnce(Return(HeapRegion{base, 512}));
+    EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
     policy_.initialize(cfg, &resource_);
 
