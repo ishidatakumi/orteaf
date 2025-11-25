@@ -108,9 +108,9 @@ TEST(HierarchicalChunkLocator, InitializeReservesRootAndReusesBlocks) {
 
     policy.initialize(cfg, &resource);
 
-    auto b1 = policy.addChunk(128);
+    auto b1 = policy.addChunk(128, 1);
     EXPECT_TRUE(policy.releaseChunk(b1.id));
-    auto b2 = policy.addChunk(128);
+    auto b2 = policy.addChunk(128, 1);
     EXPECT_TRUE(policy.releaseChunk(b2.id));
 
     MockCpuResource::reset();
@@ -125,7 +125,7 @@ TEST(HierarchicalChunkLocator, InitializeFailsWithNullResource) {
 
 TEST(HierarchicalChunkLocator, AllocateWithoutInitializeThrows) {
     Policy policy;
-    EXPECT_THROW(policy.addChunk(64), std::system_error);
+    EXPECT_THROW(policy.addChunk(64, 1), std::system_error);
 }
 
 TEST(HierarchicalChunkLocator, ReusesSpanWithoutExtraReserve) {
@@ -150,13 +150,13 @@ TEST(HierarchicalChunkLocator, ReusesSpanWithoutExtraReserve) {
     EXPECT_CALL(impl, unmap(_, _, device, context, stream)).Times(4);
 
     policy.initialize(cfg, &resource);
-    auto b1 = policy.addChunk(128);
-    auto b2 = policy.addChunk(128);
+    auto b1 = policy.addChunk(128, 1);
+    auto b2 = policy.addChunk(128, 1);
     EXPECT_TRUE(policy.releaseChunk(b1.id));
     EXPECT_TRUE(policy.releaseChunk(b2.id));
 
-    auto b3 = policy.addChunk(128);
-    auto b4 = policy.addChunk(128);
+    auto b3 = policy.addChunk(128, 1);
+    auto b4 = policy.addChunk(128, 1);
     EXPECT_TRUE(policy.releaseChunk(b3.id));
     EXPECT_TRUE(policy.releaseChunk(b4.id));
 
@@ -183,10 +183,10 @@ TEST(HierarchicalChunkLocator, SplitMergeAndReuseAcrossLayers) {
     EXPECT_CALL(impl, unmap(_, _, device, context, stream)).Times(6);
 
     policy.initialize(cfg, &resource);
-    auto b1 = policy.addChunk(128);
-    auto b2 = policy.addChunk(128);
-    auto b3 = policy.addChunk(128);
-    auto b4 = policy.addChunk(128);
+    auto b1 = policy.addChunk(128, 1);
+    auto b2 = policy.addChunk(128, 1);
+    auto b3 = policy.addChunk(128, 1);
+    auto b4 = policy.addChunk(128, 1);
 
     std::cerr << DumpSnapshot(policy, "after 4 alloc") << std::endl;
     EXPECT_TRUE(policy.releaseChunk(b1.id));
@@ -195,8 +195,8 @@ TEST(HierarchicalChunkLocator, SplitMergeAndReuseAcrossLayers) {
     EXPECT_TRUE(policy.releaseChunk(b4.id));
 
     std::cerr << DumpSnapshot(policy, "after free all") << std::endl;
-    auto b5 = policy.addChunk(128);
-    auto b6 = policy.addChunk(128);
+    auto b5 = policy.addChunk(128, 1);
+    auto b6 = policy.addChunk(128, 1);
     std::cerr << DumpSnapshot(policy, "after re-alloc") << std::endl;
     EXPECT_TRUE(policy.releaseChunk(b5.id));
     EXPECT_TRUE(policy.releaseChunk(b6.id));
@@ -242,15 +242,15 @@ TEST_F(HierarchicalChunkLocatorTest, FindChunkSizeReturnsCorrectSize) {
     policy_.initialize(cfg, &resource_);
 
     // 128バイトのチャンクを割り当て
-    auto b1 = policy_.addChunk(128);
+    auto b1 = policy_.addChunk(128, 1);
     EXPECT_EQ(policy_.findChunkSize(b1.id), 128);
 
     // 256バイトのチャンクを割り当て
-    auto b2 = policy_.addChunk(256);
+    auto b2 = policy_.addChunk(256, 1);
     EXPECT_EQ(policy_.findChunkSize(b2.id), 256);
 
     // 512バイトのチャンクを割り当て
-    auto b3 = policy_.addChunk(512);
+    auto b3 = policy_.addChunk(512, 1);
     EXPECT_EQ(policy_.findChunkSize(b3.id), 512);
 }
 
@@ -283,7 +283,7 @@ TEST_F(HierarchicalChunkLocatorTest, IncrementAndDecrementUsed) {
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
-    auto b = policy_.addChunk(256);
+    auto b = policy_.addChunk(256, 1);
 
     // 初期状態では used=0 なので releaseChunk 可能
     // incrementUsed でカウントアップ
@@ -312,7 +312,7 @@ TEST_F(HierarchicalChunkLocatorTest, DecrementUsedDoesNotUnderflow) {
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
-    auto b = policy_.addChunk(256);
+    auto b = policy_.addChunk(256, 1);
 
     // 0の状態からdecrementしてもアンダーフローしない
     policy_.decrementUsed(b.id);
@@ -337,7 +337,7 @@ TEST_F(HierarchicalChunkLocatorTest, IncrementAndDecrementPending) {
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
-    auto b = policy_.addChunk(256);
+    auto b = policy_.addChunk(256, 1);
 
     // incrementPending でカウントアップ
     policy_.incrementPending(b.id);
@@ -362,7 +362,7 @@ TEST_F(HierarchicalChunkLocatorTest, DecrementPendingDoesNotUnderflow) {
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
-    auto b = policy_.addChunk(256);
+    auto b = policy_.addChunk(256, 1);
 
     // 0の状態からdecrementしてもアンダーフローしない
     policy_.decrementPending(b.id);
@@ -386,7 +386,7 @@ TEST_F(HierarchicalChunkLocatorTest, DecrementPendingAndUsed) {
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
-    auto b = policy_.addChunk(256);
+    auto b = policy_.addChunk(256, 1);
 
     policy_.incrementPending(b.id);
     policy_.incrementUsed(b.id);
@@ -411,7 +411,7 @@ TEST_F(HierarchicalChunkLocatorTest, DecrementPendingAndUsedMultipleTimes) {
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
-    auto b = policy_.addChunk(256);
+    auto b = policy_.addChunk(256, 1);
 
     policy_.incrementPending(b.id);
     policy_.incrementPending(b.id);
@@ -438,7 +438,7 @@ TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsWhenUsedRemains) {
     EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
 
     policy_.initialize(cfg, &resource_);
-    auto b = policy_.addChunk(256);
+    auto b = policy_.addChunk(256, 1);
 
     policy_.incrementUsed(b.id);
     EXPECT_FALSE(policy_.releaseChunk(b.id));
@@ -453,7 +453,7 @@ TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsWhenPendingRemains) {
     EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
 
     policy_.initialize(cfg, &resource_);
-    auto b = policy_.addChunk(256);
+    auto b = policy_.addChunk(256, 1);
 
     policy_.incrementPending(b.id);
     EXPECT_FALSE(policy_.releaseChunk(b.id));
@@ -469,7 +469,7 @@ TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsForInvalidState) {
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
-    auto b = policy_.addChunk(256);
+    auto b = policy_.addChunk(256, 1);
 
     // 一度解放
     EXPECT_TRUE(policy_.releaseChunk(b.id));
@@ -507,23 +507,23 @@ TEST_F(HierarchicalChunkLocatorTest, PickLayerSelectsSmallestSufficientLayer) {
     policy_.initialize(cfg, &resource_);
 
     // 64バイト要求 -> 128バイト層（最小で足りる層）
-    auto b1 = policy_.addChunk(64);
+    auto b1 = policy_.addChunk(64, 1);
     EXPECT_EQ(policy_.findChunkSize(b1.id), 128);
 
     // 128バイト要求 -> 128バイト層
-    auto b2 = policy_.addChunk(128);
+    auto b2 = policy_.addChunk(128, 1);
     EXPECT_EQ(policy_.findChunkSize(b2.id), 128);
 
     // 129バイト要求 -> 256バイト層
-    auto b3 = policy_.addChunk(129);
+    auto b3 = policy_.addChunk(129, 1);
     EXPECT_EQ(policy_.findChunkSize(b3.id), 256);
 
     // 512バイト要求 -> 512バイト層
-    auto b4 = policy_.addChunk(512);
+    auto b4 = policy_.addChunk(512, 1);
     EXPECT_EQ(policy_.findChunkSize(b4.id), 512);
 
     // 513バイト要求 -> 1024バイト層
-    auto b5 = policy_.addChunk(513);
+    auto b5 = policy_.addChunk(513, 1);
     EXPECT_EQ(policy_.findChunkSize(b5.id), 1024);
 }
 
@@ -537,7 +537,7 @@ TEST_F(HierarchicalChunkLocatorTest, AddChunkFailsWhenRequestExceedsAllLayers) {
     policy_.initialize(cfg, &resource_);
 
     // 最大層よりも大きいサイズを要求
-    EXPECT_THROW(policy_.addChunk(512), std::system_error);
+    EXPECT_THROW(policy_.addChunk(512, 1), std::system_error);
 }
 
 // ============================================================================
@@ -560,10 +560,10 @@ TEST_F(HierarchicalChunkLocatorTest, RegionMultiplierAllocatesMultipleChunks) {
     policy_.initialize(cfg, &resource_);
 
     // チャンクを割り当て
-    auto b1 = policy_.addChunk(256);
-    auto b2 = policy_.addChunk(256);
-    auto b3 = policy_.addChunk(256);
-    auto b4 = policy_.addChunk(256);
+    auto b1 = policy_.addChunk(256, 1);
+    auto b2 = policy_.addChunk(256, 1);
+    auto b3 = policy_.addChunk(256, 1);
+    auto b4 = policy_.addChunk(256, 1);
 
     EXPECT_NE(b1.view.data(), nullptr);
     EXPECT_NE(b2.view.data(), nullptr);
@@ -581,7 +581,7 @@ TEST_F(HierarchicalChunkLocatorTest, RegionMultiplierZeroDefaultsToOne) {
     EXPECT_CALL(impl_, map(_, device_, context_, stream_)).WillRepeatedly(ReturnArg<0>());
 
     policy_.initialize(cfg, &resource_);
-    auto b1 = policy_.addChunk(256);
+    auto b1 = policy_.addChunk(256, 1);
     EXPECT_NE(b1.view.data(), nullptr);
 }
 
@@ -617,7 +617,7 @@ TEST_F(HierarchicalChunkLocatorTest, OperationsOnFreedSlotDoNothing) {
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
-    auto b = policy_.addChunk(256);
+    auto b = policy_.addChunk(256, 1);
     BufferId id = b.id;
 
     EXPECT_TRUE(policy_.releaseChunk(id));
@@ -640,7 +640,7 @@ TEST_F(HierarchicalChunkLocatorTest, EmptyLevelsWithZeroInitialBytes) {
     policy_.initialize(cfg, &resource_);
 
     // 割り当て要求は失敗する（適切な層がない）
-    EXPECT_THROW(policy_.addChunk(64), std::system_error);
+    EXPECT_THROW(policy_.addChunk(64, 1), std::system_error);
 }
 
 // ============================================================================
@@ -666,7 +666,7 @@ TEST_F(HierarchicalChunkLocatorTest, SnapshotReturnsCorrectState) {
     EXPECT_EQ(snap1.layers[0].free_list.size(), 1);
 
     // チャンク割り当て後
-    auto b = policy_.addChunk(256);
+    auto b = policy_.addChunk(256, 1);
     auto snap2 = policy_.snapshot();
 
     // ルート層はsplitされた
@@ -688,8 +688,8 @@ TEST_F(HierarchicalChunkLocatorTest, ValidatePassesOnValidState) {
 
     policy_.initialize(cfg, &resource_);
 
-    auto b1 = policy_.addChunk(128);
-    auto b2 = policy_.addChunk(128);
+    auto b1 = policy_.addChunk(128, 1);
+    auto b2 = policy_.addChunk(128, 1);
 
     // validateは例外を投げない
     EXPECT_NO_THROW(policy_.validate());
@@ -718,11 +718,11 @@ TEST_F(HierarchicalChunkLocatorTest, MultipleRegionsAreAddedWhenExhausted) {
     policy_.initialize(cfg, &resource_);
 
     // 最初のリージョンから割り当て
-    auto b1 = policy_.addChunk(256);
+    auto b1 = policy_.addChunk(256, 1);
     EXPECT_EQ(b1.view.data(), base1);
 
     // 追加リージョンが必要
-    auto b2 = policy_.addChunk(256);
+    auto b2 = policy_.addChunk(256, 1);
     EXPECT_EQ(b2.view.data(), base2);
 }
 
@@ -741,7 +741,7 @@ TEST_F(HierarchicalChunkLocatorTest, ZeroSizeAllocationUsesSmallestLayer) {
     policy_.initialize(cfg, &resource_);
 
     // 0バイト要求でも最小層から割り当て
-    auto b = policy_.addChunk(0);
+    auto b = policy_.addChunk(0, 1);
     EXPECT_EQ(policy_.findChunkSize(b.id), 64);
 }
 
@@ -756,11 +756,11 @@ TEST_F(HierarchicalChunkLocatorTest, ExactSizeMatchSelectsCorrectLayer) {
     policy_.initialize(cfg, &resource_);
 
     // ちょうど128バイト
-    auto b1 = policy_.addChunk(128);
+    auto b1 = policy_.addChunk(128, 1);
     EXPECT_EQ(policy_.findChunkSize(b1.id), 128);
 
     // ちょうど256バイト
-    auto b2 = policy_.addChunk(256);
+    auto b2 = policy_.addChunk(256, 1);
     EXPECT_EQ(policy_.findChunkSize(b2.id), 256);
 }
 
@@ -775,7 +775,7 @@ TEST_F(HierarchicalChunkLocatorTest, SingleLayerConfiguration) {
 
     policy_.initialize(cfg, &resource_);
 
-    auto b = policy_.addChunk(512);
+    auto b = policy_.addChunk(512, 1);
     EXPECT_EQ(policy_.findChunkSize(b.id), 1024);
     EXPECT_TRUE(policy_.releaseChunk(b.id));
 }
@@ -800,7 +800,7 @@ TEST_F(HierarchicalChunkLocatorTest, DeepSplitAcrossMultipleLayers) {
     // 最小層から8つ割り当て（1024 -> 512x2 -> 256x4 -> 128x8）
     std::vector<allocator::MemoryBlock<Backend::Cpu>> blocks;
     for (int i = 0; i < 8; ++i) {
-        blocks.push_back(policy_.addChunk(128));
+        blocks.push_back(policy_.addChunk(128, 1));
         EXPECT_EQ(policy_.findChunkSize(blocks.back().id), 128);
     }
 
@@ -828,8 +828,8 @@ TEST_F(HierarchicalChunkLocatorTest, PartialMergeDoesNotOccur) {
     policy_.initialize(cfg, &resource_);
 
     // 2つの256バイトチャンクを割り当て
-    auto b1 = policy_.addChunk(256);
-    auto b2 = policy_.addChunk(256);
+    auto b1 = policy_.addChunk(256, 1);
+    auto b2 = policy_.addChunk(256, 1);
 
     // 1つだけ解放しても親はマージされない
     EXPECT_TRUE(policy_.releaseChunk(b1.id));
@@ -864,7 +864,7 @@ TEST_F(HierarchicalChunkLocatorTest, AlternatingAllocFreePattern) {
 
     // 交互に割り当て・解放を繰り返す
     for (int i = 0; i < 10; ++i) {
-        auto b = policy_.addChunk(128);
+        auto b = policy_.addChunk(128, 1);
         EXPECT_TRUE(policy_.releaseChunk(b.id));
     }
 
@@ -889,7 +889,7 @@ TEST_F(HierarchicalChunkLocatorTest, ConcurrentIncrementDecrement) {
     EXPECT_CALL(impl_, unmap(_, _, device_, context_, stream_)).Times(1);
 
     policy_.initialize(cfg, &resource_);
-    auto b = policy_.addChunk(256);
+    auto b = policy_.addChunk(256, 1);
 
     constexpr int kIterations = 100;
     std::vector<std::thread> threads;
@@ -942,10 +942,10 @@ TEST_F(HierarchicalChunkLocatorTest, InitialBytesLargerThanChunkSize) {
     policy_.initialize(cfg, &resource_);
 
     // 4つのチャンクが初期確保される（1024 / 256 = 4）
-    auto b1 = policy_.addChunk(256);
-    auto b2 = policy_.addChunk(256);
-    auto b3 = policy_.addChunk(256);
-    auto b4 = policy_.addChunk(256);
+    auto b1 = policy_.addChunk(256, 1);
+    auto b2 = policy_.addChunk(256, 1);
+    auto b3 = policy_.addChunk(256, 1);
+    auto b4 = policy_.addChunk(256, 1);
 
     EXPECT_NE(b1.view.data(), nullptr);
     EXPECT_NE(b2.view.data(), nullptr);
@@ -964,7 +964,7 @@ TEST_F(HierarchicalChunkLocatorTest, InitialBytesZeroUsesChunkSize) {
 
     policy_.initialize(cfg, &resource_);
 
-    auto b = policy_.addChunk(512);
+    auto b = policy_.addChunk(512, 1);
     EXPECT_NE(b.view.data(), nullptr);
 }
 

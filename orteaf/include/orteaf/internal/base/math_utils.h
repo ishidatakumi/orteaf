@@ -30,5 +30,11 @@ constexpr std::size_t nextPowerOfTwo(std::size_t value) {
     return value + 1;
 }
 
-}  // namespace orteaf::internal::base
+/**
+ * @brief Aligns @p value down to the nearest multiple of @p alignment (alignment must be non-zero).
+ */
+constexpr std::size_t alignDown(std::size_t value, std::size_t alignment) {
+    return alignment == 0 ? value : value - (value % alignment);
+}
 
+}  // namespace orteaf::internal::base

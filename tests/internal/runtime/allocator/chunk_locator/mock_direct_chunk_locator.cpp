@@ -29,18 +29,23 @@ using Policy = policies::DirectChunkLocatorPolicy<MockCpuResource, Backend::Cpu>
 
 TEST(DirectChunkLocator, ReleaseChunkCallsResourceWhenFree) {
     Policy policy;
+    MockCpuResource resource;
     Device device = 42;
     Stream stream = reinterpret_cast<void*>(0x1234);
-    policy.initialize(device, /*context=*/0, stream);
+    Policy::Config cfg{};
+    cfg.device = device;
+    cfg.context = 0;
+    cfg.stream = stream;
 
     NiceMock<MockCpuResourceImpl> impl;
     MockCpuResource::set(&impl);
+    policy.initialize(cfg, &resource);
 
     CpuView view{reinterpret_cast<void*>(0x10), 0, 256};
-    EXPECT_CALL(impl, allocate(256, 0, device, stream)).WillOnce(Return(view));
-    EXPECT_CALL(impl, deallocate(view, 256, 0, device, stream)).Times(1);
+    EXPECT_CALL(impl, allocate(256, 1, device, stream)).WillOnce(Return(view));
+    EXPECT_CALL(impl, deallocate(view, 256, 1, device, stream)).Times(1);
 
-    auto block = policy.addChunk(256, 64, 0);
+    auto block = policy.addChunk(256, 1);
     BufferId id = block.id;
 
     EXPECT_TRUE(policy.releaseChunk(id));
@@ -51,18 +56,23 @@ TEST(DirectChunkLocator, ReleaseChunkCallsResourceWhenFree) {
 
 TEST(DirectChunkLocator, ReleaseChunkSkipsWhenInUse) {
     Policy policy;
+    MockCpuResource resource;
     Device device = 1;
     Stream stream = nullptr;
-    policy.initialize(device, /*context=*/0, stream);
+    Policy::Config cfg{};
+    cfg.device = device;
+    cfg.context = 0;
+    cfg.stream = stream;
 
     NiceMock<MockCpuResourceImpl> impl;
     MockCpuResource::set(&impl);
+    policy.initialize(cfg, &resource);
 
     CpuView view{reinterpret_cast<void*>(0x20), 0, 128};
-    EXPECT_CALL(impl, allocate(128, 0, device, stream)).WillOnce(Return(view));
-    EXPECT_CALL(impl, deallocate(view, 128, 0, device, stream)).Times(1);
+    EXPECT_CALL(impl, allocate(128, 1, device, stream)).WillOnce(Return(view));
+    EXPECT_CALL(impl, deallocate(view, 128, 1, device, stream)).Times(1);
 
-    auto block = policy.addChunk(128, 32, 0);
+    auto block = policy.addChunk(128, 1);
     BufferId id = block.id;
     policy.incrementUsed(id);
 
@@ -76,16 +86,21 @@ TEST(DirectChunkLocator, ReleaseChunkSkipsWhenInUse) {
 
 TEST(DirectChunkLocator, PendingBlocksPreventRelease) {
     Policy policy;
-    policy.initialize(/*device=*/2, /*context=*/0, /*stream=*/nullptr);
+    MockCpuResource resource;
+    Policy::Config cfg{};
+    cfg.device = 2;
+    cfg.context = 0;
+    cfg.stream = nullptr;
 
     NiceMock<MockCpuResourceImpl> impl;
     MockCpuResource::set(&impl);
+    policy.initialize(cfg, &resource);
 
     CpuView view{reinterpret_cast<void*>(0x30), 0, 64};
-    EXPECT_CALL(impl, allocate(64, 0, 2, nullptr)).WillOnce(Return(view));
-    EXPECT_CALL(impl, deallocate(view, 64, 0, 2, nullptr)).Times(1);
+    EXPECT_CALL(impl, allocate(64, 1, 2, nullptr)).WillOnce(Return(view));
+    EXPECT_CALL(impl, deallocate(view, 64, 1, 2, nullptr)).Times(1);
 
-    auto block = policy.addChunk(64, 16, 0);
+    auto block = policy.addChunk(64, 1);
     BufferId id = block.id;
     policy.incrementPending(id);
 
@@ -97,19 +112,24 @@ TEST(DirectChunkLocator, PendingBlocksPreventRelease) {
     MockCpuResource::reset();
 }
 
-TEST(DirectChunkLocator, FindBlockSizeReturnsRegisteredValue) {
+TEST(DirectChunkLocator, FindChunkSizeReturnsRegisteredValue) {
     Policy policy;
-    policy.initialize(/*device=*/3, /*context=*/0, /*stream=*/nullptr);
+    MockCpuResource resource;
+    Policy::Config cfg{};
+    cfg.device = 3;
+    cfg.context = 0;
+    cfg.stream = nullptr;
 
     NiceMock<MockCpuResourceImpl> impl;
     MockCpuResource::set(&impl);
+    policy.initialize(cfg, &resource);
 
     CpuView view{reinterpret_cast<void*>(0x40), 0, 512};
-    EXPECT_CALL(impl, allocate(512, 0, 3, nullptr)).WillOnce(Return(view));
+    EXPECT_CALL(impl, allocate(512, 1, 3, nullptr)).WillOnce(Return(view));
 
-    auto block = policy.addChunk(512, 128, 0);
+    auto block = policy.addChunk(512, 1);
 
-    EXPECT_EQ(policy.findBlockSize(block.id), 128u);
+    EXPECT_EQ(policy.findChunkSize(block.id), 512u);
 
     MockCpuResource::reset();
 }
