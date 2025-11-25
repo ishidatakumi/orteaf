@@ -233,7 +233,7 @@ public:
         if (getState(slot) != State::InUse) return false;
         if (slot.pending > 0 || slot.used > 0) return false;
 
-        resource_->unmap(slot.region, layer.chunk_size, config_.stream);
+        resource_->unmap(slot.mapped, layer.chunk_size, config_.stream);
         resetSlot(slot);
         layer.free_list.pushBack(slot_index);
 
