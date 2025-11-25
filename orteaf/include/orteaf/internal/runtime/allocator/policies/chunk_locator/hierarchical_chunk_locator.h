@@ -6,6 +6,7 @@
 #include <mutex>
 #include <new>
 #include <stdexcept>
+#include <type_traits>
 #include <vector>
 
 #include "orteaf/internal/backend/backend.h"
@@ -63,8 +64,8 @@ public:
         }
     }
 
-    // 最小で足りるサイズクラスから MemoryBlock を返す。
-    MemoryBlock allocate(std::size_t size) {
+    // 最小で足りるサイズクラスからチャンクを取得して登録する（Direct ポリシーに合わせて addChunk 命名）。
+    MemoryBlock addChunk(std::size_t size) {
         std::lock_guard<std::mutex> lock(mutex_);
         const auto target_layer = pickLayer(size);
         if (target_layer == kInvalidLayer || resource_ == nullptr) {
@@ -78,6 +79,8 @@ public:
         const auto slot = popFree(L.free_list);
         Slot& s = L.slots[slot];
         s.state = State::InUse;
+        s.used = 0;
+        s.pending = 0;
         if (!s.mapped) {
             s.view = resource_->map(s.view, cfg_.device, cfg_.context, cfg_.stream);
             s.mapped = true;
@@ -85,26 +88,31 @@ public:
         return MemoryBlock{encode(target_layer, static_cast<uint32_t>(slot)), s.view};
     }
 
-    void deallocate(BufferId id, std::size_t size = 0) {
+    // Direct ポリシーに合わせて releaseChunk とし、used/pending が残っていれば解放しない。
+    bool releaseChunk(BufferId id) {
         std::lock_guard<std::mutex> lock(mutex_);
         auto [layer, slot] = decode(id);
-        if (layer >= layers_.size()) return;
+        if (layer >= layers_.size()) return false;
         auto& L = layers_[layer];
-        if (slot >= L.slots.size()) return;
+        if (slot >= L.slots.size()) return false;
 
         Slot& s = L.slots[slot];
-        if (s.state != State::InUse) return;
+        if (s.state != State::InUse) return false;
+        if (s.pending > 0 || s.used > 0) return false;
 
         // map/unmap を分離。CPU では unmap が deallocate を兼ねる。
-        resource_->unmap(s.view, size ? size : L.chunk_size, cfg_.device, cfg_.context, cfg_.stream);
+        resource_->unmap(s.view, L.chunk_size, cfg_.device, cfg_.context, cfg_.stream);
         s.mapped = false;
         s.state = State::Free;
+        s.used = 0;
+        s.pending = 0;
         L.free_list.pushBack(slot);
 
         // 親があれば、親配下の子がすべて Free ならマージする
         if (s.parent_slot != kNoParent && layer > 0) {
             tryMergeParent(layer, layer - 1, s.parent_slot);
         }
+        return true;
     }
 
     std::size_t findChunkSize(BufferId id) const {
@@ -115,8 +123,169 @@ public:
         return L.chunk_size;
     }
 
-private:
+    void incrementUsed(BufferId id) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (auto* s = findSlot(id)) {
+            ++s->used;
+        }
+    }
+
+    void decrementUsed(BufferId id) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (auto* s = findSlot(id)) {
+            if (s->used > 0) --s->used;
+        }
+    }
+
+    void incrementPending(BufferId id) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (auto* s = findSlot(id)) {
+            ++s->pending;
+        }
+    }
+
+    void decrementPending(BufferId id) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (auto* s = findSlot(id)) {
+            if (s->pending > 0) --s->pending;
+        }
+    }
+
+    void decrementPendingAndUsed(BufferId id) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (auto* s = findSlot(id)) {
+            if (s->pending > 0) --s->pending;
+            if (s->used > 0) --s->used;
+        }
+    }
+
     enum class State : uint8_t { Free, InUse, Split };
+
+#if ORTEAF_CORE_DEBUG_ENABLED
+    using DebugSpanFreeEntry = std::pair<uint32_t, uint32_t>;
+#else
+    using DebugSpanFreeEntry = uint32_t;
+#endif
+
+#if ORTEAF_CORE_DEBUG_ENABLED
+    struct SlotSnapshot {
+        State state{};
+        bool mapped{};
+        uint32_t parent_slot{};
+        uint32_t child_layer{};
+        uint32_t child_begin{};
+        uint32_t child_count{};
+        uint32_t used{};
+        uint32_t pending{};
+    };
+    struct LayerSnapshot {
+        std::size_t chunk_size{};
+        std::vector<SlotSnapshot> slots{};
+        std::vector<uint32_t> free_list{};
+        std::vector<DebugSpanFreeEntry> span_free{};
+    };
+    struct DebugSnapshot {
+        std::vector<LayerSnapshot> layers{};
+    };
+
+    // 現在の階層状態を取得（デバッグ用途）。
+    DebugSnapshot snapshot() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        DebugSnapshot snap;
+        snap.layers.reserve(layers_.size());
+        for (const auto& L : layers_) {
+            LayerSnapshot ls;
+            ls.chunk_size = L.chunk_size;
+            ls.free_list.resize(L.free_list.size());
+            for (std::size_t i = 0; i < L.free_list.size(); ++i) {
+                ls.free_list[i] = L.free_list[i];
+            }
+            ls.span_free.resize(L.span_free.size());
+            for (std::size_t i = 0; i < L.span_free.size(); ++i) {
+                const auto& e = L.span_free[i];
+                if constexpr (std::is_same_v<SpanFreeEntry, std::pair<uint32_t, uint32_t>>) {
+                    ls.span_free[i] = {e.first, e.second};
+                } else {
+                    ls.span_free[i] = e;
+                }
+            }
+            ls.slots.resize(L.slots.size());
+            for (std::size_t i = 0; i < L.slots.size(); ++i) {
+                const auto& s = L.slots[i];
+                ls.slots[i] = SlotSnapshot{
+                    s.state,
+                    s.mapped,
+                    s.parent_slot,
+                    s.child_layer,
+                    s.child_begin,
+                    s.child_count,
+                    s.used,
+                    s.pending,
+                };
+            }
+            snap.layers.push_back(std::move(ls));
+        }
+        return snap;
+    }
+
+    // 内部整合性チェック（デバッグビルドでのみ有効）
+    void validate() const {
+        std::lock_guard<std::mutex> lock(mutex_);
+        for (std::size_t li = 0; li < layers_.size(); ++li) {
+            const auto& L = layers_[li];
+            // free_list の範囲・重複チェック
+            std::vector<uint8_t> seen(L.slots.size(), 0);
+            for (std::size_t i = 0; i < L.free_list.size(); ++i) {
+                auto idx = L.free_list[i];
+                if (idx >= static_cast<uint32_t>(L.slots.size())) {
+                    diagnostics::error::throwError(diagnostics::error::OrteafErrc::InvalidState, "free_list index out of range");
+                }
+                if (seen[idx]) {
+                    diagnostics::error::throwError(diagnostics::error::OrteafErrc::InvalidState, "free_list duplicate");
+                }
+                seen[idx] = 1;
+                if (L.slots[idx].state != State::Free) {
+                    diagnostics::error::throwError(diagnostics::error::OrteafErrc::InvalidState, "free_list slot not free");
+                }
+            }
+            // span_free の範囲チェック
+            for (std::size_t i = 0; i < L.span_free.size(); ++i) {
+                auto entry = L.span_free[i];
+                uint32_t begin = 0;
+                uint32_t count = 1;
+                if constexpr (std::is_same_v<SpanFreeEntry, std::pair<uint32_t, uint32_t>>) {
+                    begin = entry.first;
+                    count = entry.second;
+                } else {
+                    begin = entry;
+                }
+                if (begin >= L.slots.size() || begin + count > L.slots.size()) {
+                    diagnostics::error::throwError(diagnostics::error::OrteafErrc::InvalidState, "span_free out of range");
+                }
+            }
+            // Split スロットの子範囲確認
+            for (std::size_t si = 0; si < L.slots.size(); ++si) {
+                const Slot& s = L.slots[si];
+                if (s.state != State::Split) continue;
+                if (s.child_layer == kNoChild || s.child_layer >= layers_.size()) {
+                    diagnostics::error::throwError(diagnostics::error::OrteafErrc::InvalidState, "split slot missing child layer");
+                }
+                const auto& C = layers_[s.child_layer];
+                const std::size_t expected = L.chunk_size / C.chunk_size;
+                if (s.child_begin >= C.slots.size() || s.child_begin + expected > C.slots.size()) {
+                    diagnostics::error::throwError(diagnostics::error::OrteafErrc::InvalidState, "split child range out of bounds");
+                }
+                for (std::size_t i = 0; i < expected; ++i) {
+                    if (C.slots[s.child_begin + i].parent_slot != si) {
+                        diagnostics::error::throwError(diagnostics::error::OrteafErrc::InvalidState, "child parent mismatch");
+                    }
+                }
+            }
+        }
+    }
+#endif
+
+private:
     static constexpr uint32_t kNoParent = UINT32_MAX;
     static constexpr uint32_t kNoChild = UINT32_MAX;
     static constexpr uint32_t kInvalidLayer = UINT32_MAX;
@@ -132,6 +301,8 @@ private:
         uint32_t parent_slot{kNoParent};
         uint32_t child_layer{kNoChild};
         uint32_t child_begin{0};
+        uint32_t used{0};
+        uint32_t pending{0};
 #if ORTEAF_CORE_DEBUG_ENABLED
         uint32_t child_count{0};
 #endif
@@ -156,7 +327,10 @@ private:
         uint32_t best = kInvalidLayer;
         for (uint32_t i = 0; i < layers_.size(); ++i) {
             if (req <= layers_[i].chunk_size) {
-                best = i;  // levels は大きい順なので最初に当たった層が最小で足りる
+                // levels は大きい順なので、より小さい層でも収まるか最後まで確認する
+                best = i;
+            } else {
+                // これより小さい層には入らないので打ち切り
                 break;
             }
         }
@@ -186,7 +360,19 @@ private:
             const std::size_t step = remaining >= chunk_size ? chunk_size : remaining;
             const std::size_t slot = root.slots.size();
             BufferView view{reinterpret_cast<char*>(base.data()) + offset, base.offset() + offset, step};
-            root.slots.emplaceBack(Slot{view, State::Free, false, kNoParent, kNoChild, 0, 0});
+            Slot s{};
+            s.view = view;
+            s.state = State::Free;
+            s.mapped = false;
+            s.parent_slot = kNoParent;
+            s.child_layer = kNoChild;
+            s.child_begin = 0;
+            s.used = 0;
+            s.pending = 0;
+#if ORTEAF_CORE_DEBUG_ENABLED
+            s.child_count = 0;
+#endif
+            root.slots.emplaceBack(s);
             root.free_list.pushBack(static_cast<uint32_t>(slot));
             offset += step;
             remaining -= step;
@@ -295,7 +481,11 @@ private:
             cs.parent_slot = parent_slot;
             cs.child_layer = kNoChild;
             cs.child_begin = 0;
+            cs.used = 0;
+            cs.pending = 0;
+#if ORTEAF_CORE_DEBUG_ENABLED
             cs.child_count = 0;
+#endif
             C.free_list.pushBack(static_cast<uint32_t>(base_slot + i));
         }
 
@@ -369,6 +559,24 @@ private:
         const uint32_t slot = raw & kSlotMask;
         const uint32_t layer = (raw >> kSlotBits) & ((uint32_t{1u} << kLayerBits) - 1u);
         return {layer, slot};
+    }
+
+    Slot* findSlot(BufferId id) {
+        auto [layer, slot] = decode(id);
+        if (layer >= layers_.size()) return nullptr;
+        auto& L = layers_[layer];
+        if (slot >= L.slots.size()) return nullptr;
+        Slot& s = L.slots[slot];
+        return s.state == State::InUse ? &s : nullptr;
+    }
+
+    const Slot* findSlot(BufferId id) const {
+        auto [layer, slot] = decode(id);
+        if (layer >= layers_.size()) return nullptr;
+        const auto& L = layers_[layer];
+        if (slot >= L.slots.size()) return nullptr;
+        const Slot& s = L.slots[slot];
+        return s.state == State::InUse ? &s : nullptr;
     }
 
 private:
