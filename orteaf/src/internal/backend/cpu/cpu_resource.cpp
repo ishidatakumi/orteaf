@@ -12,7 +12,7 @@ void CpuResource::initialize(const Config& /*config*/) noexcept {
     // CPU backend is stateless; nothing to do.
 }
 
-CpuResource::HeapRegion CpuResource::reserve(std::size_t size, Device /*device*/, Stream /*stream*/) {
+CpuResource::HeapRegion CpuResource::reserve(std::size_t size, Stream /*stream*/) {
     if (size == 0) {
         return {};
     }
@@ -23,8 +23,7 @@ CpuResource::HeapRegion CpuResource::reserve(std::size_t size, Device /*device*/
     return HeapRegion{base, size};
 }
 
-CpuResource::BufferView CpuResource::allocate(std::size_t size, std::size_t alignment,
-                                              Device /*device*/, Stream /*stream*/) {
+CpuResource::BufferView CpuResource::allocate(std::size_t size, std::size_t alignment, Stream /*stream*/) {
     if (size == 0) {
         return {};
     }
@@ -32,8 +31,7 @@ CpuResource::BufferView CpuResource::allocate(std::size_t size, std::size_t alig
     return BufferView{base, 0, size};
 }
 
-void CpuResource::deallocate(BufferView view, std::size_t size, std::size_t /*alignment*/,
-                             Device /*device*/, Stream /*stream*/) {
+void CpuResource::deallocate(BufferView view, std::size_t size, std::size_t /*alignment*/, Stream /*stream*/) {
     if (!view) {
         return;
     }
@@ -41,8 +39,7 @@ void CpuResource::deallocate(BufferView view, std::size_t size, std::size_t /*al
     cpu::dealloc(base, size);
 }
 
-CpuResource::BufferView CpuResource::map(HeapRegion region, Device /*device*/,
-                                         Context /*context*/, Stream /*stream*/) {
+CpuResource::BufferView CpuResource::map(HeapRegion region, Stream /*stream*/) {
     if (!region) return {};
     void* base = region.data();
     if (mprotect(base, region.size(), PROT_READ | PROT_WRITE) != 0) {
@@ -51,8 +48,7 @@ CpuResource::BufferView CpuResource::map(HeapRegion region, Device /*device*/,
     return BufferView{base, 0, region.size()};
 }
 
-void CpuResource::unmap(HeapRegion region, std::size_t /*size*/,
-                        Device /*device*/, Context /*context*/, Stream /*stream*/) {
+void CpuResource::unmap(HeapRegion region, std::size_t /*size*/, Stream /*stream*/) {
     if (!region) return;
     void* base = region.data();
     if (munmap(base, region.size()) != 0) {
