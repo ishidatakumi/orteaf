@@ -1,6 +1,6 @@
 #include "orteaf/internal/runtime/allocator/policies/chunk_locator/chunk_locator_concept.h"
 #include "orteaf/internal/runtime/allocator/policies/chunk_locator/direct_chunk_locator.h"
-#include "orteaf/internal/runtime/allocator/policies/chunk_locator/hierarchical_chunk_locator.h"
+#include "orteaf/internal/runtime/allocator/lowlevel/hierarchical_chunk_locator.h"
 
 #include <gtest/gtest.h>
 

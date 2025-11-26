@@ -1,4 +1,4 @@
-#include "orteaf/internal/runtime/allocator/policies/chunk_locator/hierarchical_chunk_locator.h"
+#include "orteaf/internal/runtime/allocator/lowlevel/hierarchical_chunk_locator.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
