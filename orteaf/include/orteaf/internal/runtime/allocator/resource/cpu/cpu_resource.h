@@ -4,31 +4,22 @@
 
 #include "orteaf/internal/backend/backend_traits.h"
 #include "orteaf/internal/backend/cpu/cpu_buffer_view.h"
-#include "orteaf/internal/backend/cpu/cpu_heap_region.h"
 
 namespace orteaf::internal::backend::cpu {
 
-// CPU backend resource used by allocator policies; non-owning BufferView wrapper.
+// CPU backend resource for direct allocation.
+// For low-level heap operations (reserve/map/unmap), use CpuHeapOps.
 struct CpuResource {
     using BufferView = ::orteaf::internal::backend::cpu::CpuBufferView;
-    using HeapRegion = ::orteaf::internal::backend::cpu::CpuHeapRegion;
     using Stream = ::orteaf::internal::backend::BackendTraits<::orteaf::internal::backend::Backend::Cpu>::Stream;
 
     struct Config {};
 
     static void initialize(const Config& config = {}) noexcept;
 
-    // VA 予約。mmap で PROT_NONE の領域を確保し、PA は map で張る。
-    static HeapRegion reserve(std::size_t size, Stream stream);
-
     static BufferView allocate(std::size_t size, std::size_t alignment, Stream stream);
 
     static void deallocate(BufferView view, std::size_t size, std::size_t alignment, Stream stream);
-
-    // map/unmap は VA を RW に切り替え、unmap で解放する。
-    static BufferView map(HeapRegion region, Stream stream);
-
-    static void unmap(BufferView view, std::size_t size, Stream stream);
 };
 
 }  // namespace orteaf::internal::backend::cpu
