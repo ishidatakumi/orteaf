@@ -43,8 +43,8 @@ TEST(DirectChunkLocator, ReleaseChunkCallsResourceWhenFree) {
     policy.initialize(cfg, &resource);
 
     CpuView view{reinterpret_cast<void*>(0x10), 0, 256};
-    EXPECT_CALL(impl, allocate(256, 1, device, stream)).WillOnce(Return(view));
-    EXPECT_CALL(impl, deallocate(view, 256, 1, device, stream)).Times(1);
+    EXPECT_CALL(impl, allocate(256, 1, stream)).WillOnce(Return(view));
+    EXPECT_CALL(impl, deallocate(view, 256, 1, stream)).Times(1);
 
     auto block = policy.addChunk(256, 1);
     BufferId id = block.id;
@@ -87,8 +87,8 @@ TEST(DirectChunkLocator, ReleaseChunkSkipsWhenInUse) {
     policy.initialize(cfg, &resource);
 
     CpuView view{reinterpret_cast<void*>(0x20), 0, 128};
-    EXPECT_CALL(impl, allocate(128, 1, device, stream)).WillOnce(Return(view));
-    EXPECT_CALL(impl, deallocate(view, 128, 1, device, stream)).Times(1);
+    EXPECT_CALL(impl, allocate(128, 1, stream)).WillOnce(Return(view));
+    EXPECT_CALL(impl, deallocate(view, 128, 1, stream)).Times(1);
 
     auto block = policy.addChunk(128, 1);
     BufferId id = block.id;
@@ -115,8 +115,8 @@ TEST(DirectChunkLocator, DoubleReleaseFails) {
     policy.initialize(cfg, &resource);
 
     CpuView view{reinterpret_cast<void*>(0x21), 0, 128};
-    EXPECT_CALL(impl, allocate(128, 1, 11, nullptr)).WillOnce(Return(view));
-    EXPECT_CALL(impl, deallocate(view, 128, 1, 11, nullptr)).Times(1);
+    EXPECT_CALL(impl, allocate(128, 1, nullptr)).WillOnce(Return(view));
+    EXPECT_CALL(impl, deallocate(view, 128, 1, nullptr)).Times(1);
 
     auto block = policy.addChunk(128, 1);
     BufferId id = block.id;
@@ -140,8 +140,8 @@ TEST(DirectChunkLocator, PendingBlocksPreventRelease) {
     policy.initialize(cfg, &resource);
 
     CpuView view{reinterpret_cast<void*>(0x30), 0, 64};
-    EXPECT_CALL(impl, allocate(64, 1, 2, nullptr)).WillOnce(Return(view));
-    EXPECT_CALL(impl, deallocate(view, 64, 1, 2, nullptr)).Times(1);
+    EXPECT_CALL(impl, allocate(64, 1, nullptr)).WillOnce(Return(view));
+    EXPECT_CALL(impl, deallocate(view, 64, 1, nullptr)).Times(1);
 
     auto block = policy.addChunk(64, 1);
     BufferId id = block.id;
@@ -191,7 +191,7 @@ TEST(DirectChunkLocator, FindChunkSizeReturnsRegisteredValue) {
     policy.initialize(cfg, &resource);
 
     CpuView view{reinterpret_cast<void*>(0x40), 0, 512};
-    EXPECT_CALL(impl, allocate(512, 1, 3, nullptr)).WillOnce(Return(view));
+    EXPECT_CALL(impl, allocate(512, 1, nullptr)).WillOnce(Return(view));
 
     auto block = policy.addChunk(512, 1);
 
@@ -231,8 +231,8 @@ TEST(DirectChunkLocator, IsAliveReflectsState) {
     policy.initialize(cfg, &resource);
 
     CpuView view{reinterpret_cast<void*>(0x70), 0, 64};
-    EXPECT_CALL(impl, allocate(64, 1, 7, nullptr)).WillOnce(Return(view));
-    EXPECT_CALL(impl, deallocate(view, 64, 1, 7, nullptr)).Times(1);
+    EXPECT_CALL(impl, allocate(64, 1, nullptr)).WillOnce(Return(view));
+    EXPECT_CALL(impl, deallocate(view, 64, 1, nullptr)).Times(1);
 
     auto block = policy.addChunk(64, 1);
     EXPECT_TRUE(policy.isAlive(block.id));

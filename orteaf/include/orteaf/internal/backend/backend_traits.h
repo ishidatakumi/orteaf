@@ -7,6 +7,7 @@
 
 #include <orteaf/internal/backend/backend.h>
 #include <orteaf/internal/backend/cpu/cpu_buffer_view.h>
+#include <orteaf/internal/backend/cpu/cpu_heap_region.h>
 #if ORTEAF_ENABLE_CUDA
 #include <orteaf/internal/backend/cuda/wrapper/cuda_device.h>
 #include <orteaf/internal/backend/cuda/wrapper/cuda_stream.h>
@@ -15,6 +16,7 @@
 
 #if ORTEAF_ENABLE_MPS
 #include <orteaf/internal/backend/mps/mps_buffer_view.h>
+#include <orteaf/internal/backend/mps/mps_heap_region.h>
 #include <orteaf/internal/backend/mps/wrapper/mps_command_queue.h>
 #include <orteaf/internal/backend/mps/wrapper/mps_device.h>
 #endif
@@ -28,6 +30,7 @@ struct BackendTraits;
 template <>
 struct BackendTraits<Backend::Cpu> {
     using BufferView = cpu::CpuBufferView;
+    using HeapRegion = cpu::CpuHeapRegion;
     using Stream = void*;      // placeholder; adjust when stream type is defined
     using Device = int;        // placeholder; adjust when device abstraction is defined
     using Context = int;       // placeholder; adjust when context abstraction is defined
@@ -38,6 +41,7 @@ struct BackendTraits<Backend::Cpu> {
 template <>
 struct BackendTraits<Backend::Cuda> {
     using BufferView = cuda::CudaBufferView;
+    using HeapRegion = cuda::CudaBufferView;  // TODO: replace with dedicated region type
     using Stream = cuda::CUstream_t;     // CUDA stream handle
     using Device = cuda::CUdevice_t;     // opaque CUDA device handle
     using Context = int;                 // placeholder until context abstraction exists
@@ -49,6 +53,7 @@ struct BackendTraits<Backend::Cuda> {
 template <>
 struct BackendTraits<Backend::Mps> {
     using BufferView = mps::MpsBufferView;
+    using HeapRegion = mps::MpsHeapRegion;
     using Stream = mps::MPSCommandQueue_t;    // command queue as stream token
     using Device = mps::MPSDevice_t;          // opaque Metal device handle
     using Context = int;                      // placeholder until context abstraction exists

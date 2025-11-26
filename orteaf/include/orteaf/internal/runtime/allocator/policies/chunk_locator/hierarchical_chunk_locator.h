@@ -68,11 +68,12 @@ struct SpanFreeEntryTraits<true> {
 // ============================================================================
 // SlotBase: デバッグ時のみ child_count を保持
 // ============================================================================
-template <bool DebugEnabled, typename BufferView>
+template <bool DebugEnabled, typename Region, typename BufferView>
 struct SlotBase {
-    BufferView view{};
+    Region region{};
+    BufferView mapped{};
     uint8_t state{0};  // State enum value
-    bool mapped{false};
+    bool mapped_flag{false};
     uint32_t parent_slot{UINT32_MAX};
     uint32_t child_layer{UINT32_MAX};
     uint32_t child_begin{0};
@@ -80,11 +81,12 @@ struct SlotBase {
     uint32_t pending{0};
 };
 
-template <typename BufferView>
-struct SlotBase<true, BufferView> {
-    BufferView view{};
+template <typename Region, typename BufferView>
+struct SlotBase<true, Region, BufferView> {
+    Region region{};
+    BufferView mapped{};
     uint8_t state{0};
-    bool mapped{false};
+    bool mapped_flag{false};
     uint32_t parent_slot{UINT32_MAX};
     uint32_t child_layer{UINT32_MAX};
     uint32_t child_begin{0};
@@ -139,6 +141,7 @@ public:
     // ========================================================================
     using BufferId = ::orteaf::internal::base::BufferId;
     using BufferView = typename ::orteaf::internal::backend::BackendTraits<B>::BufferView;
+    using HeapRegion = typename ::orteaf::internal::backend::BackendTraits<B>::HeapRegion;
     using MemoryBlock = ::orteaf::internal::runtime::allocator::MemoryBlock<B>;
     using Device = typename ::orteaf::internal::backend::BackendTraits<B>::Device;
     using Context = typename ::orteaf::internal::backend::BackendTraits<B>::Context;
@@ -206,12 +209,12 @@ public:
         slot.used = 0;
         slot.pending = 0;
 
-        if (!slot.mapped) {
-            slot.view = resource_->map(slot.view, config_.device, config_.context, config_.stream);
-            slot.mapped = true;
+        if (!slot.mapped_flag) {
+            slot.mapped = resource_->map(slot.region, config_.stream);
+            slot.mapped_flag = true;
         }
 
-        return MemoryBlock{encode(target_layer, slot_index), slot.view};
+        return MemoryBlock{encode(target_layer, slot_index), slot.mapped};
     }
 
     /**
@@ -230,7 +233,7 @@ public:
         if (getState(slot) != State::InUse) return false;
         if (slot.pending > 0 || slot.used > 0) return false;
 
-        resource_->unmap(slot.view, layer.chunk_size, config_.device, config_.context, config_.stream);
+        resource_->unmap(slot.mapped, layer.chunk_size, config_.stream);
         resetSlot(slot);
         layer.free_list.pushBack(slot_index);
 
@@ -373,7 +376,7 @@ private:
     // ========================================================================
     using SpanFreeTraits = detail::SpanFreeEntryTraits<kDebugEnabled>;
     using SpanFreeEntry = typename SpanFreeTraits::Type;
-    using Slot = detail::SlotBase<kDebugEnabled, BufferView>;
+    using Slot = detail::SlotBase<kDebugEnabled, HeapRegion, BufferView>;
     using ChildCountAccessor = detail::SlotChildCountAccessor<kDebugEnabled>;
 
     struct Layer {
@@ -396,17 +399,19 @@ private:
     }
 
     static void resetSlot(Slot& slot) noexcept {
-        slot.mapped = false;
+        slot.mapped_flag = false;
+        slot.mapped = {};
         setState(slot, State::Free);
         slot.used = 0;
         slot.pending = 0;
     }
 
-    Slot createFreeSlot(BufferView view, uint32_t parent_slot = kNoParent) const {
+    Slot createFreeSlot(HeapRegion region, uint32_t parent_slot = kNoParent) const {
         Slot slot{};
-        slot.view = view;
+        slot.region = region;
+        slot.mapped = {};
+        slot.mapped_flag = false;
         setState(slot, State::Free);
-        slot.mapped = false;
         slot.parent_slot = parent_slot;
         slot.child_layer = kNoChild;
         slot.child_begin = 0;
@@ -505,20 +510,19 @@ private:
         const std::size_t chunk_size = root_layer.chunk_size;
         std::size_t remaining = (bytes == 0) ? chunk_size : bytes;
 
-        BufferView base_view = resource_->reserve(remaining, config_.device, config_.stream);
+        HeapRegion base_region = resource_->reserve(remaining, config_.stream);
         std::size_t offset = 0;
 
         while (remaining > 0) {
             const std::size_t step = (remaining >= chunk_size) ? chunk_size : remaining;
             const std::size_t slot_index = root_layer.slots.size();
 
-            BufferView view{
-                reinterpret_cast<char*>(base_view.data()) + offset,
-                base_view.offset() + offset,
+            HeapRegion region{
+                static_cast<void*>(static_cast<char*>(base_region.data()) + offset),
                 step
             };
 
-            root_layer.slots.emplaceBack(createFreeSlot(view));
+            root_layer.slots.emplaceBack(createFreeSlot(region));
             root_layer.free_list.pushBack(static_cast<uint32_t>(slot_index));
 
             offset += step;
@@ -630,14 +634,13 @@ private:
                               const Slot& parent_slot, uint32_t parent_slot_index, std::size_t child_size) {
         for (std::size_t i = 0; i < count; ++i) {
             const std::size_t offset = i * child_size;
-            BufferView view{
-                reinterpret_cast<char*>(parent_slot.view.data()) + offset,
-                parent_slot.view.offset() + offset,
+            HeapRegion region{
+                static_cast<void*>(static_cast<char*>(parent_slot.region.data()) + offset),
                 child_size
             };
 
             Slot& child_slot = child_layer.slots[base_slot + i];
-            child_slot = createFreeSlot(view, parent_slot_index);
+            child_slot = createFreeSlot(region, parent_slot_index);
             child_layer.free_list.pushBack(static_cast<uint32_t>(base_slot + i));
         }
     }
@@ -757,7 +760,7 @@ private:
             const auto& slot = layer.slots[i];
             snapshot.slots.push_back(SlotSnapshot{
                 getState(slot),
-                slot.mapped,
+                slot.mapped_flag,
                 slot.parent_slot,
                 slot.child_layer,
                 slot.child_begin,

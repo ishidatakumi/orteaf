@@ -70,7 +70,7 @@ public:
         ORTEAF_THROW_IF(resource_ == nullptr, InvalidState, "DirectChunkLocatorPolicy is not initialized");
         ORTEAF_THROW_IF(size == 0, InvalidParameter, "size must be non-zero");
 
-        BufferView base = resource_->allocate(size, alignment, config_.device, config_.stream);
+        BufferView base = resource_->allocate(size, alignment, config_.stream);
         if (!base) {
             return {};
         }
@@ -97,7 +97,7 @@ public:
             return false;
         }
 
-        resource_->deallocate(chunk.base, chunk.size, chunk.alignment, config_.device, config_.stream);
+        resource_->deallocate(chunk.base, chunk.size, chunk.alignment, config_.stream);
         chunk = ChunkInfo{};
         free_list_.pushBack(slot);
         return true;
