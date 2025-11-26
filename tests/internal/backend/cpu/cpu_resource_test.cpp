@@ -1,4 +1,4 @@
-#include "orteaf/internal/backend/cpu/cpu_resource.h"
+#include "orteaf/internal/runtime/allocator/resource/cpu/cpu_resource.h"
 
 #include <gtest/gtest.h>
 
