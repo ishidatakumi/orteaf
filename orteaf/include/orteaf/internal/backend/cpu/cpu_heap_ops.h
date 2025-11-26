@@ -8,7 +8,7 @@
 namespace orteaf::internal::backend::cpu {
 
 // Low-level heap operations for CPU backend.
-// Used by HierarchicalChunkLocator for VA reservation and mapping.
+// Used by HierarchicalSlotAllocator for VA reservation and mapping.
 struct CpuHeapOps {
     using BufferView = ::orteaf::internal::backend::cpu::CpuBufferView;
     using HeapRegion = ::orteaf::internal::backend::cpu::CpuHeapRegion;
@@ -20,7 +20,7 @@ struct CpuHeapOps {
     static BufferView map(HeapRegion region);
 
     // Unmap and release the region.
-    static void unmap(BufferView view, std::size_t size);
+    static void unmap(HeapRegion region, std::size_t size);
 };
 
 }  // namespace orteaf::internal::backend::cpu

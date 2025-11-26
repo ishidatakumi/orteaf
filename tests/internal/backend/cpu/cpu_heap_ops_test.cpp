@@ -21,12 +21,12 @@ TEST(CpuHeapOpsTest, ReserveMapUnmapRoundTrip) {
     EXPECT_EQ(mapped.size(), kSize);
 
     // Should not throw
-    CpuHeapOps::unmap(mapped, kSize);
+    CpuHeapOps::unmap(region, kSize);
 }
 
 TEST(CpuHeapOpsTest, MapUnmapOnEmptyIsNoOp) {
     CpuHeapOps::map({});          // no-throw
-    CpuHeapOps::unmap(CpuHeapOps::BufferView{}, 0);     // no-throw
+    CpuHeapOps::unmap(CpuHeapOps::HeapRegion{}, 0);     // no-throw
     SUCCEED();
 }
 
