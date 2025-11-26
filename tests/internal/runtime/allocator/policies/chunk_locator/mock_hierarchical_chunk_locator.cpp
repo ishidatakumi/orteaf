@@ -168,7 +168,7 @@ TEST(HierarchicalChunkLocator, InitializeFailsWhenReserveThrows) {
     MockCpuHeapOps::set(&impl);
 
     EXPECT_CALL(impl, reserve(256))
-        .WillOnce([](std::size_t, Stream) -> HeapRegion {
+        .WillOnce([](std::size_t) -> HeapRegion {
             throw std::system_error(std::make_error_code(std::errc::invalid_argument));
         });
 
@@ -197,7 +197,7 @@ TEST(HierarchicalChunkLocator, AddChunkFailsWhenMapThrows) {
     EXPECT_CALL(impl, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
     EXPECT_CALL(impl, map(_))
-        .WillOnce([](HeapRegion, Stream) -> BufferView {
+        .WillOnce([](HeapRegion) -> BufferView {
             throw std::system_error(std::make_error_code(std::errc::bad_message));
         });
 
@@ -258,7 +258,7 @@ TEST(HierarchicalChunkLocator, ReusesSpanWithoutExtraReserve) {
     void* base = reinterpret_cast<void*>(0x1000);
     EXPECT_CALL(impl, reserve(562))
         .Times(1)
-        .WillOnce([&](std::size_t, Stream) {
+        .WillOnce([&](std::size_t) {
             return HeapRegion{base, 562};
         });
 
@@ -394,7 +394,7 @@ TEST_F(HierarchicalChunkLocatorTest, IsAliveReflectsSlotState) {
         .WillOnce(Return(HeapRegion{base, 256}));
     EXPECT_CALL(impl_, map(_))
         .Times(1)
-        .WillOnce([](HeapRegion region, Stream) {
+        .WillOnce([](HeapRegion region) {
             return BufferView{region.data(), 0, region.size()};
         });
     EXPECT_CALL(impl_, unmap(_, _)).Times(1);
