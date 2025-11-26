@@ -72,7 +72,7 @@ public:
 
         BufferView base = resource_->allocate(size, alignment, config_.stream);
         if (!base) {
-            return {};∑
+            return {};
         }
 
         const std::size_t slot = reserveSlot();
