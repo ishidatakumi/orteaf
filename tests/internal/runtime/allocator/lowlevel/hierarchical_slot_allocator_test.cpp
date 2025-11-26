@@ -262,4 +262,99 @@ TEST_F(HierarchicalSlotAllocatorTest, ExpandBytesUsedWhenAllocatingMoreSlots) {
     EXPECT_TRUE(view2);
 }
 
+// ============================================================================
+// computeRequestSlots tests
+// ============================================================================
+
+TEST_F(HierarchicalSlotAllocatorTest, ComputeRequestSlotsSingleSlot) {
+    // levels = {256}, size = 100 → rs = [1]
+    void* base = reinterpret_cast<void*>(0xA000);
+    EXPECT_CALL(impl_, reserve(256)).WillOnce(Return(HeapRegion{base, 256}));
+
+    Allocator::Config cfg{};
+    cfg.levels = {256};
+    allocator_.initialize(cfg, &heap_ops_);
+
+    auto rs = allocator_.computeRequestSlots(100);
+    ASSERT_EQ(rs.size(), 1);
+    EXPECT_EQ(rs[0], 1);
+}
+
+TEST_F(HierarchicalSlotAllocatorTest, ComputeRequestSlotsExactFit) {
+    // levels = {256, 64}, size = 256 → rs = [1, 0]
+    void* base = reinterpret_cast<void*>(0xB000);
+    EXPECT_CALL(impl_, reserve(256)).WillOnce(Return(HeapRegion{base, 256}));
+
+    Allocator::Config cfg{};
+    cfg.levels = {256, 64};
+    allocator_.initialize(cfg, &heap_ops_);
+
+    auto rs = allocator_.computeRequestSlots(256);
+    ASSERT_EQ(rs.size(), 2);
+    EXPECT_EQ(rs[0], 1);
+    EXPECT_EQ(rs[1], 0);
+}
+
+TEST_F(HierarchicalSlotAllocatorTest, ComputeRequestSlotsMultiLayer) {
+    // levels = {256, 128, 64}, size = 300
+    // b = 64, N = ceil(300/64) = 5
+    // u = [4, 2, 1]
+    // rs[0] = 5/4 = 1, N_rem = 1
+    // rs[1] = 1/2 = 0, N_rem = 1
+    // rs[2] = 1
+    // → rs = [1, 0, 1]
+    void* base = reinterpret_cast<void*>(0xC000);
+    EXPECT_CALL(impl_, reserve(256)).WillOnce(Return(HeapRegion{base, 256}));
+
+    Allocator::Config cfg{};
+    cfg.levels = {256, 128, 64};
+    allocator_.initialize(cfg, &heap_ops_);
+
+    auto rs = allocator_.computeRequestSlots(300);
+    ASSERT_EQ(rs.size(), 3);
+    EXPECT_EQ(rs[0], 1);
+    EXPECT_EQ(rs[1], 0);
+    EXPECT_EQ(rs[2], 1);
+}
+
+TEST_F(HierarchicalSlotAllocatorTest, ComputeRequestSlotsLargeSize) {
+    // levels = {256, 64}, size = 600
+    // b = 64, N = ceil(600/64) = 10
+    // u = [4, 1]
+    // rs[0] = 10/4 = 2, N_rem = 2
+    // rs[1] = 2
+    // → rs = [2, 2]
+    void* base = reinterpret_cast<void*>(0xD000);
+    EXPECT_CALL(impl_, reserve(256)).WillOnce(Return(HeapRegion{base, 256}));
+
+    Allocator::Config cfg{};
+    cfg.levels = {256, 64};
+    allocator_.initialize(cfg, &heap_ops_);
+
+    auto rs = allocator_.computeRequestSlots(600);
+    ASSERT_EQ(rs.size(), 2);
+    EXPECT_EQ(rs[0], 2);
+    EXPECT_EQ(rs[1], 2);
+}
+
+TEST_F(HierarchicalSlotAllocatorTest, ComputeRequestSlotsSmallestSlotOnly) {
+    // levels = {256, 64}, size = 32
+    // b = 64, N = ceil(32/64) = 1
+    // u = [4, 1]
+    // rs[0] = 1/4 = 0, N_rem = 1
+    // rs[1] = 1
+    // → rs = [0, 1]
+    void* base = reinterpret_cast<void*>(0xE000);
+    EXPECT_CALL(impl_, reserve(256)).WillOnce(Return(HeapRegion{base, 256}));
+
+    Allocator::Config cfg{};
+    cfg.levels = {256, 64};
+    allocator_.initialize(cfg, &heap_ops_);
+
+    auto rs = allocator_.computeRequestSlots(32);
+    ASSERT_EQ(rs.size(), 2);
+    EXPECT_EQ(rs[0], 0);
+    EXPECT_EQ(rs[1], 1);
+}
+
 }  // namespace

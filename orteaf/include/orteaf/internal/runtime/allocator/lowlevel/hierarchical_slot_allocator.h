@@ -92,6 +92,23 @@ public:
         tryMergeUpward(layer_idx, slot_idx);
     }
 
+    [[nodiscard]] std::vector<uint32_t> computeRequestSlots(std::size_t size) const {
+        const auto& levels = config_.levels;
+        std::size_t b = levels.back();
+        std::size_t N = (size + b - 1) / b;
+
+        std::vector<uint32_t> rs(levels.size(), 0);
+
+        for (std::size_t i = 0; i < levels.size() - 1; ++i) {
+            std::size_t u = levels[i] / b;
+            rs[i] = static_cast<uint32_t>(N / u);
+            N -= rs[i] * u;
+        }
+        rs.back() = static_cast<uint32_t>(N);
+
+        return rs;
+    }
+
 private:
     static constexpr uint32_t kNoParent = UINT32_MAX;
     static constexpr uint32_t kInvalidLayer = UINT32_MAX;
