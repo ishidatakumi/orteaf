@@ -19,15 +19,8 @@ public:
     using BufferId = ::orteaf::internal::base::BufferId;
     using BufferView = typename ::orteaf::internal::backend::BackendTraits<B>::BufferView;
     using MemoryBlock = ::orteaf::internal::runtime::allocator::MemoryBlock<B>;
-    using Device = typename ::orteaf::internal::backend::BackendTraits<B>::Device;
-    using Context = typename ::orteaf::internal::backend::BackendTraits<B>::Context;
-    using Stream = typename ::orteaf::internal::backend::BackendTraits<B>::Stream;
 
-    void initialize(Device device, Context context, Stream stream){
-        device_ = device;
-        context_ = context;
-        stream_ = stream;
-    }
+    void initialize() {}
 
     MemoryBlock allocate(std::size_t size, std::size_t alignment) {
         std::lock_guard<std::mutex> lock(mutex_);
@@ -35,7 +28,7 @@ public:
             return {};
         }
 
-        BufferView buffer = Resource::allocate(size, alignment, stream_);
+        BufferView buffer = Resource::allocate(size, alignment);
         if (buffer.empty()) {
             return {};
         }
@@ -68,7 +61,7 @@ public:
             return;
         }
 
-        Resource::deallocate(entry.view, size, alignment, stream_);
+        Resource::deallocate(entry.view, size, alignment);
 #if ORTEAF_CORE_DEBUG_ENABLED
         ORTEAF_LOG_DEBUG_IF(Core,
                             entry.size != size || entry.alignment != alignment,
@@ -135,10 +128,6 @@ private:
     mutable std::mutex mutex_;
     base::HeapVector<Entry> entries_;
     base::HeapVector<std::size_t> free_list_;
-
-    Device device_;
-    Context context_;
-    Stream stream_;
 };
 
 }  // namespace orteaf::internal::runtime::allocator::policies

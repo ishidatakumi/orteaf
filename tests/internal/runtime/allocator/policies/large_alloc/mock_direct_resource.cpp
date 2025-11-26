@@ -17,9 +17,6 @@ namespace policies = ::orteaf::internal::runtime::allocator::policies;
 using Backend = ::orteaf::internal::backend::Backend;
 using ::orteaf::internal::runtime::allocator::testing::MockCpuResource;
 using ::orteaf::internal::runtime::allocator::testing::MockCpuResourceImpl;
-using Traits = ::orteaf::internal::backend::BackendTraits<Backend::Cpu>;
-using Device = Traits::Device;
-using Stream = Traits::Stream;
 
 namespace {
 
@@ -54,13 +51,11 @@ private:
 
 TEST(DirectResourceLargeAlloc, AllocateReturnsMemoryBlockWithId) {
     policies::DirectResourceLargeAllocPolicy<MockCpuResource, Backend::Cpu> policy;
-    Device device{};
-    Stream stream{};
-    policy.initialize(device, 0, stream);
+    policy.initialize();
 
     ::testing::NiceMock<MockCpuResourceImpl> impl;
     MockCpuResource::set(&impl);
-    EXPECT_CALL(impl, allocate(128, 64, stream))
+    EXPECT_CALL(impl, allocate(128, 64))
         .WillOnce(Return(::orteaf::internal::backend::cpu::CpuBufferView{reinterpret_cast<void*>(0x1), 0, 128}));
 
     auto block = policy.allocate(128, 64);
@@ -71,15 +66,13 @@ TEST(DirectResourceLargeAlloc, AllocateReturnsMemoryBlockWithId) {
 
 TEST(DirectResourceLargeAlloc, DeallocateCallsResource) {
     policies::DirectResourceLargeAllocPolicy<MockCpuResource, Backend::Cpu> policy;
-    Device device{};
-    Stream stream{};
-    policy.initialize(device, 0, stream);
+    policy.initialize();
 
     ::orteaf::internal::backend::cpu::CpuBufferView view{reinterpret_cast<void*>(0x2), 0, 256};
     ::testing::NiceMock<MockCpuResourceImpl> impl;
     MockCpuResource::set(&impl);
-    EXPECT_CALL(impl, allocate(256, 16, stream)).WillOnce(Return(view));
-    EXPECT_CALL(impl, deallocate(view, 256, 16, stream)).Times(1);
+    EXPECT_CALL(impl, allocate(256, 16)).WillOnce(Return(view));
+    EXPECT_CALL(impl, deallocate(view, 256, 16)).Times(1);
 
     auto block = policy.allocate(256, 16);
     policy.deallocate(block.id, 256, 16);
@@ -89,15 +82,13 @@ TEST(DirectResourceLargeAlloc, DeallocateCallsResource) {
 #if ORTEAF_CORE_DEBUG_ENABLED
 TEST(DirectResourceLargeAlloc, LogsDebugWhenMetadataMismatches) {
     policies::DirectResourceLargeAllocPolicy<MockCpuResource, Backend::Cpu> policy;
-    Device device{};
-    Stream stream{};
-    policy.initialize(device, 0, stream);
+    policy.initialize();
 
     ::testing::NiceMock<MockCpuResourceImpl> impl;
     MockCpuResource::set(&impl);
     ::orteaf::internal::backend::cpu::CpuBufferView view{reinterpret_cast<void*>(0x3), 0, 64};
-    EXPECT_CALL(impl, allocate(64, 16, stream)).WillOnce(Return(view));
-    EXPECT_CALL(impl, deallocate(view, 32, 8, stream)).Times(1);
+    EXPECT_CALL(impl, allocate(64, 16)).WillOnce(Return(view));
+    EXPECT_CALL(impl, deallocate(view, 32, 8)).Times(1);
 
     auto block = policy.allocate(64, 16);
 

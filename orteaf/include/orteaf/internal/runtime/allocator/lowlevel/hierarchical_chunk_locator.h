@@ -15,7 +15,6 @@
 #include "orteaf/internal/base/strong_id.h"
 #include "orteaf/internal/base/math_utils.h"
 #include "orteaf/internal/runtime/allocator/memory_block.h"
-#include "orteaf/internal/runtime/allocator/policies/chunk_locator/chunk_locator_config.h"
 #include "orteaf/internal/diagnostics/log/log.h"
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/diagnostics/error/error_macros.h"
@@ -133,7 +132,7 @@ struct SlotChildCountAccessor<true> {
  * 最小で足りる層から割り当てを行う。親子分割の完全実装はこれからだが、
  * まずは複数サイズクラスを扱える骨格として提供する。
  */
-template <class Resource, ::orteaf::internal::backend::Backend B>
+template <class HeapOps, ::orteaf::internal::backend::Backend B>
 class HierarchicalChunkLocator {
 public:
     // ========================================================================
@@ -143,16 +142,13 @@ public:
     using BufferView = typename ::orteaf::internal::backend::BackendTraits<B>::BufferView;
     using HeapRegion = typename ::orteaf::internal::backend::BackendTraits<B>::HeapRegion;
     using MemoryBlock = ::orteaf::internal::runtime::allocator::MemoryBlock<B>;
-    using Device = typename ::orteaf::internal::backend::BackendTraits<B>::Device;
-    using Context = typename ::orteaf::internal::backend::BackendTraits<B>::Context;
-    using Stream = typename ::orteaf::internal::backend::BackendTraits<B>::Stream;
 
     enum class State : uint8_t { Free, InUse, Split };
 
     /**
      * @brief HierarchicalChunkLocator 固有の設定。
      */
-    struct Config : ChunkLocatorConfigBase<Device, Context, Stream> {
+    struct Config {
         /// 大きい順で渡すことを想定する。例: {1_MB, 256_KB, 64_KB}
         std::vector<std::size_t> levels;
         /// ルート初期確保サイズ（0なら chunk_size 1個分）
@@ -167,11 +163,11 @@ public:
     // Public API
     // ========================================================================
 
-    void initialize(const Config& config, Resource* resource) {
+    void initialize(const Config& config, HeapOps* heap_ops) {
         config_ = config;
-        resource_ = resource;
+        heap_ops_ = heap_ops;
 
-        ORTEAF_THROW_IF_NULL(resource_, "HierarchicalChunkLocator requires non-null Resource*");
+        ORTEAF_THROW_IF_NULL(heap_ops_, "HierarchicalChunkLocator requires non-null HeapOps*");
         validateLevels(config.levels, config.threshold);
 
         layers_.clear();
@@ -196,8 +192,8 @@ public:
         std::lock_guard<std::mutex> lock(mutex_);
 
         const auto target_layer = pickLayer(size);
-        ORTEAF_THROW_IF(target_layer == kInvalidLayer || resource_ == nullptr,
-                        OutOfMemory, "No suitable layer or resource is null");
+        ORTEAF_THROW_IF(target_layer == kInvalidLayer || heap_ops_ == nullptr,
+                        OutOfMemory, "No suitable layer or heap_ops is null");
 
         ensureFreeSlot(target_layer);
 
@@ -210,7 +206,7 @@ public:
         slot.pending = 0;
 
         if (!slot.mapped_flag) {
-            slot.mapped = resource_->map(slot.region, config_.stream);
+            slot.mapped = heap_ops_->map(slot.region);
             slot.mapped_flag = true;
         }
 
@@ -233,7 +229,7 @@ public:
         if (getState(slot) != State::InUse) return false;
         if (slot.pending > 0 || slot.used > 0) return false;
 
-        resource_->unmap(slot.mapped, layer.chunk_size, config_.stream);
+        heap_ops_->unmap(slot.mapped, layer.chunk_size);
         resetSlot(slot);
         layer.free_list.pushBack(slot_index);
 
@@ -510,7 +506,7 @@ private:
         const std::size_t chunk_size = root_layer.chunk_size;
         std::size_t remaining = (bytes == 0) ? chunk_size : bytes;
 
-        HeapRegion base_region = resource_->reserve(remaining, config_.stream);
+        HeapRegion base_region = heap_ops_->reserve(remaining);
         std::size_t offset = 0;
 
         while (remaining > 0) {
@@ -828,7 +824,7 @@ private:
     // Member variables
     // ========================================================================
     Config config_{};
-    Resource* resource_{nullptr};  // 非所有
+    HeapOps* heap_ops_{nullptr};  // 非所有
     std::vector<Layer> layers_{};
     mutable std::mutex mutex_{};
 };

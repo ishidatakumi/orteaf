@@ -21,20 +21,17 @@ namespace allocator = ::orteaf::internal::runtime::allocator;
 namespace policies = ::orteaf::internal::runtime::allocator::policies;
 using Backend = ::orteaf::internal::backend::Backend;
 using Traits = ::orteaf::internal::backend::BackendTraits<Backend::Cpu>;
-using Device = Traits::Device;
-using Context = Traits::Context;
-using Stream = Traits::Stream;
 using BufferView = Traits::BufferView;
 using HeapRegion = Traits::HeapRegion;
 using BufferId = ::orteaf::internal::base::BufferId;
-using ::orteaf::internal::runtime::allocator::testing::MockCpuResource;
-using ::orteaf::internal::runtime::allocator::testing::MockCpuResourceImpl;
+using ::orteaf::internal::runtime::allocator::testing::MockCpuHeapOps;
+using ::orteaf::internal::runtime::allocator::testing::MockCpuHeapOpsImpl;
 
 namespace {
 
-using Policy = policies::HierarchicalChunkLocator<MockCpuResource, Backend::Cpu>;
+using Policy = policies::HierarchicalChunkLocator<MockCpuHeapOps, Backend::Cpu>;
 
-static BufferView MapReturn(HeapRegion region, Stream) {
+static BufferView MapReturn(HeapRegion region) {
     return BufferView{region.data(), 0, region.size()};
 }
 
@@ -79,107 +76,104 @@ std::string DumpSnapshot(const Policy& policy, const char* title) {
 class HierarchicalChunkLocatorTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        MockCpuResource::set(&impl_);
+        MockCpuHeapOps::set(&impl_);
     }
 
     void TearDown() override {
-        MockCpuResource::reset();
+        MockCpuHeapOps::reset();
     }
 
-    NiceMock<MockCpuResourceImpl> impl_;
-    MockCpuResource resource_;
+    NiceMock<MockCpuHeapOpsImpl> impl_;
+    MockCpuHeapOps heap_ops_;
     Policy policy_;
-    Device device_{1};
-    Context context_{0};
-    Stream stream_{nullptr};
 };
 
 TEST(HierarchicalChunkLocator, InitializeReservesRootAndReusesBlocks) {
     Policy policy;
-    MockCpuResource resource;
-    Device device = 5;
-    Context context = 0;
-    Stream stream = nullptr;
-    typename Policy::Config cfg{device, context, stream, {256, 128}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    MockCpuHeapOps heap_ops;
+    
+    
+    
+    typename Policy::Config cfg{{256, 128}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
-    NiceMock<MockCpuResourceImpl> impl;
-    MockCpuResource::set(&impl);
+    NiceMock<MockCpuHeapOpsImpl> impl;
+    MockCpuHeapOps::set(&impl);
 
     void* base = reinterpret_cast<void*>(0x1800);
-    EXPECT_CALL(impl, reserve(256, stream))
+    EXPECT_CALL(impl, reserve(256))
         .Times(1)
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl, map(_, stream))
+    EXPECT_CALL(impl, map(_))
         .Times(2)
         .WillRepeatedly(::testing::Invoke(MapReturn));
-    EXPECT_CALL(impl, unmap(_, _, stream)).Times(2);
+    EXPECT_CALL(impl, unmap(_, _)).Times(2);
 
-    policy.initialize(cfg, &resource);
+    policy.initialize(cfg, &heap_ops);
 
     auto b1 = policy.addChunk(128, 1);
     EXPECT_TRUE(policy.releaseChunk(b1.id));
     auto b2 = policy.addChunk(128, 1);
     EXPECT_TRUE(policy.releaseChunk(b2.id));
 
-    MockCpuResource::reset();
+    MockCpuHeapOps::reset();
 }
 
 TEST(HierarchicalChunkLocator, InitializeFailsWithNullResource) {
     Policy policy;
-    MockCpuResource resource;
-    typename Policy::Config cfg{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {128}, /*initial_bytes=*/128, /*region_multiplier=*/1};
+    MockCpuHeapOps heap_ops;
+    typename Policy::Config cfg{{128}, /*initial_bytes=*/128, /*region_multiplier=*/1};
     orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::NullPointer,
                                [&] { policy.initialize(cfg, nullptr); });
 }
 
 TEST(HierarchicalChunkLocator, InitializeCanBeCalledTwice) {
     Policy policy;
-    MockCpuResource resource;
-    Device device = 2;
-    Context context = 0;
-    Stream stream = nullptr;
-    typename Policy::Config cfg{device, context, stream, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    MockCpuHeapOps heap_ops;
+    
+    
+    
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
-    NiceMock<MockCpuResourceImpl> impl;
-    MockCpuResource::set(&impl);
+    NiceMock<MockCpuHeapOpsImpl> impl;
+    MockCpuHeapOps::set(&impl);
 
     void* base1 = reinterpret_cast<void*>(0x1200);
     void* base2 = reinterpret_cast<void*>(0x2200);
-    EXPECT_CALL(impl, reserve(256, stream))
+    EXPECT_CALL(impl, reserve(256))
         .Times(2)
         .WillOnce(Return(HeapRegion{base1, 256}))
         .WillOnce(Return(HeapRegion{base2, 256}));
 
-    policy.initialize(cfg, &resource);
+    policy.initialize(cfg, &heap_ops);
     auto b1 = policy.addChunk(256, 1);
     EXPECT_TRUE(policy.releaseChunk(b1.id));
 
     // 2回目の initialize でも reserve が呼ばれ、再初期化できることを確認
-    EXPECT_NO_THROW(policy.initialize(cfg, &resource));
+    EXPECT_NO_THROW(policy.initialize(cfg, &heap_ops));
     auto b2 = policy.addChunk(256, 1);
     EXPECT_TRUE(policy.releaseChunk(b2.id));
 
-    MockCpuResource::reset();
+    MockCpuHeapOps::reset();
 }
 
 TEST(HierarchicalChunkLocator, InitializeFailsWhenReserveThrows) {
     Policy policy;
-    MockCpuResource resource;
-    Device device = 3;
-    Context context = 0;
-    Stream stream = nullptr;
-    typename Policy::Config cfg{device, context, stream, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    MockCpuHeapOps heap_ops;
+    
+    
+    
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
-    NiceMock<MockCpuResourceImpl> impl;
-    MockCpuResource::set(&impl);
+    NiceMock<MockCpuHeapOpsImpl> impl;
+    MockCpuHeapOps::set(&impl);
 
-    EXPECT_CALL(impl, reserve(256, stream))
-        .WillOnce([](std::size_t, Stream) -> HeapRegion {
+    EXPECT_CALL(impl, reserve(256))
+        .WillOnce([](std::size_t) -> HeapRegion {
             throw std::system_error(std::make_error_code(std::errc::invalid_argument));
         });
 
-    orteaf::tests::ExpectException<std::system_error>([&] { policy.initialize(cfg, &resource); });
-    MockCpuResource::reset();
+    orteaf::tests::ExpectException<std::system_error>([&] { policy.initialize(cfg, &heap_ops); });
+    MockCpuHeapOps::reset();
 }
 
 TEST(HierarchicalChunkLocator, AllocateWithoutInitializeThrows) {
@@ -190,88 +184,88 @@ TEST(HierarchicalChunkLocator, AllocateWithoutInitializeThrows) {
 
 TEST(HierarchicalChunkLocator, AddChunkFailsWhenMapThrows) {
     Policy policy;
-    MockCpuResource resource;
-    Device device = 4;
-    Context context = 0;
-    Stream stream = nullptr;
-    typename Policy::Config cfg{device, context, stream, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    MockCpuHeapOps heap_ops;
+    
+    
+    
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
-    NiceMock<MockCpuResourceImpl> impl;
-    MockCpuResource::set(&impl);
+    NiceMock<MockCpuHeapOpsImpl> impl;
+    MockCpuHeapOps::set(&impl);
 
     void* base = reinterpret_cast<void*>(0x1400);
-    EXPECT_CALL(impl, reserve(256, stream))
+    EXPECT_CALL(impl, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl, map(_, stream))
-        .WillOnce([](HeapRegion, Stream) -> BufferView {
+    EXPECT_CALL(impl, map(_))
+        .WillOnce([](HeapRegion) -> BufferView {
             throw std::system_error(std::make_error_code(std::errc::bad_message));
         });
 
-    policy.initialize(cfg, &resource);
+    policy.initialize(cfg, &heap_ops);
     orteaf::tests::ExpectException<std::system_error>([&] { policy.addChunk(128, 1); });
 
-    MockCpuResource::reset();
+    MockCpuHeapOps::reset();
 }
 
 TEST(HierarchicalChunkLocator, LevelsMustBeNonIncreasing) {
     Policy policy;
-    MockCpuResource resource;
-    typename Policy::Config cfg{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {128, 256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    MockCpuHeapOps heap_ops;
+    typename Policy::Config cfg{{128, 256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
     orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
-                               [&] { policy.initialize(cfg, &resource); });
+                               [&] { policy.initialize(cfg, &heap_ops); });
 }
 
 TEST(HierarchicalChunkLocator, ThresholdValidationFailsForInvalidValues) {
     Policy policy;
-    MockCpuResource resource;
+    MockCpuHeapOps heap_ops;
 
     // threshold がシステム最小より小さい
-    typename Policy::Config cfg_small{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {128}, /*initial_bytes=*/128, /*region_multiplier=*/1, /*threshold=*/alignof(double) / 2};
+    typename Policy::Config cfg_small{{128}, /*initial_bytes=*/128, /*region_multiplier=*/1, /*threshold=*/alignof(double) / 2};
     orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
-                               [&] { policy.initialize(cfg_small, &resource); });
+                               [&] { policy.initialize(cfg_small, &heap_ops); });
 
     // threshold が非2の冪乗
-    typename Policy::Config cfg_non_pow2{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {128}, /*initial_bytes=*/128, /*region_multiplier=*/1, /*threshold=*/24};
+    typename Policy::Config cfg_non_pow2{{128}, /*initial_bytes=*/128, /*region_multiplier=*/1, /*threshold=*/24};
     orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
-                               [&] { policy.initialize(cfg_non_pow2, &resource); });
+                               [&] { policy.initialize(cfg_non_pow2, &heap_ops); });
 
     // threshold 以下のレベルが 2 の冪乗でない
-    typename Policy::Config cfg_below{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {96, 48, 24}, /*initial_bytes=*/96, /*region_multiplier=*/1, /*threshold=*/32};
+    typename Policy::Config cfg_below{{96, 48, 24}, /*initial_bytes=*/96, /*region_multiplier=*/1, /*threshold=*/32};
     orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
-                               [&] { policy.initialize(cfg_below, &resource); });
+                               [&] { policy.initialize(cfg_below, &heap_ops); });
 
     // threshold より大きいレベルが threshold で割り切れない
-    typename Policy::Config cfg_above{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {192, 96, 48}, /*initial_bytes=*/192, /*region_multiplier=*/1, /*threshold=*/64};
+    typename Policy::Config cfg_above{{192, 96, 48}, /*initial_bytes=*/192, /*region_multiplier=*/1, /*threshold=*/64};
     orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
-                               [&] { policy.initialize(cfg_above, &resource); });
+                               [&] { policy.initialize(cfg_above, &heap_ops); });
 
     // 妥当な threshold 設定では初期化が成功する
-    typename Policy::Config cfg_ok{/*device=*/1, /*context=*/0, /*stream=*/nullptr, {256, 128, 64}, /*initial_bytes=*/256, /*region_multiplier=*/1, /*threshold=*/64};
-    EXPECT_NO_THROW(policy.initialize(cfg_ok, &resource));
+    typename Policy::Config cfg_ok{{256, 128, 64}, /*initial_bytes=*/256, /*region_multiplier=*/1, /*threshold=*/64};
+    EXPECT_NO_THROW(policy.initialize(cfg_ok, &heap_ops));
 }
 
 TEST(HierarchicalChunkLocator, ReusesSpanWithoutExtraReserve) {
     Policy policy;
-    MockCpuResource resource;
-    Device device = 7;
-    Context context = 0;
-    Stream stream = nullptr;
-    typename Policy::Config cfg{device, context, stream, {256, 128}, /*initial_bytes=*/562, /*region_multiplier=*/1};
+    MockCpuHeapOps heap_ops;
+    
+    
+    
+    typename Policy::Config cfg{{256, 128}, /*initial_bytes=*/562, /*region_multiplier=*/1};
 
-    NiceMock<MockCpuResourceImpl> impl;
-    MockCpuResource::set(&impl);
+    NiceMock<MockCpuHeapOpsImpl> impl;
+    MockCpuHeapOps::set(&impl);
 
     void* base = reinterpret_cast<void*>(0x1000);
-    EXPECT_CALL(impl, reserve(562, stream))
+    EXPECT_CALL(impl, reserve(562))
         .Times(1)
-        .WillOnce([&](std::size_t, Stream) {
+        .WillOnce([&](std::size_t) {
             return HeapRegion{base, 562};
         });
 
-    EXPECT_CALL(impl, map(_, stream)).Times(4).WillRepeatedly(::testing::Invoke(MapReturn));
-    EXPECT_CALL(impl, unmap(_, _, stream)).Times(4);
+    EXPECT_CALL(impl, map(_)).Times(4).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl, unmap(_, _)).Times(4);
 
-    policy.initialize(cfg, &resource);
+    policy.initialize(cfg, &heap_ops);
     auto b1 = policy.addChunk(128, 1);
     auto b2 = policy.addChunk(128, 1);
     EXPECT_TRUE(policy.releaseChunk(b1.id));
@@ -282,29 +276,29 @@ TEST(HierarchicalChunkLocator, ReusesSpanWithoutExtraReserve) {
     EXPECT_TRUE(policy.releaseChunk(b3.id));
     EXPECT_TRUE(policy.releaseChunk(b4.id));
 
-    MockCpuResource::reset();
+    MockCpuHeapOps::reset();
 }
 
 TEST(HierarchicalChunkLocator, SplitMergeAndReuseAcrossLayers) {
     Policy policy;
-    MockCpuResource resource;
-    Device device = 1;
-    Context context = 0;
-    Stream stream = nullptr;
-    typename Policy::Config cfg{device, context, stream, {512, 256, 128}, /*initial_bytes=*/512, /*region_multiplier=*/1};
+    MockCpuHeapOps heap_ops;
+    
+    
+    
+    typename Policy::Config cfg{{512, 256, 128}, /*initial_bytes=*/512, /*region_multiplier=*/1};
 
-    NiceMock<MockCpuResourceImpl> impl;
-    MockCpuResource::set(&impl);
+    NiceMock<MockCpuHeapOpsImpl> impl;
+    MockCpuHeapOps::set(&impl);
 
     void* base = reinterpret_cast<void*>(0x2000);
-    EXPECT_CALL(impl, reserve(512, stream))
+    EXPECT_CALL(impl, reserve(512))
         .Times(1)
         .WillOnce(Return(HeapRegion{base, 512}));
 
-    EXPECT_CALL(impl, map(_, stream)).Times(6).WillRepeatedly(::testing::Invoke(MapReturn));
-    EXPECT_CALL(impl, unmap(_, _, stream)).Times(6);
+    EXPECT_CALL(impl, map(_)).Times(6).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl, unmap(_, _)).Times(6);
 
-    policy.initialize(cfg, &resource);
+    policy.initialize(cfg, &heap_ops);
     auto b1 = policy.addChunk(128, 1);
     auto b2 = policy.addChunk(128, 1);
     auto b3 = policy.addChunk(128, 1);
@@ -325,28 +319,28 @@ TEST(HierarchicalChunkLocator, SplitMergeAndReuseAcrossLayers) {
     std::cerr << DumpSnapshot(policy, "final state") << std::endl;
     policy.validate();
 
-    MockCpuResource::reset();
+    MockCpuHeapOps::reset();
 }
 
 #if ORTEAF_CORE_DEBUG_ENABLED
 TEST(HierarchicalChunkLocator, LargeIdThrowsInDebug) {
     Policy policy;
-    MockCpuResource resource;
-    Device device = 3;
-    Context context = 0;
-    Stream stream = nullptr;
-    typename Policy::Config cfg{device, context, stream, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    MockCpuHeapOps heap_ops;
+    
+    
+    
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
-    NiceMock<MockCpuResourceImpl> impl;
-    MockCpuResource::set(&impl);
-    EXPECT_CALL(impl, reserve(256, stream))
+    NiceMock<MockCpuHeapOpsImpl> impl;
+    MockCpuHeapOps::set(&impl);
+    EXPECT_CALL(impl, reserve(256))
         .WillOnce(Return(HeapRegion{reinterpret_cast<void*>(0x3000), 256}));
 
-    policy.initialize(cfg, &resource);
+    policy.initialize(cfg, &heap_ops);
     ::orteaf::internal::base::BufferId bad{static_cast<::orteaf::internal::base::BufferId::underlying_type>(1u << 31)};
     orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
                                [&] { policy.releaseChunk(bad); });
-    MockCpuResource::reset();
+    MockCpuHeapOps::reset();
 }
 #endif
 
@@ -355,15 +349,15 @@ TEST(HierarchicalChunkLocator, LargeIdThrowsInDebug) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, FindChunkSizeReturnsCorrectSize) {
-    typename Policy::Config cfg{device_, context_, stream_, {512, 256, 128}, /*initial_bytes=*/512, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{512, 256, 128}, /*initial_bytes=*/512, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x4000);
-    EXPECT_CALL(impl_, reserve(512, stream_))
+    EXPECT_CALL(impl_, reserve(512))
         .WillRepeatedly(Return(HeapRegion{base, 512}));
-    EXPECT_CALL(impl_, map(_, stream_))
+    EXPECT_CALL(impl_, map(_))
         .WillRepeatedly(::testing::Invoke(MapReturn));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 128バイトのチャンクを割り当て
     auto b1 = policy_.addChunk(128, 1);
@@ -379,13 +373,13 @@ TEST_F(HierarchicalChunkLocatorTest, FindChunkSizeReturnsCorrectSize) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, FindChunkSizeReturnsZeroForInvalidId) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x4000);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 存在しないID
     BufferId invalid{99999};
@@ -393,19 +387,19 @@ TEST_F(HierarchicalChunkLocatorTest, FindChunkSizeReturnsZeroForInvalidId) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, IsAliveReflectsSlotState) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x4A00);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_))
+    EXPECT_CALL(impl_, map(_))
         .Times(1)
-        .WillOnce([](HeapRegion region, Stream) {
+        .WillOnce([](HeapRegion region) {
             return BufferView{region.data(), 0, region.size()};
         });
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(1);
+    EXPECT_CALL(impl_, unmap(_, _)).Times(1);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto block = policy_.addChunk(256, 1);
 
     EXPECT_TRUE(policy_.isAlive(block.id));
@@ -422,16 +416,16 @@ TEST_F(HierarchicalChunkLocatorTest, IsAliveReflectsSlotState) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, IncrementAndDecrementUsed) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x5000);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).Times(1).WillOnce(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).Times(1).WillOnce(::testing::Invoke(MapReturn));
     // 最後の releaseChunk 成功時に unmap が1回呼ばれる
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(1);
+    EXPECT_CALL(impl_, unmap(_, _)).Times(1);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto b = policy_.addChunk(256, 1);
 
     // 初期状態では used=0 なので releaseChunk 可能
@@ -452,15 +446,15 @@ TEST_F(HierarchicalChunkLocatorTest, IncrementAndDecrementUsed) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, DecrementUsedDoesNotUnderflow) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x5100);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(1);
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, unmap(_, _)).Times(1);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto b = policy_.addChunk(256, 1);
 
     // 0の状態からdecrementしてもアンダーフローしない
@@ -476,16 +470,16 @@ TEST_F(HierarchicalChunkLocatorTest, DecrementUsedDoesNotUnderflow) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, IncrementAndDecrementPending) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x6000);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).Times(1).WillOnce(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).Times(1).WillOnce(::testing::Invoke(MapReturn));
     // 最後の releaseChunk 成功時に unmap が1回呼ばれる
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(1);
+    EXPECT_CALL(impl_, unmap(_, _)).Times(1);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto b = policy_.addChunk(256, 1);
 
     // incrementPending でカウントアップ
@@ -502,15 +496,15 @@ TEST_F(HierarchicalChunkLocatorTest, IncrementAndDecrementPending) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, DecrementPendingDoesNotUnderflow) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x6100);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(1);
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, unmap(_, _)).Times(1);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto b = policy_.addChunk(256, 1);
 
     // 0の状態からdecrementしてもアンダーフローしない
@@ -526,15 +520,15 @@ TEST_F(HierarchicalChunkLocatorTest, DecrementPendingDoesNotUnderflow) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, DecrementPendingAndUsed) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x7000);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(1);
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, unmap(_, _)).Times(1);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto b = policy_.addChunk(256, 1);
 
     policy_.incrementPending(b.id);
@@ -551,15 +545,15 @@ TEST_F(HierarchicalChunkLocatorTest, DecrementPendingAndUsed) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, DecrementPendingAndUsedMultipleTimes) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x7100);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(1);
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, unmap(_, _)).Times(1);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto b = policy_.addChunk(256, 1);
 
     policy_.incrementPending(b.id);
@@ -579,14 +573,14 @@ TEST_F(HierarchicalChunkLocatorTest, DecrementPendingAndUsedMultipleTimes) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsWhenUsedRemains) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x8000);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto b = policy_.addChunk(256, 1);
 
     policy_.incrementUsed(b.id);
@@ -594,14 +588,14 @@ TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsWhenUsedRemains) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsWhenPendingRemains) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x8100);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto b = policy_.addChunk(256, 1);
 
     policy_.incrementPending(b.id);
@@ -609,15 +603,15 @@ TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsWhenPendingRemains) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsForInvalidState) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x8200);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(1);
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, unmap(_, _)).Times(1);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto b = policy_.addChunk(256, 1);
 
     // 一度解放
@@ -628,13 +622,13 @@ TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsForInvalidState) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsForInvalidId) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x8300);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 存在しないID
     BufferId invalid{99999};
@@ -646,14 +640,14 @@ TEST_F(HierarchicalChunkLocatorTest, ReleaseChunkFailsForInvalidId) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, PickLayerSelectsSmallestSufficientLayer) {
-    typename Policy::Config cfg{device_, context_, stream_, {1024, 512, 256, 128}, /*initial_bytes=*/1024, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{1024, 512, 256, 128}, /*initial_bytes=*/1024, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x9000);
-    EXPECT_CALL(impl_, reserve(1024, stream_))
+    EXPECT_CALL(impl_, reserve(1024))
         .WillRepeatedly(Return(HeapRegion{base, 1024}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 64バイト要求 -> 128バイト層（最小で足りる層）
     auto b1 = policy_.addChunk(64, 1);
@@ -677,13 +671,13 @@ TEST_F(HierarchicalChunkLocatorTest, PickLayerSelectsSmallestSufficientLayer) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, AddChunkFailsWhenRequestExceedsAllLayers) {
-    typename Policy::Config cfg{device_, context_, stream_, {256, 128}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256, 128}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x9100);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 最大層よりも大きいサイズを要求
     orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::OutOfMemory,
@@ -698,16 +692,16 @@ TEST_F(HierarchicalChunkLocatorTest, RegionMultiplierAllocatesMultipleChunks) {
     // initial_bytes=0 と region_multiplier=4 の場合:
     // initial_bytes=0 なら levels[0]=256 が initial になり、初期化時に 256 バイト確保。
     // その後 ensureFreeSlot で addRegion が呼ばれる際に region_multiplier が適用される。
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/0, /*region_multiplier=*/4};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/0, /*region_multiplier=*/4};
 
     void* base = reinterpret_cast<void*>(0xA000);
     // initial_bytes=0 時は levels[0]=256 が initial になる
     // その後 addRegion は chunk_size * region_multiplier = 256 * 4 = 1024
-    EXPECT_CALL(impl_, reserve(_, stream_))
+    EXPECT_CALL(impl_, reserve(_))
         .WillRepeatedly(Return(HeapRegion{base, 1024}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // チャンクを割り当て
     auto b1 = policy_.addChunk(256, 1);
@@ -722,15 +716,15 @@ TEST_F(HierarchicalChunkLocatorTest, RegionMultiplierAllocatesMultipleChunks) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, RegionMultiplierZeroDefaultsToOne) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/0, /*region_multiplier=*/0};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/0, /*region_multiplier=*/0};
 
     void* base = reinterpret_cast<void*>(0xA100);
     // region_multiplier=0 は 1 にデフォルトされるので 256 バイト確保
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto b1 = policy_.addChunk(256, 1);
     EXPECT_NE(b1.view.data(), nullptr);
 }
@@ -740,13 +734,13 @@ TEST_F(HierarchicalChunkLocatorTest, RegionMultiplierZeroDefaultsToOne) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, IncrementUsedOnInvalidIdDoesNothing) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0xB000);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 無効なIDでも例外を投げない（何もしない）
     BufferId invalid{99999};
@@ -758,15 +752,15 @@ TEST_F(HierarchicalChunkLocatorTest, IncrementUsedOnInvalidIdDoesNothing) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, OperationsOnFreedSlotDoNothing) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0xB100);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(1);
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, unmap(_, _)).Times(1);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto b = policy_.addChunk(256, 1);
     BufferId id = b.id;
 
@@ -784,10 +778,10 @@ TEST_F(HierarchicalChunkLocatorTest, OperationsOnFreedSlotDoNothing) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, EmptyLevelsWithZeroInitialBytes) {
-    typename Policy::Config cfg{device_, context_, stream_, {}, /*initial_bytes=*/0, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{}, /*initial_bytes=*/0, /*region_multiplier=*/1};
 
     // 空のlevelsでは初期確保は行われない
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 割り当て要求は失敗する（適切な層がない）
     orteaf::tests::ExpectError(::orteaf::internal::diagnostics::error::OrteafErrc::OutOfMemory,
@@ -800,14 +794,14 @@ TEST_F(HierarchicalChunkLocatorTest, EmptyLevelsWithZeroInitialBytes) {
 
 #if ORTEAF_CORE_DEBUG_ENABLED
 TEST_F(HierarchicalChunkLocatorTest, SnapshotReturnsCorrectState) {
-    typename Policy::Config cfg{device_, context_, stream_, {512, 256}, /*initial_bytes=*/512, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{512, 256}, /*initial_bytes=*/512, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0xC000);
-    EXPECT_CALL(impl_, reserve(512, stream_))
+    EXPECT_CALL(impl_, reserve(512))
         .WillOnce(Return(HeapRegion{base, 512}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     auto snap1 = policy_.snapshot();
     EXPECT_EQ(snap1.layers.size(), 2);
@@ -827,17 +821,17 @@ TEST_F(HierarchicalChunkLocatorTest, SnapshotReturnsCorrectState) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, ValidatePassesOnValidState) {
-    typename Policy::Config cfg{device_, context_, stream_, {512, 256, 128}, /*initial_bytes=*/512, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{512, 256, 128}, /*initial_bytes=*/512, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0xC100);
-    EXPECT_CALL(impl_, reserve(512, stream_))
+    EXPECT_CALL(impl_, reserve(512))
         .WillOnce(Return(HeapRegion{base, 512}));
     // 128バイトチャンク2つを割り当てるために map が2回呼ばれる
-    EXPECT_CALL(impl_, map(_, stream_)).Times(2).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).Times(2).WillRepeatedly(::testing::Invoke(MapReturn));
     // 2つのチャンクを解放するので unmap が2回呼ばれる
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(2);
+    EXPECT_CALL(impl_, unmap(_, _)).Times(2);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     auto b1 = policy_.addChunk(128, 1);
     auto b2 = policy_.addChunk(128, 1);
@@ -857,16 +851,16 @@ TEST_F(HierarchicalChunkLocatorTest, ValidatePassesOnValidState) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, MultipleRegionsAreAddedWhenExhausted) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base1 = reinterpret_cast<void*>(0xD000);
     void* base2 = reinterpret_cast<void*>(0xD100);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base1, 256}))
         .WillOnce(Return(HeapRegion{base2, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 最初のリージョンから割り当て
     auto b1 = policy_.addChunk(256, 1);
@@ -882,14 +876,14 @@ TEST_F(HierarchicalChunkLocatorTest, MultipleRegionsAreAddedWhenExhausted) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, ZeroSizeAllocationUsesSmallestLayer) {
-    typename Policy::Config cfg{device_, context_, stream_, {256, 128, 64}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256, 128, 64}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0xE000);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 0バイト要求でも最小層から割り当て
     auto b = policy_.addChunk(0, 1);
@@ -897,14 +891,14 @@ TEST_F(HierarchicalChunkLocatorTest, ZeroSizeAllocationUsesSmallestLayer) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, ExactSizeMatchSelectsCorrectLayer) {
-    typename Policy::Config cfg{device_, context_, stream_, {256, 128}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256, 128}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0xE100);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillRepeatedly(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // ちょうど128バイト
     auto b1 = policy_.addChunk(128, 1);
@@ -916,15 +910,15 @@ TEST_F(HierarchicalChunkLocatorTest, ExactSizeMatchSelectsCorrectLayer) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, SingleLayerConfiguration) {
-    typename Policy::Config cfg{device_, context_, stream_, {1024}, /*initial_bytes=*/1024, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{1024}, /*initial_bytes=*/1024, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0xE200);
-    EXPECT_CALL(impl_, reserve(1024, stream_))
+    EXPECT_CALL(impl_, reserve(1024))
         .WillOnce(Return(HeapRegion{base, 1024}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(1);
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, unmap(_, _)).Times(1);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     auto b = policy_.addChunk(512, 1);
     EXPECT_EQ(policy_.findChunkSize(b.id), 1024);
@@ -936,17 +930,17 @@ TEST_F(HierarchicalChunkLocatorTest, SingleLayerConfiguration) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, DeepSplitAcrossMultipleLayers) {
-    typename Policy::Config cfg{device_, context_, stream_, {1024, 512, 256, 128}, /*initial_bytes=*/1024, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{1024, 512, 256, 128}, /*initial_bytes=*/1024, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0xF000);
-    EXPECT_CALL(impl_, reserve(1024, stream_))
+    EXPECT_CALL(impl_, reserve(1024))
         .WillOnce(Return(HeapRegion{base, 1024}));
     // 8つの128バイトチャンクを割り当てるために map が8回呼ばれる
-    EXPECT_CALL(impl_, map(_, stream_)).Times(8).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).Times(8).WillRepeatedly(::testing::Invoke(MapReturn));
     // 8つのチャンクを解放するので unmap が8回呼ばれる
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(8);
+    EXPECT_CALL(impl_, unmap(_, _)).Times(8);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 最小層から8つ割り当て（1024 -> 512x2 -> 256x4 -> 128x8）
     std::vector<allocator::MemoryBlock<Backend::Cpu>> blocks;
@@ -966,17 +960,17 @@ TEST_F(HierarchicalChunkLocatorTest, DeepSplitAcrossMultipleLayers) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, PartialMergeDoesNotOccur) {
-    typename Policy::Config cfg{device_, context_, stream_, {512, 256}, /*initial_bytes=*/512, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{512, 256}, /*initial_bytes=*/512, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0xF100);
-    EXPECT_CALL(impl_, reserve(512, stream_))
+    EXPECT_CALL(impl_, reserve(512))
         .WillOnce(Return(HeapRegion{base, 512}));
     // 2つの256バイトチャンクを割り当てるために map が2回呼ばれる
-    EXPECT_CALL(impl_, map(_, stream_)).Times(2).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).Times(2).WillRepeatedly(::testing::Invoke(MapReturn));
     // 2つのチャンクを解放するので unmap が2回呼ばれる
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(2);
+    EXPECT_CALL(impl_, unmap(_, _)).Times(2);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 2つの256バイトチャンクを割り当て
     auto b1 = policy_.addChunk(256, 1);
@@ -1002,16 +996,16 @@ TEST_F(HierarchicalChunkLocatorTest, PartialMergeDoesNotOccur) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, AlternatingAllocFreePattern) {
-    typename Policy::Config cfg{device_, context_, stream_, {256, 128}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256, 128}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0xF200);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
     // 10回の割り当て・解放を繰り返すので map/unmap が各10回呼ばれる
-    EXPECT_CALL(impl_, map(_, stream_)).Times(10).WillRepeatedly(::testing::Invoke(MapReturn));
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(10);
+    EXPECT_CALL(impl_, map(_)).Times(10).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, unmap(_, _)).Times(10);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 交互に割り当て・解放を繰り返す
     for (int i = 0; i < 10; ++i) {
@@ -1029,17 +1023,17 @@ TEST_F(HierarchicalChunkLocatorTest, AlternatingAllocFreePattern) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, ConcurrentIncrementDecrement) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/256, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x10000);
-    EXPECT_CALL(impl_, reserve(256, stream_))
+    EXPECT_CALL(impl_, reserve(256))
         .WillOnce(Return(HeapRegion{base, 256}));
     // チャンク1つを割り当てるために map が1回呼ばれる
-    EXPECT_CALL(impl_, map(_, stream_)).Times(1).WillOnce(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).Times(1).WillOnce(::testing::Invoke(MapReturn));
     // 最後に releaseChunk で unmap が1回呼ばれる
-    EXPECT_CALL(impl_, unmap(_, _, stream_)).Times(1);
+    EXPECT_CALL(impl_, unmap(_, _)).Times(1);
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
     auto b = policy_.addChunk(256, 1);
 
     constexpr int kIterations = 100;
@@ -1083,14 +1077,14 @@ TEST_F(HierarchicalChunkLocatorTest, ConcurrentIncrementDecrement) {
 // ============================================================================
 
 TEST_F(HierarchicalChunkLocatorTest, InitialBytesLargerThanChunkSize) {
-    typename Policy::Config cfg{device_, context_, stream_, {256}, /*initial_bytes=*/1024, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{256}, /*initial_bytes=*/1024, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x11000);
-    EXPECT_CALL(impl_, reserve(1024, stream_))
+    EXPECT_CALL(impl_, reserve(1024))
         .WillOnce(Return(HeapRegion{base, 1024}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     // 4つのチャンクが初期確保される（1024 / 256 = 4）
     auto b1 = policy_.addChunk(256, 1);
@@ -1105,15 +1099,15 @@ TEST_F(HierarchicalChunkLocatorTest, InitialBytesLargerThanChunkSize) {
 }
 
 TEST_F(HierarchicalChunkLocatorTest, InitialBytesZeroUsesChunkSize) {
-    typename Policy::Config cfg{device_, context_, stream_, {512}, /*initial_bytes=*/0, /*region_multiplier=*/1};
+    typename Policy::Config cfg{{512}, /*initial_bytes=*/0, /*region_multiplier=*/1};
 
     void* base = reinterpret_cast<void*>(0x11100);
     // initial_bytes=0 の場合、最大チャンクサイズ（512）が使われる
-    EXPECT_CALL(impl_, reserve(512, stream_))
+    EXPECT_CALL(impl_, reserve(512))
         .WillOnce(Return(HeapRegion{base, 512}));
-    EXPECT_CALL(impl_, map(_, stream_)).WillRepeatedly(::testing::Invoke(MapReturn));
+    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
-    policy_.initialize(cfg, &resource_);
+    policy_.initialize(cfg, &heap_ops_);
 
     auto b = policy_.addChunk(512, 1);
     EXPECT_NE(b.view.data(), nullptr);

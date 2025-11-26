@@ -9,7 +9,6 @@
 #include "orteaf/internal/base/heap_vector.h"
 #include "orteaf/internal/base/strong_id.h"
 #include "orteaf/internal/runtime/allocator/memory_block.h"
-#include "orteaf/internal/runtime/allocator/policies/chunk_locator/chunk_locator_config.h"
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/diagnostics/error/error_macros.h"
 
@@ -33,14 +32,11 @@ public:
     using BufferId = ::orteaf::internal::base::BufferId;
     using BufferView = typename ::orteaf::internal::backend::BackendTraits<B>::BufferView;
     using MemoryBlock = ::orteaf::internal::runtime::allocator::MemoryBlock<B>;
-    using Device = typename ::orteaf::internal::backend::BackendTraits<B>::Device;
-    using Context = typename ::orteaf::internal::backend::BackendTraits<B>::Context;
-    using Stream = typename ::orteaf::internal::backend::BackendTraits<B>::Stream;
 
     /**
      * @brief DirectChunkLocatorPolicy 固有の設定。
      */
-    struct Config : ChunkLocatorConfigBase<Device, Context, Stream> {
+    struct Config {
         // 現時点では追加設定なし（将来の拡張用）
     };
 
@@ -70,7 +66,7 @@ public:
         ORTEAF_THROW_IF(resource_ == nullptr, InvalidState, "DirectChunkLocatorPolicy is not initialized");
         ORTEAF_THROW_IF(size == 0, InvalidParameter, "size must be non-zero");
 
-        BufferView base = resource_->allocate(size, alignment, config_.stream);
+        BufferView base = resource_->allocate(size, alignment);
         if (!base) {
             return {};
         }
@@ -97,7 +93,7 @@ public:
             return false;
         }
 
-        resource_->deallocate(chunk.base, chunk.size, chunk.alignment, config_.stream);
+        resource_->deallocate(chunk.base, chunk.size, chunk.alignment);
         chunk = ChunkInfo{};
         free_list_.pushBack(slot);
         return true;
