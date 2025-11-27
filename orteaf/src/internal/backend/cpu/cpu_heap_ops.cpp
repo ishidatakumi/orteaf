@@ -26,9 +26,9 @@ CpuHeapOps::BufferView CpuHeapOps::map(HeapRegion region) {
     return BufferView{base, 0, region.size()};
 }
 
-void CpuHeapOps::unmap(BufferView view, std::size_t size) {
-    if (!view) return;
-    void* base = static_cast<void*>(static_cast<char*>(view.data()) - view.offset());
+void CpuHeapOps::unmap(HeapRegion region, std::size_t size) {
+    if (!region) return;
+    void* base = region.data();
     if (munmap(base, size) != 0) {
         diagnostics::error::throwError(diagnostics::error::OrteafErrc::OperationFailed, "cpu unmap munmap failed");
     }

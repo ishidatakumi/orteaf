@@ -18,7 +18,7 @@ public:
 
     MOCK_METHOD(HeapRegion, reserve, (std::size_t size));
     MOCK_METHOD(BufferView, map, (HeapRegion region));
-    MOCK_METHOD(void, unmap, (BufferView view, std::size_t size));
+    MOCK_METHOD(void, unmap, (HeapRegion region, std::size_t size));
 };
 
 // Static-API wrapper that forwards to a shared MockCpuHeapOpsImpl instance.
@@ -35,8 +35,8 @@ struct MockCpuHeapOps {
     static BufferView map(HeapRegion region) {
         return impl_ ? impl_->map(region) : BufferView{};
     }
-    static void unmap(BufferView view, std::size_t size) {
-        if (impl_) impl_->unmap(view, size);
+    static void unmap(HeapRegion region, std::size_t size) {
+        if (impl_) impl_->unmap(region, size);
     }
 
 private:

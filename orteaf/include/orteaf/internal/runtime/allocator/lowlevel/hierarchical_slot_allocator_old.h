@@ -12,9 +12,7 @@
 #include "orteaf/internal/backend/backend.h"
 #include "orteaf/internal/backend/backend_traits.h"
 #include "orteaf/internal/base/heap_vector.h"
-#include "orteaf/internal/base/strong_id.h"
 #include "orteaf/internal/base/math_utils.h"
-#include "orteaf/internal/runtime/allocator/memory_block.h"
 #include "orteaf/internal/diagnostics/log/log.h"
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/diagnostics/error/error_macros.h"
@@ -76,8 +74,6 @@ struct SlotBase {
     uint32_t parent_slot{UINT32_MAX};
     uint32_t child_layer{UINT32_MAX};
     uint32_t child_begin{0};
-    uint32_t used{0};
-    uint32_t pending{0};
 };
 
 template <typename Region, typename BufferView>
@@ -89,8 +85,6 @@ struct SlotBase<true, Region, BufferView> {
     uint32_t parent_slot{UINT32_MAX};
     uint32_t child_layer{UINT32_MAX};
     uint32_t child_begin{0};
-    uint32_t used{0};
-    uint32_t pending{0};
     uint32_t child_count{0};  // デバッグ時のみ
 };
 
@@ -122,7 +116,7 @@ struct SlotChildCountAccessor<true> {
 }  // namespace detail
 
 // ============================================================================
-// HierarchicalChunkLocator
+// HierarchicalSlotAllocator
 // ============================================================================
 
 /**
@@ -133,20 +127,18 @@ struct SlotChildCountAccessor<true> {
  * まずは複数サイズクラスを扱える骨格として提供する。
  */
 template <class HeapOps, ::orteaf::internal::backend::Backend B>
-class HierarchicalChunkLocator {
+class HierarchicalSlotAllocator {
 public:
     // ========================================================================
     // Type aliases
     // ========================================================================
-    using BufferId = ::orteaf::internal::base::BufferId;
     using BufferView = typename ::orteaf::internal::backend::BackendTraits<B>::BufferView;
     using HeapRegion = typename ::orteaf::internal::backend::BackendTraits<B>::HeapRegion;
-    using MemoryBlock = ::orteaf::internal::runtime::allocator::MemoryBlock<B>;
 
     enum class State : uint8_t { Free, InUse, Split };
 
     /**
-     * @brief HierarchicalChunkLocator 固有の設定。
+     * @brief HierarchicalSlotAllocator 固有の設定。
      */
     struct Config {
         /// 大きい順で渡すことを想定する。例: {1_MB, 256_KB, 64_KB}
@@ -167,7 +159,7 @@ public:
         config_ = config;
         heap_ops_ = heap_ops;
 
-        ORTEAF_THROW_IF_NULL(heap_ops_, "HierarchicalChunkLocator requires non-null HeapOps*");
+        ORTEAF_THROW_IF_NULL(heap_ops_, "HierarchicalSlotAllocator requires non-null HeapOps*");
         validateLevels(config.levels, config.threshold);
 
         layers_.clear();
@@ -183,12 +175,11 @@ public:
     }
 
     /**
-     * @brief 最小で足りるサイズクラスからチャンクを取得して登録する。
+     * @brief 指定サイズに対応するスロットを割り当て、BufferViewを返す。
      * @param size 要求サイズ
-     * @param alignment アラインメント（階層型では使用しない）
+     * @return 割り当てられたBufferView
      */
-    MemoryBlock addChunk(std::size_t size, std::size_t alignment) {
-        (void)alignment;  // 階層型では使用しない
+    BufferView allocate(std::size_t size) {
         std::lock_guard<std::mutex> lock(mutex_);
 
         const auto target_layer = pickLayer(size);
@@ -202,32 +193,31 @@ public:
         Slot& slot = layer.slots[slot_index];
 
         slot.state = static_cast<uint8_t>(State::InUse);
-        slot.used = 0;
-        slot.pending = 0;
 
         if (!slot.mapped_flag) {
             slot.mapped = heap_ops_->map(slot.region);
             slot.mapped_flag = true;
         }
 
-        return MemoryBlock{encode(target_layer, slot_index), slot.mapped};
+        return slot.mapped;
     }
 
     /**
-     * @brief チャンクを解放する。used/pending が残っていれば解放しない。
+     * @brief BufferViewに対応するスロットを解放し、物理メモリをunmapする。
+     * @param view 解放するBufferView
      */
-    bool releaseChunk(BufferId id) {
+    void deallocate(BufferView view) {
+        if (!view) return;
         std::lock_guard<std::mutex> lock(mutex_);
 
-        auto [layer_index, slot_index] = decode(id);
-        if (layer_index >= layers_.size()) return false;
+        auto [layer_index, slot_index] = findSlotByAddress(view.data());
+        if (layer_index == kInvalidLayer) return;
 
         auto& layer = layers_[layer_index];
-        if (slot_index >= layer.slots.size()) return false;
+        if (slot_index >= layer.slots.size()) return;
 
         Slot& slot = layer.slots[slot_index];
-        if (getState(slot) != State::InUse) return false;
-        if (slot.pending > 0 || slot.used > 0) return false;
+        if (getState(slot) != State::InUse) return;
 
         heap_ops_->unmap(slot.mapped, layer.chunk_size);
         resetSlot(slot);
@@ -237,65 +227,6 @@ public:
         if (slot.parent_slot != kNoParent && layer_index > 0) {
             tryMergeParent(layer_index, layer_index - 1, slot.parent_slot);
         }
-        return true;
-    }
-
-    std::size_t findChunkSize(BufferId id) const {
-        auto [layer_index, slot_index] = decode(id);
-        if (layer_index >= layers_.size()) return 0;
-        const auto& layer = layers_[layer_index];
-        if (slot_index >= layer.slots.size()) return 0;
-        return layer.chunk_size;
-    }
-
-    void incrementUsed(BufferId id) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (auto* slot = findSlot(id)) {
-            ++slot->used;
-        }
-    }
-
-    void decrementUsed(BufferId id) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (auto* slot = findSlot(id)) {
-            if (slot->used > 0) --slot->used;
-        }
-    }
-
-    void incrementPending(BufferId id) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (auto* slot = findSlot(id)) {
-            ++slot->pending;
-        }
-    }
-
-    void decrementPending(BufferId id) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (auto* slot = findSlot(id)) {
-            if (slot->pending > 0) --slot->pending;
-        }
-    }
-
-    void decrementPendingAndUsed(BufferId id) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (auto* slot = findSlot(id)) {
-            if (slot->pending > 0) --slot->pending;
-            if (slot->used > 0) --slot->used;
-        }
-    }
-
-    /**
-     * @brief チャンクが有効かどうかを確認する。
-     * @param id チャンクの BufferId
-     * @return 有効な場合 true
-     */
-    bool isAlive(BufferId id) const {
-        std::lock_guard<std::mutex> lock(mutex_);
-        auto [layer_index, slot_index] = decode(id);
-        if (layer_index >= layers_.size()) return false;
-        const auto& layer = layers_[layer_index];
-        if (slot_index >= layer.slots.size()) return false;
-        return getState(layer.slots[slot_index]) == State::InUse;
     }
 
     // ========================================================================
@@ -311,8 +242,6 @@ public:
         uint32_t child_layer{};
         uint32_t child_begin{};
         uint32_t child_count{};
-        uint32_t used{};
-        uint32_t pending{};
     };
 
     struct LayerSnapshot {
@@ -354,10 +283,6 @@ private:
     static constexpr uint32_t kNoParent = UINT32_MAX;
     static constexpr uint32_t kNoChild = UINT32_MAX;
     static constexpr uint32_t kInvalidLayer = UINT32_MAX;
-    static constexpr BufferId::underlying_type kLargeMask = BufferId::underlying_type{1u} << 31;
-    static constexpr uint32_t kLayerBits = 8;
-    static constexpr uint32_t kSlotBits = 31 - kLayerBits;
-    static constexpr uint32_t kSlotMask = (uint32_t{1u} << kSlotBits) - 1u;
     static constexpr std::size_t kSystemMinThreshold = alignof(double);
 
     static constexpr bool kDebugEnabled =
@@ -398,8 +323,6 @@ private:
         slot.mapped_flag = false;
         slot.mapped = {};
         setState(slot, State::Free);
-        slot.used = 0;
-        slot.pending = 0;
     }
 
     Slot createFreeSlot(HeapRegion region, uint32_t parent_slot = kNoParent) const {
@@ -411,8 +334,6 @@ private:
         slot.parent_slot = parent_slot;
         slot.child_layer = kNoChild;
         slot.child_begin = 0;
-        slot.used = 0;
-        slot.pending = 0;
         ChildCountAccessor::set(slot, 0);
         return slot;
     }
@@ -685,48 +606,21 @@ private:
     }
 
     // ========================================================================
-    // BufferId encoding/decoding
-    // ========================================================================
-    BufferId encode(uint32_t layer, uint32_t slot) const noexcept {
-        const auto layer_part = (layer & ((uint32_t{1u} << kLayerBits) - 1u)) << kSlotBits;
-        const auto slot_part = slot & kSlotMask;
-        return BufferId{static_cast<BufferId::underlying_type>(layer_part | slot_part)};
-    }
-
-    std::pair<uint32_t, uint32_t> decode(BufferId id) const {
-        const auto raw_full = static_cast<BufferId::underlying_type>(id);
-        ORTEAF_DEBUG_THROW_IF((raw_full & kLargeMask) != 0, InvalidParameter,
-                              "LargeAlloc BufferId passed to chunk locator");
-
-        const auto raw = static_cast<uint32_t>(raw_full);
-        const uint32_t slot = raw & kSlotMask;
-        const uint32_t layer = (raw >> kSlotBits) & ((uint32_t{1u} << kLayerBits) - 1u);
-        return {layer, slot};
-    }
-
-    // ========================================================================
     // Slot lookup
     // ========================================================================
-    Slot* findSlot(BufferId id) {
-        auto [layer_index, slot_index] = decode(id);
-        if (layer_index >= layers_.size()) return nullptr;
-
-        auto& layer = layers_[layer_index];
-        if (slot_index >= layer.slots.size()) return nullptr;
-
-        Slot& slot = layer.slots[slot_index];
-        return (getState(slot) == State::InUse) ? &slot : nullptr;
-    }
-
-    const Slot* findSlot(BufferId id) const {
-        auto [layer_index, slot_index] = decode(id);
-        if (layer_index >= layers_.size()) return nullptr;
-
-        const auto& layer = layers_[layer_index];
-        if (slot_index >= layer.slots.size()) return nullptr;
-
-        const Slot& slot = layer.slots[slot_index];
-        return (getState(slot) == State::InUse) ? &slot : nullptr;
+    
+    /// アドレスからスロットを特定する。{layer_index, slot_index}を返す。
+    std::pair<uint32_t, uint32_t> findSlotByAddress(void* addr) const {
+        for (uint32_t layer_idx = 0; layer_idx < layers_.size(); ++layer_idx) {
+            const auto& layer = layers_[layer_idx];
+            for (uint32_t slot_idx = 0; slot_idx < layer.slots.size(); ++slot_idx) {
+                const Slot& slot = layer.slots[slot_idx];
+                if (getState(slot) == State::InUse && slot.mapped.data() == addr) {
+                    return {layer_idx, slot_idx};
+                }
+            }
+        }
+        return {kInvalidLayer, 0};
     }
 
     // ========================================================================
@@ -760,9 +654,7 @@ private:
                 slot.parent_slot,
                 slot.child_layer,
                 slot.child_begin,
-                slot.child_count,
-                slot.used,
-                slot.pending,
+                ChildCountAccessor::get(slot, 0, 0),
             });
         }
         return snapshot;
