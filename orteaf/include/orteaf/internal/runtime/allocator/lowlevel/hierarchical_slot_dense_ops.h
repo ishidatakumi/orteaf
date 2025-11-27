@@ -113,11 +113,10 @@ private:
         auto& layers = storage_.layers();
         if (layers.empty() || layers[0].slots.empty()) return plan;
 
-        // levels[0]の末尾からスタート
-        uint32_t start_idx = static_cast<uint32_t>(layers[0].slots.size()) - 1;
+        // levels[0]の先端からスタート
         uint32_t need = rs[0];
 
-        bool result = tryFindTrailRecursive(rs, 0, start_idx, need, false, plan, static_cast<uint32_t>(layers[0].slots.size()));
+        bool result = tryFindTrailRecursive(rs, 0, 0, need, false, plan, static_cast<uint32_t>(layers[0].slots.size()));
         plan.found = result;
 
         return plan;
@@ -162,43 +161,59 @@ private:
                 if (layer_idx + 1 < layers.size()) {
                     uint32_t sibling_count = static_cast<uint32_t>(layer.slot_size / layers[layer_idx + 1].slot_size);
                     if (layer_idx + 1 >= rs.size()) return false;
-                    if (sibling_count < rs[layer_idx + 1]) return false;
                     uint32_t child_begin = split_slot.child_begin;
                     return tryFindTrailRecursive(rs, layer_idx + 1, child_begin, rs[layer_idx + 1], true, plan, child_begin + sibling_count);
                 }
+            } else if (idx + 1 < upper_bound) {
+                // ここが開始位置
+                plan.start_layer = layer_idx;
+                plan.start_slot = idx;
+                return true;
             }
-
-            // ここが開始位置
-            plan.start_layer = layer_idx;
-            plan.start_slot = start_idx;
-            return true;
 
         } else {
             // 確認モード：needを満たせるか確認
             uint32_t count = 0;
             uint32_t idx = start_idx;
 
-            while (idx < upper_bound && layer.slots[static_cast<size_t>(idx)].state == State::Free) {
+            while (idx + 1 < upper_bound && layer.slots[static_cast<size_t>(idx + 1)].state == State::Free) {
                 ++count;
                 ++idx;
             }
 
-            if (count >= need) {
+            if (count == need) {
                 // 十分なFreeあり。隣接Splitがあれば子に潜る
-                if (idx < upper_bound && layer.slots[static_cast<size_t>(idx)].state == State::Split) {
+                if (idx + 1 < upper_bound && layer.slots[static_cast<size_t>(idx + 1)].state == State::Split) {
                     if (layer_idx + 1 < layers.size()) {
-                        Slot& split_slot = layer.slots[static_cast<size_t>(idx)];
+                        Slot& split_slot = layer.slots[static_cast<size_t>(idx + 1)];
                         uint32_t sibling_count = static_cast<uint32_t>(layer.slot_size / layers[layer_idx + 1].slot_size);
                         if (layer_idx + 1 >= rs.size()) return false;
                         if (sibling_count < rs[layer_idx + 1]) return false;
                         uint32_t child_begin = split_slot.child_begin;
                         return tryFindTrailRecursive(rs, layer_idx + 1, child_begin, rs[layer_idx + 1], false, plan, child_begin + sibling_count);
                     }
+                } else if (idx + 1 < upper_bound) {
+                    for (std::size_t req_idx = layer_idx; req_idx < rs.size(); ++req_idx) {
+                        if (rs[req_idx] != 0) {
+                            return false;
+                        }
+                    }
+                    return true;
                 }
-                // 子がない or Splitでない→この層で開始位置を確定
-                plan.start_layer = layer_idx;
-                plan.start_slot = start_idx;
-                return true;
+            } else if (count > need) {
+                if (idx + 1 < upper_bound && layer.slots[static_cast<size_t>(idx + 1)].state == State::Split) {
+                    if (layer_idx + 1 < layers.size()) {
+                        Slot& split_slot = layer.slots[static_cast<size_t>(idx + 1)];
+                        uint32_t sibling_count = static_cast<uint32_t>(layer.slot_size / layers[layer_idx + 1].slot_size);
+                        if (layer_idx + 1 >= rs.size()) return false;
+                        uint32_t child_begin = split_slot.child_begin;
+                        return tryFindTrailRecursive(rs, layer_idx + 1, child_begin, rs[layer_idx + 1], true, plan, child_begin + sibling_count);
+                    }
+                } else if (idx + 1 < upper_bound) {
+                    plan.start_layer = layer_idx;
+                    plan.start_slot = idx;
+                    return true;
+                }
             }
             // 足りない
             return false;
