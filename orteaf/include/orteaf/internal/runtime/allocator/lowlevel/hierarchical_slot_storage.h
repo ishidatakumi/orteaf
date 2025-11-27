@@ -117,11 +117,18 @@ public:
             DebugLayer dl;
             dl.slot_size = L.slot_size;
             dl.slots.reserve(L.slots.size());
-            for (const auto& s : L.slots) {
+            for (std::size_t i = 0; i < L.slots.size(); ++i) {
+                const auto& s = L.slots[i];
                 dl.slots.push_back(DebugSlot{s.state, s.parent_slot, s.child_begin});
             }
-            dl.free_list.assign(L.free_list.begin(), L.free_list.end());
-            dl.span_free_list.assign(L.span_free_list.begin(), L.span_free_list.end());
+            dl.free_list.reserve(L.free_list.size());
+            for (std::size_t i = 0; i < L.free_list.size(); ++i) {
+                dl.free_list.push_back(L.free_list[i]);
+            }
+            dl.span_free_list.reserve(L.span_free_list.size());
+            for (std::size_t i = 0; i < L.span_free_list.size(); ++i) {
+                dl.span_free_list.push_back(L.span_free_list[i]);
+            }
             out.emplace_back(std::move(dl));
         }
         return out;
