@@ -62,6 +62,10 @@ public:
     [[nodiscard]] typename DenseOps::AllocationPlan debugTryFindMiddlePlan(const std::vector<uint32_t>& rs) {
         return dense_ops_->debugTryFindMiddlePlan(rs);
     }
+
+    [[nodiscard]] auto debugSnapshot() const {
+        return storage_.debugSnapshot();
+    }
 #endif
 
 private:
