@@ -258,33 +258,54 @@ private:
 
     BufferView executeAllocationPlan(const AllocationPlan& plan, const std::vector<uint32_t>& rs, std::size_t size) {
         auto& layers = storage_.layers();
+        if (plan.start_layer >= layers.size()) {
+            ORTEAF_THROW(OutOfMemory, "Invalid allocation plan");
+        }
+
         void* base_addr = nullptr;
         std::size_t total_allocated = 0;
 
-        uint32_t current_layer = plan.start_layer;
-        uint32_t current_slot = plan.start_slot;
+        // start_layer から順に決定的に確保する
+        uint32_t layer_idx = plan.start_layer;
+        uint32_t slot_idx = plan.start_slot;
 
-        for (uint32_t layer_idx = 0; layer_idx < rs.size(); ++layer_idx) {
-            for (uint32_t i = 0; i < rs[layer_idx]; ++i) {
-                // スロットを確保
-                if (layer_idx < current_layer) {
-                    // まだ開始レイヤーに達していない（通常ありえない）
-                    continue;
-                }
+        // start_layer の連続スロットを確保
+        for (uint32_t i = 0; i < rs[layer_idx]; ++i) {
+            if (slot_idx + i >= layers[layer_idx].slots.size()) {
+                ORTEAF_THROW(OutOfMemory, "Plan exceeds layer slots");
+            }
+            single_ops_.acquireSpecificSlot(layer_idx, slot_idx + i);
+            BufferView view = single_ops_.mapSlot(layer_idx, slot_idx + i);
+            if (base_addr == nullptr) {
+                base_addr = view.data();
+            }
+            total_allocated += layers[layer_idx].slot_size;
+        }
 
-                single_ops_.ensureSlotAvailable(layer_idx);
-                uint32_t slot_idx = single_ops_.acquireSlot(layer_idx);
-                BufferView view = single_ops_.mapSlot(layer_idx, slot_idx);
+        // 下位レイヤに降りる
+        for (uint32_t l = layer_idx + 1; l < rs.size(); ++l) {
+            if (rs[l] == 0) continue;
+            // 親は plan.start_slot から連続している前提で、その子ブロックを連続取得
+            Slot& parent = layers[l - 1].slots[slot_idx];
+            uint32_t children = static_cast<uint32_t>(layers[l - 1].slot_size / layers[l].slot_size);
+            uint32_t child_start = parent.child_begin;
 
+            if (child_start + rs[l] > child_start + children) {
+                ORTEAF_THROW(OutOfMemory, "Child plan exceeds layer slots");
+            }
+
+            for (uint32_t i = 0; i < rs[l]; ++i) {
+                uint32_t child_idx = child_start + i;
+                single_ops_.acquireSpecificSlot(l, child_idx);
+                BufferView view = single_ops_.mapSlot(l, child_idx);
                 if (base_addr == nullptr) {
                     base_addr = view.data();
                 }
-
-                total_allocated += layers[layer_idx].slot_size;
+                total_allocated += layers[l].slot_size;
             }
         }
 
-        return BufferView{base_addr, 0, total_allocated};
+        return BufferView{base_addr, 0, size};
     }
 
     Storage& storage_;

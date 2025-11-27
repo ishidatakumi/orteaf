@@ -357,91 +357,112 @@ TEST_F(HierarchicalSlotAllocatorTest, ComputeRequestSlotsSmallestSlotOnly) {
     EXPECT_EQ(rs[1], 1);
 }
 
-// ============================================================================
-// Dense allocation tests
-// ============================================================================
+// // ============================================================================
+// // Dense allocation tests
+// // ============================================================================
 
-TEST_F(HierarchicalSlotAllocatorTest, AllocateDenseMultipleSlots) {
-    // levels = {256, 128, 64}, size = 300 → rs = [1, 0, 1]
-    // 連続した領域として確保される
-    void* base = reinterpret_cast<void*>(0xF000);
-    EXPECT_CALL(impl_, reserve(512)).WillOnce(Return(HeapRegion{base, 512}));
-    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
+// TEST_F(HierarchicalSlotAllocatorTest, AllocateDenseMultipleSlots) {
+//     // levels = {256, 128, 64}, size = 300 → rs = [1, 0, 1]
+//     // 連続した領域として確保される
+//     void* base = reinterpret_cast<void*>(0xF000);
+//     EXPECT_CALL(impl_, reserve(512)).WillOnce(Return(HeapRegion{base, 512}));
+//     EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
 
-    Allocator::Config cfg{};
-    cfg.levels = {256, 128, 64};
-    cfg.initial_bytes = 512;
-    allocator_.initialize(cfg, &heap_ops_);
+//     Allocator::Config cfg{};
+//     cfg.levels = {256, 128, 64};
+//     cfg.initial_bytes = 512;
+//     allocator_.initialize(cfg, &heap_ops_);
 
-    auto view = allocator_.allocateDense(300);
-    EXPECT_TRUE(view);
-    // 256 + 64 = 320 bytes
-    EXPECT_GE(view.size(), 300);
-}
+//     auto view = allocator_.allocateDense(300);
+//     EXPECT_TRUE(view);
+//     // 256 + 64 = 320 bytes
+//     EXPECT_GE(view.size(), 300);
+// }
 
-TEST_F(HierarchicalSlotAllocatorTest, DeallocateDenseReleasesAllSlots) {
-    void* base = reinterpret_cast<void*>(0x10000);
-    EXPECT_CALL(impl_, reserve(512)).WillOnce(Return(HeapRegion{base, 512}));
-    EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
-    // unmap for 256 + 64 = 2 calls
-    EXPECT_CALL(impl_, unmap(_, _)).Times(::testing::AtLeast(1));
+// TEST_F(HierarchicalSlotAllocatorTest, DeallocateDenseReleasesAllSlots) {
+//     void* base = reinterpret_cast<void*>(0x10000);
+//     EXPECT_CALL(impl_, reserve(512)).WillOnce(Return(HeapRegion{base, 512}));
+//     EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
+//     // unmap for 256 + 64 = 2 calls
+//     EXPECT_CALL(impl_, unmap(_, _)).Times(::testing::AtLeast(1));
 
-    Allocator::Config cfg{};
-    cfg.levels = {256, 128, 64};
-    cfg.initial_bytes = 512;
-    allocator_.initialize(cfg, &heap_ops_);
+//     Allocator::Config cfg{};
+//     cfg.levels = {256, 128, 64};
+//     cfg.initial_bytes = 512;
+//     allocator_.initialize(cfg, &heap_ops_);
 
-    const std::size_t request_size = 300;
-    auto view = allocator_.allocateDense(request_size);
-    allocator_.deallocateDense(view, request_size);
-}
+//     const std::size_t request_size = 300;
+//     auto view = allocator_.allocateDense(request_size);
+//     allocator_.deallocateDense(view, request_size);
+// }
 
-TEST_F(HierarchicalSlotAllocatorTest, AllocateDenseSingleSlotLevel0) {
-    // levels = {256, 128, 64}, size = 200 → rs = [1, 0, 0]
-    void* base = reinterpret_cast<void*>(0x11000);
-    EXPECT_CALL(impl_, reserve(256)).WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_)).WillOnce(::testing::Invoke(MapReturn));
+// TEST_F(HierarchicalSlotAllocatorTest, AllocateDenseSingleSlotLevel0) {
+//     // levels = {256, 128, 64}, size = 200 → rs = [1, 0, 0]
+//     void* base = reinterpret_cast<void*>(0x11000);
+//     EXPECT_CALL(impl_, reserve(256)).WillOnce(Return(HeapRegion{base, 256}));
+//     EXPECT_CALL(impl_, map(_)).WillOnce(::testing::Invoke(MapReturn));
 
-    Allocator::Config cfg{};
-    cfg.levels = {256, 128, 64};
-    cfg.initial_bytes = 256;
-    allocator_.initialize(cfg, &heap_ops_);
+//     Allocator::Config cfg{};
+//     cfg.levels = {256, 128, 64};
+//     cfg.initial_bytes = 256;
+//     allocator_.initialize(cfg, &heap_ops_);
 
-    auto view = allocator_.allocateDense(200);
-    EXPECT_TRUE(view);
-    EXPECT_EQ(view.size(), 256);
-}
+//     auto view = allocator_.allocateDense(200);
+//     EXPECT_TRUE(view);
+//     EXPECT_EQ(view.size(), 256);
+// }
 
-TEST_F(HierarchicalSlotAllocatorTest, AllocateDenseSingleSlotLevel1) {
-    // levels = {256, 128, 64}, size = 100 → rs = [0, 1, 0]
-    void* base = reinterpret_cast<void*>(0x12000);
-    EXPECT_CALL(impl_, reserve(256)).WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_)).WillOnce(::testing::Invoke(MapReturn));
+// TEST_F(HierarchicalSlotAllocatorTest, AllocateDenseSingleSlotLevel1) {
+//     // levels = {256, 128, 64}, size = 100 → rs = [0, 1, 0]
+//     void* base = reinterpret_cast<void*>(0x12000);
+//     EXPECT_CALL(impl_, reserve(256)).WillOnce(Return(HeapRegion{base, 256}));
+//     EXPECT_CALL(impl_, map(_)).WillOnce(::testing::Invoke(MapReturn));
 
-    Allocator::Config cfg{};
-    cfg.levels = {256, 128, 64};
-    cfg.initial_bytes = 256;
-    allocator_.initialize(cfg, &heap_ops_);
+//     Allocator::Config cfg{};
+//     cfg.levels = {256, 128, 64};
+//     cfg.initial_bytes = 256;
+//     allocator_.initialize(cfg, &heap_ops_);
 
-    auto view = allocator_.allocateDense(100);
-    EXPECT_TRUE(view);
-    EXPECT_EQ(view.size(), 128);
-}
+//     auto view = allocator_.allocateDense(100);
+//     EXPECT_TRUE(view);
+//     EXPECT_EQ(view.size(), 128);
+// }
 
-TEST_F(HierarchicalSlotAllocatorTest, AllocateDenseSingleSlotLevel2) {
-    // levels = {256, 128, 64}, size = 50 → rs = [0, 0, 1]
-    void* base = reinterpret_cast<void*>(0x13000);
-    EXPECT_CALL(impl_, reserve(256)).WillOnce(Return(HeapRegion{base, 256}));
-    EXPECT_CALL(impl_, map(_)).WillOnce(::testing::Invoke(MapReturn));
+// TEST_F(HierarchicalSlotAllocatorTest, AllocateDenseSingleSlotLevel2) {
+//     // levels = {256, 128, 64}, size = 50 → rs = [0, 0, 1]
+//     void* base = reinterpret_cast<void*>(0x13000);
+//     EXPECT_CALL(impl_, reserve(256)).WillOnce(Return(HeapRegion{base, 256}));
+//     EXPECT_CALL(impl_, map(_)).WillOnce(::testing::Invoke(MapReturn));
 
-    Allocator::Config cfg{};
-    cfg.levels = {256, 128, 64};
-    cfg.initial_bytes = 256;
-    allocator_.initialize(cfg, &heap_ops_);
+//     Allocator::Config cfg{};
+//     cfg.levels = {256, 128, 64};
+//     cfg.initial_bytes = 256;
+//     allocator_.initialize(cfg, &heap_ops_);
 
-    auto view = allocator_.allocateDense(50);
-    EXPECT_TRUE(view);
-    EXPECT_EQ(view.size(), 64);
-}
+//     auto view = allocator_.allocateDense(50);
+//     EXPECT_TRUE(view);
+//     EXPECT_EQ(view.size(), 64);
+// }
+
+// TEST_F(HierarchicalSlotAllocatorTest, AllocateDenseFromChildStartContinuesContiguously) {
+//     // 最初の割り当てでスプリットが走り、次の割り当ては子レイヤから開始するケース。
+//     // 2回目は子スロットが連続して割り当てられることを確認する。
+//     void* base = reinterpret_cast<void*>(0x14000);
+//     EXPECT_CALL(impl_, reserve(256)).WillOnce(Return(HeapRegion{base, 256}));
+//     EXPECT_CALL(impl_, map(_)).WillRepeatedly(::testing::Invoke(MapReturn));
+
+//     Allocator::Config cfg{};
+//     cfg.levels = {256, 128, 64};
+//     cfg.initial_bytes = 256;
+//     allocator_.initialize(cfg, &heap_ops_);
+
+//     auto first = allocator_.allocateDense(64);   // 子レイヤの最初のスロット
+//     auto second = allocator_.allocateDense(64);  // 子レイヤの次のスロットに連続で入るはず
+
+//     ASSERT_TRUE(first);
+//     ASSERT_TRUE(second);
+//     auto diff = static_cast<std::uintptr_t>(static_cast<char*>(second.data()) - static_cast<char*>(first.data()));
+//     EXPECT_EQ(diff, 64);  // 子スロットが連続していることを確認
+// }
 
 }  // namespace

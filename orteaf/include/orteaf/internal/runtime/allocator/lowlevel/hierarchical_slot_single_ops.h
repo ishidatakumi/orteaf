@@ -83,6 +83,16 @@ public:
         return slot_idx;
     }
 
+    // Dense用: 既知のインデックスをそのまま確保する
+    void acquireSpecificSlot(uint32_t layer_index, uint32_t slot_index) {
+        Layer& layer = storage_.layers()[layer_index];
+        ORTEAF_THROW_IF(slot_index >= layer.slots.size(), OutOfMemory, "Slot index out of range");
+        Slot& slot = layer.slots[slot_index];
+        ORTEAF_THROW_IF(slot.state != State::Free, OutOfMemory, "Slot not free");
+        Storage::markSlotInUse(slot);
+        // free_list からは呼び出し元で調整済み（or 未登録）想定
+    }
+
     BufferView mapSlot(uint32_t layer_index, uint32_t slot_index) {
         Slot& slot = storage_.layers()[layer_index].slots[slot_index];
         return storage_.heapOps()->map(slot.region);
