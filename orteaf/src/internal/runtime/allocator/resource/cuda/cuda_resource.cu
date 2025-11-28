@@ -1,7 +1,5 @@
 #include "orteaf/internal/runtime/allocator/resource/cuda/cuda_resource.h"
 
-#if ORTEAF_ENABLE_CUDA
-
 #include "orteaf/internal/backend/cuda/wrapper/cuda_alloc.h"
 #include "orteaf/internal/diagnostics/error/error_macros.h"
 
@@ -30,5 +28,3 @@ void CudaResource::deallocate(BufferView view, std::size_t size, std::size_t /*a
 }
 
 }  // namespace orteaf::internal::backend::cuda
-
-#endif  // ORTEAF_ENABLE_CUDA
