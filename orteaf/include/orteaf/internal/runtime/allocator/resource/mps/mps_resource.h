@@ -23,9 +23,9 @@ public:
 
     MpsResource() = default;
 
-    explicit MpsResource(const Config& config) noexcept { initialize(config); }
+    explicit MpsResource(const Config& config) { initialize(config); }
 
-    void initialize(const Config& config) noexcept;
+    void initialize(const Config& config);
 
     BufferView allocate(std::size_t size, std::size_t alignment);
 

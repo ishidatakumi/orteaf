@@ -2,9 +2,13 @@
 
 #if ORTEAF_ENABLE_MPS
 
+#include "orteaf/internal/diagnostics/error/error_macros.h"
+
 namespace orteaf::internal::backend::mps {
 
-void MpsResource::initialize(const Config& config) noexcept {
+void MpsResource::initialize(const Config& config) {
+    ORTEAF_THROW_IF_NULL(config.device, "MpsResource requires non-null device");
+    ORTEAF_THROW_IF_NULL(config.heap, "MpsResource requires non-null heap");
     device_ = config.device;
     heap_ = config.heap;
     usage_ = config.usage;
@@ -12,9 +16,8 @@ void MpsResource::initialize(const Config& config) noexcept {
 }
 
 MpsResource::BufferView MpsResource::allocate(std::size_t size, std::size_t /*alignment*/) {
-    if (!initialized_ || size == 0) {
-        return {};
-    }
+    ORTEAF_THROW_IF(!initialized_, InvalidState, "MpsResource::allocate called before initialize");
+    ORTEAF_THROW_IF(size == 0, InvalidParameter, "MpsResource::allocate requires size > 0");
 
     MPSBuffer_t buffer = createBuffer(heap_, size, usage_);
     if (!buffer) {
@@ -25,7 +28,7 @@ MpsResource::BufferView MpsResource::allocate(std::size_t size, std::size_t /*al
 }
 
 void MpsResource::deallocate(BufferView view, std::size_t /*size*/, std::size_t /*alignment*/) noexcept {
-    if (!view) {
+    if (!initialized_ || !view) {
         return;
     }
     destroyBuffer(view.raw());

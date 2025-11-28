@@ -12,8 +12,7 @@ TEST(CpuResourceTest, InitializeIsIdempotent) {
 }
 
 TEST(CpuResourceTest, AllocateZeroReturnsEmpty) {
-    auto view = CpuResource::allocate(0, 64);
-    EXPECT_FALSE(view);
+    EXPECT_THROW(CpuResource::allocate(0, 64), std::system_error);
 }
 
 TEST(CpuResourceTest, AllocateAndDeallocateSucceeds) {

@@ -3,6 +3,7 @@
 #if ORTEAF_ENABLE_CUDA
 
 #include "orteaf/internal/backend/cuda/wrapper/cuda_alloc.h"
+#include "orteaf/internal/diagnostics/error/error_macros.h"
 
 namespace orteaf::internal::backend::cuda {
 
@@ -11,9 +12,7 @@ void CudaResource::initialize(const Config& config) noexcept {
 }
 
 CudaResource::BufferView CudaResource::allocate(std::size_t size, std::size_t /*alignment*/) {
-    if (size == 0) {
-        return {};
-    }
+    ORTEAF_THROW_IF(size == 0, InvalidParameter, "CudaResource::allocate requires size > 0");
 
     CUdeviceptr_t base = ::orteaf::internal::backend::cuda::alloc(size);
     if (base == 0) {
