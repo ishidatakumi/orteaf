@@ -21,6 +21,7 @@ public:
     bool empty() const { return base_ == 0; }
     explicit operator bool() const { return !empty(); }
 
+    pointer raw() const { return base_; }
     pointer data() const { return base_ + offset_; }
     std::size_t offset() const { return offset_; }
     std::size_t size() const { return size_; }

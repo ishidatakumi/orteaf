@@ -16,6 +16,7 @@ public:
     bool empty() const { return base_ == nullptr; }
     explicit operator bool() const { return !empty(); }
 
+    void* raw() const { return base_; }
     void* data() const { return static_cast<char*>(base_) + offset_; }
     std::size_t offset() const { return offset_; }
     std::size_t size() const { return size_; }

@@ -37,4 +37,8 @@ bool CudaResource::isCompleted(const ReuseToken& token) {
     return true;
 }
 
+CudaResource::BufferView CudaResource::makeView(BufferView base, std::size_t offset, std::size_t size) {
+    return BufferView{base.raw(), offset, size};
+}
+
 }  // namespace orteaf::internal::backend::cuda

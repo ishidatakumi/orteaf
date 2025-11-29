@@ -41,6 +41,8 @@ public:
     bool isCompleted(FenceToken& token);
     bool isCompleted(ReuseToken& token);
 
+    static BufferView makeView(BufferView base, std::size_t offset, std::size_t size);
+
 private:
     MPSDevice_t device_{nullptr};
     MPSHeap_t heap_{nullptr};
