@@ -41,7 +41,7 @@ bool MpsResource::isCompleted(FenceToken& token) {
         if (!ticket.valid()) {
             continue;
         }
-        if (isCompleted(ticket.commandBuffer())) {
+        if (::orteaf::internal::backend::mps::isCompleted(ticket.commandBuffer())) {
             ticket.reset();  // mark as invalid so subsequent calls skip it
             continue;
         } else {
@@ -60,7 +60,7 @@ bool MpsResource::isCompleted(ReuseToken& token) {
         if (!ticket.valid()) {
             continue;
         }
-        if (isCompleted(ticket.commandBuffer())) {
+        if (::orteaf::internal::backend::mps::isCompleted(ticket.commandBuffer())) {
             ticket.reset();
             continue;
         } else {
