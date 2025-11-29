@@ -33,4 +33,8 @@ bool CpuResource::isCompleted(const ReuseToken& token) {
     return true;
 }
 
+CpuResource::BufferView CpuResource::makeView(BufferView base, std::size_t offset, std::size_t size) {
+    return BufferView{base.raw(), offset, size};
+}
+
 }  // namespace orteaf::internal::backend::cpu

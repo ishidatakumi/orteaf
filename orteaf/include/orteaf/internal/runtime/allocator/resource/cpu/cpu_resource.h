@@ -25,6 +25,8 @@ public:
 
     static bool isCompleted(const FenceToken& token);
     static bool isCompleted(const ReuseToken& token);
+
+    static BufferView makeView(BufferView base, std::size_t offset, std::size_t size);
 };
 
 }  // namespace orteaf::internal::backend::cpu

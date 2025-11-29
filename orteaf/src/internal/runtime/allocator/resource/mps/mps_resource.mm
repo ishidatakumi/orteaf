@@ -72,4 +72,8 @@ bool MpsResource::isCompleted(ReuseToken& token) {
     return all_completed;
 }
 
+MpsResource::BufferView MpsResource::makeView(BufferView base, std::size_t offset, std::size_t size) {
+    return BufferView{base.raw(), offset, size};
+}
+
 }  // namespace orteaf::internal::backend::mps
