@@ -49,12 +49,16 @@ public:
         for (std::size_t i = 0; i < pending_queue_.size(); ++i) {
             PendingReuse& item = pending_queue_[i];
             const bool timed_out = (now - item.timestamp) > timeout_ms_;
-            const bool completed = timed_out || resource_->isCompleted(item.reuse_token);
+            const bool completed = resource_->isCompleted(item.reuse_token);
 
             if (completed) {
                 ready_queue_.emplaceBack(ReadyReuse{std::move(item.block), item.freelist_index});
                 ++ready_count;
             } else {
+                // タイムアウトしても未完了の場合、早期再利用を避けるため残す。
+                if (timed_out) {
+                    item.timestamp = now;  // 同じtimeout判定での連続ヒットを避ける
+                }
                 if (write_idx != i) {
                     pending_queue_[write_idx] = std::move(item);
                 }
