@@ -8,6 +8,7 @@
 #include <orteaf/internal/backend/backend.h>
 #include <orteaf/internal/backend/cpu/cpu_buffer_view.h>
 #include <orteaf/internal/backend/cpu/cpu_heap_region.h>
+#include <orteaf/internal/backend/cpu/cpu_tokens.h>
 #if ORTEAF_ENABLE_CUDA
 #include <orteaf/internal/backend/cuda/wrapper/cuda_device.h>
 #include <orteaf/internal/backend/cuda/wrapper/cuda_stream.h>
@@ -36,8 +37,8 @@ struct BackendTraits<Backend::Cpu> {
     using Stream = void*;      // placeholder; adjust when stream type is defined
     using Device = int;        // placeholder; adjust when device abstraction is defined
     using Context = int;       // placeholder; adjust when context abstraction is defined
-    using FenceToken = void*;  // placeholder fence token
-    using ReuseToken = void*;  // placeholder reuse token
+    using FenceToken = cpu::FenceToken;
+    using ReuseToken = cpu::ReuseToken;
 };
 
 // CUDA
