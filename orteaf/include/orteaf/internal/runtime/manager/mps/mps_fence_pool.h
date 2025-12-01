@@ -45,7 +45,7 @@ public:
     FenceLease acquireFence();
 
     // Manual release helper for callers wanting explicit return.
-    void release(FenceLease& lease) noexcept {
+    void release(FenceLease& lease) {
         if (lease) {
             release(lease.get());
         }

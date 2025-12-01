@@ -4,6 +4,8 @@
 #include <utility>
 #include <type_traits>
 
+#include "orteaf/internal/diagnostics/error/error_macros.h"
+
 namespace orteaf::internal::base {
 
 /**
@@ -39,22 +41,32 @@ public:
 
     const HandleT& handle() const noexcept { return handle_; }
 
-    ResourceT& get() noexcept { return resource_; }
-    const ResourceT& get() const noexcept { return resource_; }
+    ResourceT& get() {
+        ensureValid();
+        return resource_;
+    }
+    const ResourceT& get() const {
+        ensureValid();
+        return resource_;
+    }
 
     ResourceT* operator->() noexcept { return std::addressof(resource_); }
     const ResourceT* operator->() const noexcept { return std::addressof(resource_); }
 
     explicit operator bool() const noexcept { return manager_ != nullptr; }
 
-    // Explicitly release early; safe to call multiple times.
-    void release() noexcept { doRelease(); }
+    // Explicitly release early; safe to call multiple times. May throw if manager_->release throws.
+    void release() { doRelease(); }
 
 private:
+    void ensureValid() const {
+        ORTEAF_THROW_IF(!manager_, InvalidState, "Lease is not active (moved-from or released)");
+    }
+
     Lease(ManagerT* mgr, HandleT handle, ResourceT resource) noexcept
         : manager_(mgr), handle_(std::move(handle)), resource_(std::move(resource)) {}
 
-    void doRelease() noexcept {
+    void doRelease() {
         if (manager_) {
             manager_->release(*this);
             manager_ = nullptr;
@@ -94,22 +106,32 @@ public:
 
     ~Lease() { release(); }
 
-    ResourceT& get() noexcept { return resource_; }
-    const ResourceT& get() const noexcept { return resource_; }
+    ResourceT& get() {
+        ensureValid();
+        return resource_;
+    }
+    const ResourceT& get() const {
+        ensureValid();
+        return resource_;
+    }
 
     ResourceT* operator->() noexcept { return std::addressof(resource_); }
     const ResourceT* operator->() const noexcept { return std::addressof(resource_); }
 
     explicit operator bool() const noexcept { return manager_ != nullptr; }
 
-    // Explicitly release early; safe to call multiple times.
-    void release() noexcept { doRelease(); }
+    // Explicitly release early; safe to call multiple times. May throw if manager_->release throws.
+    void release() { doRelease(); }
 
 private:
+    void ensureValid() const {
+        ORTEAF_THROW_IF(!manager_, InvalidState, "Lease is not active (moved-from or released)");
+    }
+
     Lease(ManagerT* mgr, ResourceT resource) noexcept
         : manager_(mgr), resource_(std::move(resource)) {}
 
-    void doRelease() noexcept {
+    void doRelease() {
         if (manager_) {
             manager_->release(*this);
             manager_ = nullptr;

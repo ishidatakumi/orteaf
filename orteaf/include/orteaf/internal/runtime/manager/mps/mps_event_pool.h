@@ -45,7 +45,7 @@ public:
     EventLease acquireEvent();
 
     // Manual release helper for callers wanting explicit return.
-    void release(EventLease& lease) noexcept {
+    void release(EventLease& lease) {
         if (lease) {
             release(lease.get());
         }
