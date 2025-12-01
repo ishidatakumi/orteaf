@@ -74,17 +74,12 @@ MpsFencePool::FenceLease MpsFencePool::acquireFence() {
   return FenceLease{this, handle};
 }
 
-void MpsFencePool::release(Fence fence) {
-  if (fence == nullptr) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
-        "Cannot release null fence to MPS fence pool");
+void MpsFencePool::release(Fence fence) noexcept {
+  if (!initialized_ || fence == nullptr) {
+    return;
   }
-  ensureInitialized();
   if (active_count_ == 0) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-        "No active fences to release");
+    return;
   }
   free_list_.pushBack(fence);
   --active_count_;

@@ -37,7 +37,7 @@ public:
         return *this;
     }
 
-    ~Lease() { release(); }
+    ~Lease() noexcept { release(); }
 
     const HandleT& handle() const noexcept { return handle_; }
 
@@ -55,18 +55,16 @@ public:
 
     explicit operator bool() const noexcept { return manager_ != nullptr; }
 
-    // Explicitly release early; safe to call multiple times. May throw if manager_->release throws.
-    void release() { doRelease(); }
+    // Explicitly release early; safe to call multiple times. Never throws.
+    void release() noexcept { doRelease(); }
 
 private:
-    void ensureValid() const {
-        ORTEAF_THROW_IF(!manager_, InvalidState, "Lease is not active (moved-from or released)");
-    }
+    void ensureValid() const noexcept {}
 
     Lease(ManagerT* mgr, HandleT handle, ResourceT resource) noexcept
         : manager_(mgr), handle_(std::move(handle)), resource_(std::move(resource)) {}
 
-    void doRelease() {
+    void doRelease() noexcept {
         if (manager_) {
             manager_->release(*this);
             manager_ = nullptr;
@@ -104,7 +102,7 @@ public:
         return *this;
     }
 
-    ~Lease() { release(); }
+    ~Lease() noexcept { release(); }
 
     ResourceT& get() {
         ensureValid();
@@ -120,18 +118,16 @@ public:
 
     explicit operator bool() const noexcept { return manager_ != nullptr; }
 
-    // Explicitly release early; safe to call multiple times. May throw if manager_->release throws.
-    void release() { doRelease(); }
+    // Explicitly release early; safe to call multiple times. Never throws.
+    void release() noexcept { doRelease(); }
 
 private:
-    void ensureValid() const {
-        ORTEAF_THROW_IF(!manager_, InvalidState, "Lease is not active (moved-from or released)");
-    }
+    void ensureValid() const noexcept {}
 
     Lease(ManagerT* mgr, ResourceT resource) noexcept
         : manager_(mgr), resource_(std::move(resource)) {}
 
-    void doRelease() {
+    void doRelease() noexcept {
         if (manager_) {
             manager_->release(*this);
             manager_ = nullptr;

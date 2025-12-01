@@ -45,7 +45,7 @@ public:
     EventLease acquireEvent();
 
     // Manual release helper for callers wanting explicit return.
-    void release(EventLease& lease) {
+    void release(EventLease& lease) noexcept {
         if (lease) {
             release(lease.get());
         }
@@ -78,7 +78,7 @@ private:
 
     void growFreeList(std::size_t count);
 
-    void release(Event handle);
+    void release(Event handle) noexcept;
 
     std::size_t growth_chunk_size_{1};
     bool initialized_{false};

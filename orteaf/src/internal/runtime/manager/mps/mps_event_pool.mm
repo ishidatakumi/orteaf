@@ -74,17 +74,12 @@ MpsEventPool::EventLease MpsEventPool::acquireEvent() {
   return EventLease{this, handle};
 }
 
-void MpsEventPool::release(Event event) {
-  if (event == nullptr) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
-        "Cannot release null event to MPS event pool");
+void MpsEventPool::release(Event event) noexcept {
+  if (!initialized_ || event == nullptr) {
+    return;
   }
-  ensureInitialized();
   if (active_count_ == 0) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-        "No active events to release");
+    return;
   }
   free_list_.pushBack(event);
   --active_count_;

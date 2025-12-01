@@ -45,7 +45,7 @@ public:
     FenceLease acquireFence();
 
     // Manual release helper for callers wanting explicit return.
-    void release(FenceLease& lease) {
+    void release(FenceLease& lease) noexcept {
         if (lease) {
             release(lease.get());
         }
@@ -78,7 +78,7 @@ private:
 
     void growFreeList(std::size_t count);
 
-    void release(Fence handle);
+    void release(Fence handle) noexcept;
 
     std::size_t growth_chunk_size_{1};
     bool initialized_{false};
