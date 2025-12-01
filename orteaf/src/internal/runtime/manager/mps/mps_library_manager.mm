@@ -20,7 +20,7 @@ void MpsLibraryManager::initialize(
   }
   device_ = device;
   ops_ = ops;
-  if (capacity > kMaxStateCount) {
+  if (capacity > base::LibraryId::invalid_index()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "Requested MPS library capacity exceeds supported limit");
@@ -154,7 +154,7 @@ MpsLibraryManager::ensureAliveState(base::LibraryId id) {
         "MPS library handle is inactive");
   }
   const std::uint32_t expected_generation = generationFromId(id);
-  if ((state.generation & kGenerationMask) != expected_generation) {
+  if (static_cast<base::LibraryId::generation_type>(state.generation) != expected_generation) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "MPS library handle is stale");
@@ -180,7 +180,7 @@ void MpsLibraryManager::growStatePool(std::size_t additional) {
   if (additional == 0) {
     return;
   }
-  if (additional > (kMaxStateCount - states_.size())) {
+  if (additional > (base::LibraryId::invalid_index() - states_.size())) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "Requested MPS library capacity exceeds supported limit");
@@ -196,18 +196,15 @@ void MpsLibraryManager::growStatePool(std::size_t additional) {
 
 base::LibraryId MpsLibraryManager::encodeId(std::size_t index,
                                             std::uint32_t generation) const {
-  const std::uint32_t encoded_generation = generation & kGenerationMask;
-  const std::uint32_t encoded = (encoded_generation << kGenerationShift) |
-                                static_cast<std::uint32_t>(index);
-  return base::LibraryId{encoded};
+  return base::LibraryId{static_cast<std::uint32_t>(index), static_cast<std::uint8_t>(generation)};
 }
 
 std::size_t MpsLibraryManager::indexFromId(base::LibraryId id) const {
-  return static_cast<std::size_t>(static_cast<std::uint32_t>(id) & kIndexMask);
+  return static_cast<std::size_t>(id.index);
 }
 
 std::uint32_t MpsLibraryManager::generationFromId(base::LibraryId id) const {
-  return (static_cast<std::uint32_t>(id) >> kGenerationShift) & kGenerationMask;
+  return static_cast<std::uint32_t>(id.generation);
 }
 
 ::orteaf::internal::backend::mps::MPSLibrary_t

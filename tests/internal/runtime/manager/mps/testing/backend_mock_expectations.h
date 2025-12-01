@@ -18,7 +18,7 @@
 #include <orteaf/internal/backend/mps/wrapper/mps_function.h>
 #include <orteaf/internal/backend/mps/wrapper/mps_heap.h>
 #include <orteaf/internal/backend/mps/wrapper/mps_library.h>
-#include <orteaf/internal/base/strong_id.h>
+#include <orteaf/internal/base/handle.h>
 #include <tests/internal/runtime/manager/mps/testing/backend_mock.h>
 
 namespace orteaf::tests::runtime::mps {

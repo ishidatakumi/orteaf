@@ -21,7 +21,7 @@ void MpsCommandQueueManager::initialize(
     return;
   }
 
-  if (capacity > kMaxStateCount) {
+  if (capacity > base::CommandQueueId::invalid_index()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "Requested MPS command queue capacity exceeds supported limit");
@@ -203,7 +203,7 @@ void MpsCommandQueueManager::growStatePool(std::size_t additional_count) {
   if (additional_count == 0) {
     return;
   }
-  if (additional_count > (kMaxStateCount - states_.size())) {
+  if (additional_count > (base::CommandQueueId::invalid_index() - states_.size())) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "Requested MPS command queue capacity exceeds supported limit");
@@ -240,7 +240,7 @@ MpsCommandQueueManager::ensureActiveState(base::CommandQueueId id) {
         "MPS command queue is inactive");
   }
   const std::uint32_t expected_generation = generationFromId(id);
-  if ((state.generation & kGenerationMask) != expected_generation) {
+  if (static_cast<base::CommandQueueId::generation_type>(state.generation) != expected_generation) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "MPS command queue handle is stale");
@@ -251,10 +251,7 @@ MpsCommandQueueManager::ensureActiveState(base::CommandQueueId id) {
 base::CommandQueueId
 MpsCommandQueueManager::encodeId(std::size_t index,
                                  std::uint32_t generation) const {
-  const std::uint32_t encoded_generation = generation & kGenerationMask;
-  const std::uint32_t encoded = (encoded_generation << kGenerationShift) |
-                                static_cast<std::uint32_t>(index);
-  return base::CommandQueueId{encoded};
+  return base::CommandQueueId{static_cast<std::uint32_t>(index), static_cast<std::uint8_t>(generation)};
 }
 
 std::size_t MpsCommandQueueManager::indexFromId(base::CommandQueueId id) const {
@@ -263,12 +260,12 @@ std::size_t MpsCommandQueueManager::indexFromId(base::CommandQueueId id) const {
 
 std::size_t
 MpsCommandQueueManager::indexFromIdRaw(base::CommandQueueId id) const {
-  return static_cast<std::size_t>(static_cast<std::uint32_t>(id) & kIndexMask);
+  return static_cast<std::size_t>(id.index);
 }
 
 std::uint32_t
 MpsCommandQueueManager::generationFromId(base::CommandQueueId id) const {
-  return (static_cast<std::uint32_t>(id) >> kGenerationShift) & kGenerationMask;
+  return static_cast<std::uint32_t>(id.generation);
 }
 
 } // namespace orteaf::internal::runtime::mps

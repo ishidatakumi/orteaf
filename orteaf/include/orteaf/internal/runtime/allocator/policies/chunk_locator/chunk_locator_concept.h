@@ -9,7 +9,7 @@
 #include <cstddef>
 #include <type_traits>
 
-#include "orteaf/internal/base/strong_id.h"
+#include "orteaf/internal/base/handle.h"
 
 namespace orteaf::internal::runtime::allocator::policies {
 

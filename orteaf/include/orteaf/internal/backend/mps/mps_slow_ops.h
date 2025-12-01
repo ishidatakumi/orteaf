@@ -14,7 +14,7 @@
 #include "orteaf/internal/backend/mps/wrapper/mps_heap.h"
 #include "orteaf/internal/backend/mps/wrapper/mps_library.h"
 #include "orteaf/internal/backend/mps/wrapper/mps_string.h"
-#include "orteaf/internal/base/strong_id.h"
+#include "orteaf/internal/base/handle.h"
 
 namespace orteaf::internal::runtime::backend_ops::mps {
 

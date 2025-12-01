@@ -9,7 +9,7 @@
 #include "orteaf/internal/backend/backend.h"
 #include "orteaf/internal/backend/backend_traits.h"
 #include "orteaf/internal/backend/cpu/cpu_buffer_view.h"
-#include "orteaf/internal/base/strong_id.h"
+#include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/runtime/allocator/memory_block.h"
 #include "tests/internal/testing/error_assert.h"
 

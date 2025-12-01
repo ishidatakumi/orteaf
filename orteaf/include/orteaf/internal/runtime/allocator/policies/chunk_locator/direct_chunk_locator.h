@@ -7,7 +7,7 @@
 #include "orteaf/internal/backend/backend.h"
 #include "orteaf/internal/backend/backend_traits.h"
 #include "orteaf/internal/base/heap_vector.h"
-#include "orteaf/internal/base/strong_id.h"
+#include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/runtime/allocator/memory_block.h"
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/diagnostics/error/error_macros.h"

@@ -9,7 +9,7 @@
 #include "orteaf/internal/architecture/architecture.h"
 #include "orteaf/internal/backend/mps/wrapper/mps_device.h"
 #include "orteaf/internal/base/heap_vector.h"
-#include "orteaf/internal/base/strong_id.h"
+#include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/backend/mps/mps_slow_ops.h"
 #include "orteaf/internal/runtime/manager/mps/mps_command_queue_manager.h"

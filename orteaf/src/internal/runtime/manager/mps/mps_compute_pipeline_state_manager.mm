@@ -20,7 +20,7 @@ void MpsComputePipelineStateManager::initialize(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "MPS compute pipeline state manager requires valid ops");
   }
-  if (capacity > kMaxStateCount) {
+  if (capacity > base::FunctionId::invalid_index()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "Requested MPS compute pipeline capacity exceeds supported limit");
@@ -171,7 +171,7 @@ MpsComputePipelineStateManager::ensureAliveState(base::FunctionId id) {
         "MPS compute pipeline state is inactive");
   }
   const std::uint32_t expected_generation = generationFromId(id);
-  if ((state.generation & kGenerationMask) != expected_generation) {
+  if (static_cast<base::FunctionId::generation_type>(state.generation) != expected_generation) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "MPS compute pipeline handle is stale");
@@ -197,7 +197,7 @@ void MpsComputePipelineStateManager::growStatePool(std::size_t additional) {
   if (additional == 0) {
     return;
   }
-  if (additional > (kMaxStateCount - states_.size())) {
+  if (additional > (base::FunctionId::invalid_index() - states_.size())) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "Requested MPS compute pipeline capacity exceeds supported limit");
@@ -214,20 +214,17 @@ void MpsComputePipelineStateManager::growStatePool(std::size_t additional) {
 base::FunctionId
 MpsComputePipelineStateManager::encodeId(std::size_t index,
                                          std::uint32_t generation) const {
-  const std::uint32_t encoded_generation = generation & kGenerationMask;
-  const std::uint32_t encoded = (encoded_generation << kGenerationShift) |
-                                static_cast<std::uint32_t>(index);
-  return base::FunctionId{encoded};
+  return base::FunctionId{static_cast<std::uint32_t>(index), static_cast<std::uint8_t>(generation)};
 }
 
 std::size_t
 MpsComputePipelineStateManager::indexFromId(base::FunctionId id) const {
-  return static_cast<std::size_t>(static_cast<std::uint32_t>(id) & kIndexMask);
+  return static_cast<std::size_t>(id.index);
 }
 
 std::uint32_t
 MpsComputePipelineStateManager::generationFromId(base::FunctionId id) const {
-  return (static_cast<std::uint32_t>(id) >> kGenerationShift) & kGenerationMask;
+  return static_cast<std::uint32_t>(id.generation);
 }
 
 } // namespace orteaf::internal::runtime::mps

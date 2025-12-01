@@ -15,7 +15,7 @@
 #include "orteaf/internal/backend/mps/wrapper/mps_function.h"
 #include "orteaf/internal/backend/mps/wrapper/mps_library.h"
 #include "orteaf/internal/base/heap_vector.h"
-#include "orteaf/internal/base/strong_id.h"
+#include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/backend/mps/mps_slow_ops.h"
 
@@ -109,13 +109,6 @@ private:
         std::uint32_t generation{0};
         bool alive{false};
     };
-
-    static constexpr std::uint32_t kGenerationBits = 8;
-    static constexpr std::uint32_t kIndexBits = 24;
-    static constexpr std::uint32_t kGenerationShift = kIndexBits;
-    static constexpr std::uint32_t kIndexMask = (1u << kIndexBits) - 1u;
-    static constexpr std::uint32_t kGenerationMask = (1u << kGenerationBits) - 1u;
-    static constexpr std::size_t kMaxStateCount = static_cast<std::size_t>(kIndexMask);
 
     void ensureInitialized() const;
 

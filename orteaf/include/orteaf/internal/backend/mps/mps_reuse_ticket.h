@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "orteaf/internal/backend/mps/wrapper/mps_event.h"
-#include "orteaf/internal/base/strong_id.h"
+#include "orteaf/internal/base/handle.h"
 
 namespace orteaf::internal::backend::mps {
 

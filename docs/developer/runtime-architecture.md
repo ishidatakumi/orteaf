@@ -50,7 +50,7 @@ orteaf/
 - **DeviceManager**  
   - デバイス列挙と `DeviceState` の保持。`initialize_devices()` / `shutdown()` / `get_state()` を提供。
   - 各バックエンド固有のアーキ情報（SM 数や Metal Feature Set など）を保持する構造体もここに置く。
-  - ID 系の誤用を防ぐため、`base/strong_id.h` で提供する `DeviceId`/`StreamId`/`ContextId` を API 引数／返り値に強制し、`uint8_t`/`uint32_t` をそのまま受け取らない。
+  - ID 系の誤用を防ぐため、`base/handle.h` で提供する `DeviceId`/`StreamId`/`ContextId` を API 引数／返り値に強制し、`uint8_t`/`uint32_t` をそのまま受け取らない。
 - **ContextManager**  
   - CUDA などドライバが明示的なコンテキストを要求するバックエンド専用。  
   - `ContextState` に `StreamManager`/`EventManager`/`Allocator` のハンドルを内包し、遅延生成・破棄を管理する。

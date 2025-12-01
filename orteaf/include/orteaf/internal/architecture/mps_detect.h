@@ -1,7 +1,7 @@
 #pragma once
 
 #include "orteaf/internal/architecture/architecture.h"
-#include "orteaf/internal/base/strong_id.h"
+#include "orteaf/internal/base/handle.h"
 
 #include <cstdint>
 #include <string_view>
