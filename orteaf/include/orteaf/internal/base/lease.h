@@ -13,19 +13,19 @@ namespace orteaf::internal::base {
  * private ctor with the acquired resource; destruction releases via Manager::release.
  */
 template <class HandleT, class ResourceT, class ManagerT>
-class HandleScope {
+class Lease {
     friend ManagerT;
 
 public:
-    HandleScope(const HandleScope&) = delete;
-    HandleScope& operator=(const HandleScope&) = delete;
+    Lease(const Lease&) = delete;
+    Lease& operator=(const Lease&) = delete;
 
-    HandleScope(HandleScope&& other) noexcept
+    Lease(Lease&& other) noexcept
         : manager_(std::exchange(other.manager_, nullptr)),
           handle_(std::move(other.handle_)),
           resource_(std::move(other.resource_)) {}
 
-    HandleScope& operator=(HandleScope&& other) noexcept {
+    Lease& operator=(Lease&& other) noexcept {
         if (this != &other) {
             release();
             manager_ = std::exchange(other.manager_, nullptr);
@@ -35,7 +35,7 @@ public:
         return *this;
     }
 
-    ~HandleScope() { release(); }
+    ~Lease() { release(); }
 
     const HandleT& handle() const noexcept { return handle_; }
 
@@ -47,16 +47,19 @@ public:
 
     explicit operator bool() const noexcept { return manager_ != nullptr; }
 
-    void release() noexcept {
+    // Explicitly release early; safe to call multiple times.
+    void release() noexcept { doRelease(); }
+
+private:
+    Lease(ManagerT* mgr, HandleT handle, ResourceT resource) noexcept
+        : manager_(mgr), handle_(std::move(handle)), resource_(std::move(resource)) {}
+
+    void doRelease() noexcept {
         if (manager_) {
-            manager_->release(handle_);
+            manager_->release(*this);
             manager_ = nullptr;
         }
     }
-
-private:
-    HandleScope(ManagerT* mgr, HandleT handle, ResourceT resource) noexcept
-        : manager_(mgr), handle_(std::move(handle)), resource_(std::move(resource)) {}
 
     ManagerT* manager_{nullptr};
     HandleT handle_{};
@@ -69,18 +72,18 @@ private:
  * Manager::release は ResourceT のみで解放できることを前提とする。
  */
 template <class ResourceT, class ManagerT>
-class HandleScope<void, ResourceT, ManagerT> {
+class Lease<void, ResourceT, ManagerT> {
     friend ManagerT;
 
 public:
-    HandleScope(const HandleScope&) = delete;
-    HandleScope& operator=(const HandleScope&) = delete;
+    Lease(const Lease&) = delete;
+    Lease& operator=(const Lease&) = delete;
 
-    HandleScope(HandleScope&& other) noexcept
+    Lease(Lease&& other) noexcept
         : manager_(std::exchange(other.manager_, nullptr)),
           resource_(std::move(other.resource_)) {}
 
-    HandleScope& operator=(HandleScope&& other) noexcept {
+    Lease& operator=(Lease&& other) noexcept {
         if (this != &other) {
             release();
             manager_ = std::exchange(other.manager_, nullptr);
@@ -89,7 +92,7 @@ public:
         return *this;
     }
 
-    ~HandleScope() { release(); }
+    ~Lease() { release(); }
 
     ResourceT& get() noexcept { return resource_; }
     const ResourceT& get() const noexcept { return resource_; }
@@ -99,16 +102,19 @@ public:
 
     explicit operator bool() const noexcept { return manager_ != nullptr; }
 
-    void release() noexcept {
+    // Explicitly release early; safe to call multiple times.
+    void release() noexcept { doRelease(); }
+
+private:
+    Lease(ManagerT* mgr, ResourceT resource) noexcept
+        : manager_(mgr), resource_(std::move(resource)) {}
+
+    void doRelease() noexcept {
         if (manager_) {
-            manager_->release(resource_);
+            manager_->release(*this);
             manager_ = nullptr;
         }
     }
-
-private:
-    HandleScope(ManagerT* mgr, ResourceT resource) noexcept
-        : manager_(mgr), resource_(std::move(resource)) {}
 
     ManagerT* manager_{nullptr};
     ResourceT resource_{};
