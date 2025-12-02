@@ -206,7 +206,7 @@ void MpsCommandQueueManager::releaseUnusedQueues() {
     }
     kept.pushBack(std::move(states_[i]));
   }
-  states_.swap(kept);
+  states_ = std::move(kept);
   free_list_.clear();
 }
 
