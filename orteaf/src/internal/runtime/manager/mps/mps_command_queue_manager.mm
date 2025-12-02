@@ -175,25 +175,38 @@ void MpsCommandQueueManager::releaseUnusedQueues() {
   if (states_.empty() || free_list_.empty()) {
     return;
   }
+  // All non-free-list entries must be unused before we can destroy free slots.
   for (std::size_t i = 0; i < states_.size(); ++i) {
     const State& state = states_[i];
-    if (state.in_use) {
+    if (!state.on_free_list && state.in_use) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
           "Cannot release unused queues while queues are in use");
     }
 #if ORTEAF_MPS_DEBUG_ENABLED
-    if (state.event_refcount != 0 || state.serial_refcount != 0) {
+    if (!state.on_free_list && (state.event_refcount != 0 || state.serial_refcount != 0)) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
           "Cannot release unused queues while debug leases are in use");
     }
 #endif
   }
-  for (std::size_t i = 0; i < states_.size(); ++i) {
-    states_[i].destroy(ops_);
+  // Destroy only free-list entries.
+  for (std::size_t idx : free_list_) {
+    if (idx < states_.size()) {
+      states_[idx].destroy(ops_);
+    }
   }
-  states_.clear();
+  // Compact away destroyed entries (safe because any non-free entries must be inactive).
+  ::orteaf::internal::base::HeapVector<State> kept;
+  kept.reserve(states_.size() - free_list_.size());
+  for (std::size_t i = 0; i < states_.size(); ++i) {
+    if (states_[i].on_free_list) {
+      continue;
+    }
+    kept.pushBack(std::move(states_[i]));
+  }
+  states_.swap(kept);
   free_list_.clear();
 }
 
