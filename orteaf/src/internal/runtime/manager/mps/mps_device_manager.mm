@@ -67,8 +67,8 @@ void MpsDeviceManager::shutdown() {
 }
 
 MpsDeviceManager::DeviceLease
-MpsDeviceManager::acquire(::orteaf::internal::base::DeviceHandle id) {
-  const State& state = ensureValid(id);
+MpsDeviceManager::acquire(::orteaf::internal::base::DeviceHandle handle) {
+  const State& state = ensureValid(handle);
   return DeviceLease{this, state.device};
 }
 
@@ -77,8 +77,8 @@ void MpsDeviceManager::release(DeviceLease&) noexcept {
 }
 
 MpsDeviceManager::CommandQueueManagerLease
-MpsDeviceManager::acquireCommandQueueManager(::orteaf::internal::base::DeviceHandle id) {
-  State& state = ensureValidState(id);
+MpsDeviceManager::acquireCommandQueueManager(::orteaf::internal::base::DeviceHandle handle) {
+  State& state = ensureValidState(handle);
   return CommandQueueManagerLease{this, &state.command_queue_manager};
 }
 
@@ -87,8 +87,8 @@ void MpsDeviceManager::release(CommandQueueManagerLease&) noexcept {
 }
 
 MpsDeviceManager::HeapManagerLease
-MpsDeviceManager::acquireHeapManager(::orteaf::internal::base::DeviceHandle id) {
-  State& state = ensureValidState(id);
+MpsDeviceManager::acquireHeapManager(::orteaf::internal::base::DeviceHandle handle) {
+  State& state = ensureValidState(handle);
   return HeapManagerLease{this, &state.heap_manager};
 }
 
@@ -97,8 +97,8 @@ void MpsDeviceManager::release(HeapManagerLease&) noexcept {
 }
 
 MpsDeviceManager::LibraryManagerLease
-MpsDeviceManager::acquireLibraryManager(::orteaf::internal::base::DeviceHandle id) {
-  State& state = ensureValidState(id);
+MpsDeviceManager::acquireLibraryManager(::orteaf::internal::base::DeviceHandle handle) {
+  State& state = ensureValidState(handle);
   return LibraryManagerLease{this, &state.library_manager};
 }
 
@@ -107,8 +107,8 @@ void MpsDeviceManager::release(LibraryManagerLease&) noexcept {
 }
 
 MpsDeviceManager::EventPoolLease
-MpsDeviceManager::acquireEventPool(::orteaf::internal::base::DeviceHandle id) {
-  State& state = ensureValidState(id);
+MpsDeviceManager::acquireEventPool(::orteaf::internal::base::DeviceHandle handle) {
+  State& state = ensureValidState(handle);
   return EventPoolLease{this, &state.event_pool};
 }
 
@@ -117,8 +117,8 @@ void MpsDeviceManager::release(EventPoolLease&) noexcept {
 }
 
 MpsDeviceManager::FencePoolLease
-MpsDeviceManager::acquireFencePool(::orteaf::internal::base::DeviceHandle id) {
-  State& state = ensureValidState(id);
+MpsDeviceManager::acquireFencePool(::orteaf::internal::base::DeviceHandle handle) {
+  State& state = ensureValidState(handle);
   return FencePoolLease{this, &state.fence_pool};
 }
 
@@ -127,16 +127,16 @@ void MpsDeviceManager::release(FencePoolLease&) noexcept {
 }
 
 ::orteaf::internal::architecture::Architecture
-MpsDeviceManager::getArch(::orteaf::internal::base::DeviceHandle id) const {
-  return ensureValid(id).arch;
+MpsDeviceManager::getArch(::orteaf::internal::base::DeviceHandle handle) const {
+  return ensureValid(handle).arch;
 }
 
-bool MpsDeviceManager::isAlive(::orteaf::internal::base::DeviceHandle id) const {
+bool MpsDeviceManager::isAlive(::orteaf::internal::base::DeviceHandle handle) const {
   if (!initialized_) {
     return false;
   }
   const std::size_t index =
-      static_cast<std::size_t>(static_cast<std::uint32_t>(id));
+      static_cast<std::size_t>(static_cast<std::uint32_t>(handle));
   if (index >= states_.size()) {
     return false;
   }
@@ -145,10 +145,10 @@ bool MpsDeviceManager::isAlive(::orteaf::internal::base::DeviceHandle id) const 
 
 #if ORTEAF_ENABLE_TEST
 MpsDeviceManager::DeviceDebugState
-MpsDeviceManager::debugState(::orteaf::internal::base::DeviceHandle id) const {
+MpsDeviceManager::debugState(::orteaf::internal::base::DeviceHandle handle) const {
   DeviceDebugState debug{};
   const std::size_t index =
-      static_cast<std::size_t>(static_cast<std::uint32_t>(id));
+      static_cast<std::size_t>(static_cast<std::uint32_t>(handle));
   if (index < states_.size()) {
     debug.in_range = true;
     const auto &state = states_[index];
@@ -188,18 +188,18 @@ void MpsDeviceManager::State::moveFrom(State &&other) noexcept {
 }
 
 const MpsDeviceManager::State &
-MpsDeviceManager::ensureValid(::orteaf::internal::base::DeviceHandle id) const {
+MpsDeviceManager::ensureValid(::orteaf::internal::base::DeviceHandle handle) const {
   if (!initialized_) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "MPS devices not initialized");
   }
   const std::size_t index =
-      static_cast<std::size_t>(static_cast<std::uint32_t>(id));
+      static_cast<std::size_t>(static_cast<std::uint32_t>(handle));
   if (index >= states_.size()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
-        "MPS device id out of range");
+        "MPS device handle out of range");
   }
   const State &state = states_[index];
   if (!state.is_alive || state.device == nullptr) {

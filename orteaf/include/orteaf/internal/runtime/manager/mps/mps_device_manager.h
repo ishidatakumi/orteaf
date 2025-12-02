@@ -88,39 +88,27 @@ public:
         return states_.size();
     }
 
-    DeviceLease acquire(::orteaf::internal::base::DeviceHandle id);
+    DeviceLease acquire(::orteaf::internal::base::DeviceHandle handle);
     void release(DeviceLease& lease) noexcept;
 
-    CommandQueueManagerLease acquireCommandQueueManager(::orteaf::internal::base::DeviceHandle id);
+    CommandQueueManagerLease acquireCommandQueueManager(::orteaf::internal::base::DeviceHandle handle);
     void release(CommandQueueManagerLease& lease) noexcept;
 
-    HeapManagerLease acquireHeapManager(::orteaf::internal::base::DeviceHandle id);
+    HeapManagerLease acquireHeapManager(::orteaf::internal::base::DeviceHandle handle);
     void release(HeapManagerLease& lease) noexcept;
 
-    LibraryManagerLease acquireLibraryManager(::orteaf::internal::base::DeviceHandle id);
+    LibraryManagerLease acquireLibraryManager(::orteaf::internal::base::DeviceHandle handle);
     void release(LibraryManagerLease& lease) noexcept;
 
-    EventPoolLease acquireEventPool(::orteaf::internal::base::DeviceHandle id);
+    EventPoolLease acquireEventPool(::orteaf::internal::base::DeviceHandle handle);
     void release(EventPoolLease& lease) noexcept;
 
-    FencePoolLease acquireFencePool(::orteaf::internal::base::DeviceHandle id);
+    FencePoolLease acquireFencePool(::orteaf::internal::base::DeviceHandle handle);
     void release(FencePoolLease& lease) noexcept;
 
-    ::orteaf::internal::architecture::Architecture getArch(::orteaf::internal::base::DeviceHandle id) const;
+    ::orteaf::internal::architecture::Architecture getArch(::orteaf::internal::base::DeviceHandle handle) const;
 
-    ::orteaf::internal::runtime::mps::MpsEventPool& eventPool(
-        ::orteaf::internal::base::DeviceHandle id);
-
-    const ::orteaf::internal::runtime::mps::MpsEventPool& eventPool(
-        ::orteaf::internal::base::DeviceHandle id) const;
-
-    ::orteaf::internal::runtime::mps::MpsFencePool& fencePool(
-        ::orteaf::internal::base::DeviceHandle id);
-
-    const ::orteaf::internal::runtime::mps::MpsFencePool& fencePool(
-        ::orteaf::internal::base::DeviceHandle id) const;
-
-    bool isAlive(::orteaf::internal::base::DeviceHandle id) const;
+    bool isAlive(::orteaf::internal::base::DeviceHandle handle) const;
 
 #if ORTEAF_ENABLE_TEST
     struct DebugState {
@@ -140,7 +128,7 @@ public:
         return DebugState{states_.size(), initialized_};
     }
 
-    DeviceDebugState debugState(::orteaf::internal::base::DeviceHandle id) const;
+    DeviceDebugState debugState(::orteaf::internal::base::DeviceHandle handle) const;
 #endif
 
 private:
@@ -181,10 +169,10 @@ private:
         void moveFrom(State&& other) noexcept;
     };
 
-    const State& ensureValid(::orteaf::internal::base::DeviceHandle id) const;
+    const State& ensureValid(::orteaf::internal::base::DeviceHandle handle) const;
 
-    State& ensureValidState(::orteaf::internal::base::DeviceHandle id) {
-        return const_cast<State&>(ensureValid(id));
+    State& ensureValidState(::orteaf::internal::base::DeviceHandle handle) {
+        return const_cast<State&>(ensureValid(handle));
     }
 
     ::orteaf::internal::base::HeapVector<State> states_;
