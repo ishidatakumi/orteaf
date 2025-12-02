@@ -77,7 +77,7 @@ struct FunctionTag {};
 struct HeapTag {};
 struct BufferTag {};
 
-using DeviceHandle       = Handle<DeviceTag, uint32_t, uint8_t>;
+using DeviceHandle       = Handle<DeviceTag, uint32_t, void>;
 using StreamHandle       = Handle<StreamTag, uint32_t, uint8_t>;
 using ContextHandle      = Handle<ContextTag, uint32_t, uint8_t>;
 using CommandQueueHandle = Handle<CommandQueueTag, uint32_t, uint8_t>;
