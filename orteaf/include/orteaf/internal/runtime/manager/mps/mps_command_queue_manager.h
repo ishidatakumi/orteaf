@@ -12,6 +12,7 @@
 #include "orteaf/internal/backend/mps/wrapper/mps_event.h"
 #include "orteaf/internal/base/heap_vector.h"
 #include "orteaf/internal/base/handle.h"
+#include "orteaf/internal/base/lease.h"
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/backend/mps/mps_slow_ops.h"
 
@@ -27,6 +28,21 @@ namespace orteaf::internal::runtime::mps {
 class MpsCommandQueueManager {
 public:
   using BackendOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using CommandQueueLease = ::orteaf::internal::base::Lease<::orteaf::internal::base::CommandQueueHandle,
+                                                            ::orteaf::internal::backend::mps::MPSCommandQueue_t,
+                                                            MpsCommandQueueManager>;
+#if ORTEAF_MPS_DEBUG_ENABLED
+  using EventLease = ::orteaf::internal::base::Lease<::orteaf::internal::base::CommandQueueHandle,
+                                                     ::orteaf::internal::backend::mps::MPSEvent_t,
+                                                     MpsCommandQueueManager>;
+  struct SerialState {
+    std::uint64_t submit_serial{0};
+    std::uint64_t completed_serial{0};
+  };
+  using SerialLease = ::orteaf::internal::base::Lease<::orteaf::internal::base::CommandQueueHandle,
+                                                      SerialState*,
+                                                      MpsCommandQueueManager>;
+#endif
 
   MpsCommandQueueManager() = default;
   MpsCommandQueueManager(const MpsCommandQueueManager&) = delete;
@@ -55,31 +71,31 @@ public:
 
   void growCapacity(std::size_t additional);
 
-  base::CommandQueueHandle acquire();
+  CommandQueueLease acquire();
 
-  void release(base::CommandQueueHandle id);
+  void release(CommandQueueLease& lease) noexcept;
+
+#if ORTEAF_MPS_DEBUG_ENABLED
+  EventLease acquireEvent(::orteaf::internal::base::CommandQueueHandle id);
+  void release(EventLease& lease) noexcept;
+  SerialLease acquireSerial(::orteaf::internal::base::CommandQueueHandle id);
+  void release(SerialLease& lease) noexcept;
+#endif
 
   void releaseUnusedQueues();
 
-  ::orteaf::internal::backend::mps::MPSCommandQueue_t
-  getCommandQueue(base::CommandQueueHandle id) const;
-
-  std::uint64_t submitSerial(base::CommandQueueHandle id) const;
-
-  void setSubmitSerial(base::CommandQueueHandle id, std::uint64_t value);
-
-  std::uint64_t completedSerial(base::CommandQueueHandle id) const;
-
-  void setCompletedSerial(base::CommandQueueHandle id, std::uint64_t value);
-
 #if ORTEAF_ENABLE_TEST
   struct DebugState {
-    std::uint64_t submit_serial{0};
-    std::uint64_t completed_serial{0};
     std::uint32_t generation{0};
     bool in_use{false};
     bool queue_allocated{false};
     std::size_t growth_chunk_size{0};
+#if ORTEAF_MPS_DEBUG_ENABLED
+    std::uint64_t submit_serial{0};
+    std::uint64_t completed_serial{0};
+    std::size_t event_refcount{0};
+    std::size_t serial_refcount{0};
+#endif
   };
 
   DebugState debugState(base::CommandQueueHandle id) const;
@@ -88,11 +104,15 @@ public:
 private:
   struct State {
     ::orteaf::internal::backend::mps::MPSCommandQueue_t command_queue{nullptr};
-    ::orteaf::internal::backend::mps::MPSEvent_t event{nullptr};
-    std::uint64_t submit_serial{0};
-    std::uint64_t completed_serial{0};
-    std::uint32_t generation{0};
     bool in_use{false};
+    bool on_free_list{true};
+    std::uint32_t generation{0};
+#if ORTEAF_MPS_DEBUG_ENABLED
+    ::orteaf::internal::backend::mps::MPSEvent_t event{nullptr};
+    SerialState serial{};
+    std::size_t event_refcount{0};
+    std::size_t serial_refcount{0};
+#endif
 
     void resetHazards() noexcept;
 
@@ -110,15 +130,6 @@ private:
   const State &ensureActiveState(base::CommandQueueHandle id) const {
     return const_cast<MpsCommandQueueManager *>(this)->ensureActiveState(id);
   }
-
-  base::CommandQueueHandle encodeId(std::size_t index,
-                                std::uint32_t generation) const;
-
-  std::size_t indexFromId(base::CommandQueueHandle id) const;
-
-  std::size_t indexFromIdRaw(base::CommandQueueHandle id) const;
-
-  std::uint32_t generationFromId(base::CommandQueueHandle id) const;
 
   ::orteaf::internal::base::HeapVector<State> states_;
   ::orteaf::internal::base::HeapVector<std::size_t> free_list_;

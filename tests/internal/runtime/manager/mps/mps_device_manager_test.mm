@@ -464,13 +464,13 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
                                                              makeQueue(0x901)}
               : std::vector<backend::mps::MPSCommandQueue_t>{makeQueue(0x902),
                                                              makeQueue(0x903)};
-      std::vector<base::CommandQueueHandle> acquired_ids;
+      std::vector<mps_rt::MpsCommandQueueManager::CommandQueueLease> acquired_leases;
       const std::size_t expected_count = expected_handles.size();
-      acquired_ids.reserve(expected_count);
+      acquired_leases.reserve(expected_count);
 
       for (std::size_t i = 0; i < expected_count; ++i) {
-        const auto acquired = queue_manager.acquire();
-        const auto queue_handle = queue_manager.getCommandQueue(acquired);
+        auto acquired = queue_manager.acquire();
+        const auto queue_handle = acquired.get();
         auto it = std::find(expected_handles.begin(), expected_handles.end(),
                             queue_handle);
         EXPECT_NE(it, expected_handles.end())
@@ -478,11 +478,11 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
         if (it != expected_handles.end()) {
           expected_handles.erase(it);
         }
-        acquired_ids.push_back(acquired);
+        acquired_leases.push_back(std::move(acquired));
       }
       EXPECT_TRUE(expected_handles.empty());
-      for (const auto acquired : acquired_ids) {
-        queue_manager.release(acquired);
+      for (auto& lease : acquired_leases) {
+        queue_manager.release(lease);
       }
     }
   }
