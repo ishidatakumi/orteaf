@@ -14,6 +14,7 @@
 #include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/base/lease.h"
 #include "orteaf/internal/diagnostics/error/error.h"
+#include "orteaf/internal/diagnostics/log/log_config.h"
 #include "orteaf/internal/backend/mps/mps_slow_ops.h"
 
 namespace orteaf::internal::runtime::mps {
