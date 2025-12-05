@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 
 #include "orteaf/internal/runtime/kernel/mps/mps_kernel_launcher_impl.h"
+#include "orteaf/internal/runtime/ops/mps/public/mps_public_ops.h"
+#include "orteaf/internal/backend/mps/wrapper/mps_device.h"
 #include "orteaf/internal/runtime/ops/mps/private/mps_private_ops.h"
 
 namespace base = orteaf::internal::base;
@@ -71,4 +73,32 @@ TEST(MpsKernelLauncherImplTest, InitializeAcquiresPipelinesInOrder) {
     EXPECT_EQ(DummyPrivateOps::last_device, device);
     EXPECT_EQ(DummyPrivateOps::last_library, "libB");    // last call should be second key
     EXPECT_EQ(DummyPrivateOps::last_function, "funcY");  // last call should be second key
+}
+
+TEST(MpsKernelLauncherImplTest, InitializeWithEmbeddedLibraryRealDevice) {
+    // Skip if no MPS device is available on the machine.
+    if (::orteaf::internal::backend::mps::getDeviceCount() == 0) {
+        GTEST_SKIP() << "No MPS devices available";
+    }
+
+    // Initialize runtime with default slow ops (uses embedded metallib by default).
+    ::orteaf::internal::runtime::ops::mps::MpsPublicOps public_ops;
+    public_ops.initialize();
+
+    // Prepare launcher for the embedded test kernel.
+    mps_rt::MpsKernelLauncherImpl<1> impl({
+        {"embed_test_library", "orteaf_embed_test_identity"},
+    });
+
+    const base::DeviceHandle device{0};
+    impl.initialize<>(device);
+
+    EXPECT_TRUE(impl.initialized());
+    ASSERT_EQ(impl.sizeForTest(), 1u);
+
+    // The pipeline lease should hold a valid pipeline state.
+    auto& lease = impl.pipelineLeaseForTest(0);
+    EXPECT_NE(lease.pointer(), nullptr);
+
+    public_ops.shutdown();
 }

@@ -55,6 +55,7 @@ public:
 #if ORTEAF_ENABLE_TEST
     const std::array<Key, N>& keysForTest() const noexcept { return keys_; }
     std::size_t sizeForTest() const noexcept { return size_; }
+    PipelineLease& pipelineLeaseForTest(std::size_t index) { return pipelines_[index]; }
 #endif
 
 private:
