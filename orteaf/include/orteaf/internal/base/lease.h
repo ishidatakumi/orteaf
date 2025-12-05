@@ -40,11 +40,21 @@ public:
 
     const HandleT& handle() const noexcept { return handle_; }
 
-    ResourceT& get() noexcept { return resource_; }
-    const ResourceT& get() const noexcept { return resource_; }
-
     ResourceT* operator->() noexcept { return std::addressof(resource_); }
     const ResourceT* operator->() const noexcept { return std::addressof(resource_); }
+
+    ResourceT& operator*() noexcept { return resource_; }
+    const ResourceT& operator*() const noexcept { return resource_; }
+
+    template <class F>
+    decltype(auto) with_resource(F&& f) {
+        return static_cast<F&&>(f)(resource_);
+    }
+
+    template <class F>
+    decltype(auto) with_resource(F&& f) const {
+        return static_cast<F&&>(f)(resource_);
+    }
 
     explicit operator bool() const noexcept { return manager_ != nullptr; }
 
@@ -102,11 +112,21 @@ public:
 
     ~Lease() noexcept { release(); }
 
-    ResourceT& get() noexcept { return resource_; }
-    const ResourceT& get() const noexcept { return resource_; }
-
     ResourceT* operator->() noexcept { return std::addressof(resource_); }
     const ResourceT* operator->() const noexcept { return std::addressof(resource_); }
+
+    ResourceT& operator*() noexcept { return resource_; }
+    const ResourceT& operator*() const noexcept { return resource_; }
+
+    template <class F>
+    decltype(auto) with_resource(F&& f) {
+        return static_cast<F&&>(f)(resource_);
+    }
+
+    template <class F>
+    decltype(auto) with_resource(F&& f) const {
+        return static_cast<F&&>(f)(resource_);
+    }
 
     explicit operator bool() const noexcept { return manager_ != nullptr; }
 
