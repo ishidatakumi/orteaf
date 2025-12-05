@@ -43,11 +43,6 @@ private:
     std::unique_ptr<SlowOps> slow_ops_{};
 };
 
-inline MpsRuntimeManager& GetMpsRuntimeManager() {
-    static MpsRuntimeManager instance{};
-    return instance;
-}
-
 }  // namespace orteaf::internal::runtime::mps
 
 #endif  // ORTEAF_ENABLE_MPS

@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "orteaf/internal/backend/mps/mps_slow_ops.h"
-#include "orteaf/internal/runtime/manager/mps/mps_runtime_manager.h"
+#include "orteaf/internal/runtime/ops/mps/common/mps_common_ops.h"
 
 namespace orteaf::internal::runtime::ops::mps {
 
@@ -22,11 +22,11 @@ public:
 
     // Initialize runtime with a provided SlowOps implementation, or default MpsSlowOpsImpl.
     void initialize(std::unique_ptr<SlowOps> slow_ops = nullptr) {
-        ::orteaf::internal::runtime::mps::GetMpsRuntimeManager().initialize(std::move(slow_ops));
+        MpsCommonOps::runtime().initialize(std::move(slow_ops));
     }
 
     void shutdown() {
-        ::orteaf::internal::runtime::mps::GetMpsRuntimeManager().shutdown();
+        MpsCommonOps::runtime().shutdown();
     }
 };
 
