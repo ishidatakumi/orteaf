@@ -88,7 +88,7 @@ TEST_F(MpsFenceTicketTest, ValueConstructorStoresMembers) {
     EXPECT_EQ(ticket.commandQueueId(), queue_id_);
     EXPECT_EQ(ticket.commandBuffer(), command_buffer_);
 
-    id<MTLFence> objc_fence = (__bridge id<MTLFence>)ticket.fenceHandle().get();
+    id<MTLFence> objc_fence = (__bridge id<MTLFence>)(*ticket.fenceHandle());
     EXPECT_NE(objc_fence, nil);
     id<MTLCommandBuffer> objc_cb = (__bridge id<MTLCommandBuffer>)ticket.commandBuffer();
     EXPECT_NE(objc_cb, nil);
@@ -106,7 +106,7 @@ TEST_F(MpsFenceTicketTest, SettersUpdateMembers) {
     EXPECT_TRUE(ticket.hasFence());
     EXPECT_EQ(ticket.commandQueueId(), queue_id_);
     EXPECT_EQ(ticket.commandBuffer(), command_buffer_);
-    EXPECT_NE(ticket.fenceHandle().get(), nullptr);
+    EXPECT_NE(*ticket.fenceHandle(), nullptr);
 }
 
 TEST_F(MpsFenceTicketTest, MoveTransfersOwnership) {
@@ -119,7 +119,7 @@ TEST_F(MpsFenceTicketTest, MoveTransfersOwnership) {
     EXPECT_TRUE(moved.hasFence());
     EXPECT_EQ(moved.commandQueueId(), queue_id_);
     EXPECT_EQ(moved.commandBuffer(), command_buffer_);
-    EXPECT_NE(moved.fenceHandle().get(), nullptr);
+    EXPECT_NE(*moved.fenceHandle(), nullptr);
 
     EXPECT_FALSE(ticket.valid());
     EXPECT_FALSE(ticket.hasFence());

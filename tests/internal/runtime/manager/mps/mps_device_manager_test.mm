@@ -192,7 +192,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetDeviceReturnsRegisteredHandle) {
 
   for (std::uint32_t idx = 0; idx < count; ++idx) {
     auto device_lease = manager.acquire(base::DeviceHandle{idx});
-    const auto device = device_lease.get();
+    const auto device = *device_lease;
     const auto snapshot = manager.debugState(base::DeviceHandle{idx});
     EXPECT_TRUE(snapshot.in_range);
     EXPECT_EQ(snapshot.has_device, device != nullptr);
@@ -364,9 +364,9 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ReinitializeReleasesPreviousDevices) {
     GTEST_SKIP() << "No MPS devices available";
   }
 
-  if constexpr (TypeParam::is_mock) {
+    if constexpr (TypeParam::is_mock) {
     auto lease = manager.acquire(base::DeviceHandle{0});
-    EXPECT_EQ(lease.get(), first0);
+    EXPECT_EQ(*lease, first0);
   }
 
   this->adapter().expectReleaseDevices({first0, first1});
@@ -380,9 +380,9 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ReinitializeReleasesPreviousDevices) {
   manager.initialize(this->getOps());
   const auto reinit_count = manager.getDeviceCount();
   EXPECT_EQ(reinit_count, initial_count);
-  if constexpr (TypeParam::is_mock) {
+    if constexpr (TypeParam::is_mock) {
     auto lease = manager.acquire(base::DeviceHandle{0});
-    EXPECT_EQ(lease.get(), second0);
+    EXPECT_EQ(*lease, second0);
     EXPECT_NE(second0, first0);
   }
 
@@ -471,7 +471,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
        ++index) {
     const auto id = base::DeviceHandle{index};
     auto queue_manager_lease = manager.acquireCommandQueueManager(id);
-    auto* queue_manager = queue_manager_lease.get();
+    auto* queue_manager = *queue_manager_lease;
     EXPECT_EQ(queue_manager->capacity(), kCapacity);
     if constexpr (TypeParam::is_mock) {
       std::vector<backend::mps::MPSCommandQueue_t> expected_handles =
@@ -486,7 +486,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
 
       for (std::size_t i = 0; i < expected_count; ++i) {
         auto acquired = queue_manager->acquire();
-        const auto queue_handle = acquired.get();
+        const auto queue_handle = *acquired;
         auto it = std::find(expected_handles.begin(), expected_handles.end(),
                             queue_handle);
         EXPECT_NE(it, expected_handles.end())
@@ -530,7 +530,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
        ++index) {
     const auto id = base::DeviceHandle{index};
     auto heap_manager_lease = manager.acquireHeapManager(id);
-    EXPECT_EQ(heap_manager_lease.get()->capacity(), kCapacity);
+    EXPECT_EQ((*heap_manager_lease)->capacity(), kCapacity);
   }
 
   manager.shutdown();
@@ -559,7 +559,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
        ++index) {
     const auto id = base::DeviceHandle{index};
     auto library_manager_lease = manager.acquireLibraryManager(id);
-    EXPECT_EQ(library_manager_lease.get()->capacity(), kCapacity);
+    EXPECT_EQ((*library_manager_lease)->capacity(), kCapacity);
   }
   manager.shutdown();
 }
@@ -610,7 +610,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, EventPoolAcquireSucceeds) {
   }
 
   auto event_pool_lease = manager.acquireEventPool(base::DeviceHandle{0});
-  EXPECT_NE(event_pool_lease.get(), nullptr);
+  EXPECT_NE(*event_pool_lease, nullptr);
 
   manager.shutdown();
 }
@@ -633,7 +633,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, FencePoolAcquireSucceeds) {
   }
 
   auto fence_pool_lease = manager.acquireFencePool(base::DeviceHandle{0});
-  EXPECT_NE(fence_pool_lease.get(), nullptr);
+  EXPECT_NE(*fence_pool_lease, nullptr);
 
   manager.shutdown();
 }

@@ -341,8 +341,8 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, ReleaseRequiresCompletedWork) {
     auto lease = manager.acquire();
 #if ORTEAF_MPS_DEBUG_ENABLED
     auto serial = manager.acquireSerial(lease.handle());
-    serial.get()->submit_serial = 5;
-    serial.get()->completed_serial = 4;
+    (*serial)->submit_serial = 5;
+    (*serial)->completed_serial = 4;
     manager.release(serial);
 #endif
     lease.release();
@@ -379,8 +379,8 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, HazardCountersDefaultToZero) {
     auto lease = manager.acquire();
 #if ORTEAF_MPS_DEBUG_ENABLED
     auto serial = manager.acquireSerial(lease.handle());
-    EXPECT_EQ(serial.get()->submit_serial, 0u);
-    EXPECT_EQ(serial.get()->completed_serial, 0u);
+    EXPECT_EQ((*serial)->submit_serial, 0u);
+    EXPECT_EQ((*serial)->completed_serial, 0u);
     serial.release();
 #endif
     lease.release();
@@ -397,18 +397,18 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, HazardCountersCanBeUpdatedAndResetOn
     auto lease = manager.acquire();
 #if ORTEAF_MPS_DEBUG_ENABLED
     auto serial = manager.acquireSerial(lease.handle());
-    serial.get()->submit_serial = 7;
-    serial.get()->completed_serial = 7;
-    EXPECT_EQ(serial.get()->submit_serial, 7u);
-    EXPECT_EQ(serial.get()->completed_serial, 7u);
+    (*serial)->submit_serial = 7;
+    (*serial)->completed_serial = 7;
+    EXPECT_EQ((*serial)->submit_serial, 7u);
+    EXPECT_EQ((*serial)->completed_serial, 7u);
     manager.release(serial);
 #endif
     lease.release();
     auto recycled = manager.acquire();
 #if ORTEAF_MPS_DEBUG_ENABLED
     auto recycled_serial = manager.acquireSerial(recycled.handle());
-    EXPECT_EQ(recycled_serial.get()->submit_serial, 0u);
-    EXPECT_EQ(recycled_serial.get()->completed_serial, 0u);
+    EXPECT_EQ((*recycled_serial)->submit_serial, 0u);
+    EXPECT_EQ((*recycled_serial)->completed_serial, 0u);
     recycled_serial.release();
 #endif
     recycled.release();
@@ -426,8 +426,8 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, DebugStateReflectsSetterUpdates) {
     auto lease = manager.acquire();
 #if ORTEAF_MPS_DEBUG_ENABLED
     auto serial = manager.acquireSerial(lease.handle());
-    serial.get()->submit_serial = 11;
-    serial.get()->completed_serial = 9;
+    (*serial)->submit_serial = 11;
+    (*serial)->completed_serial = 9;
     const auto snapshot = manager.debugState(lease.handle());
     EXPECT_TRUE(snapshot.in_use);
     EXPECT_TRUE(snapshot.queue_allocated);

@@ -77,8 +77,8 @@ TYPED_TEST(MpsEventPoolTypedTest, InitializePreallocatesEvents) {
     EXPECT_EQ(pool.availableCount(), 2u);
     auto first = pool.acquireEvent();
     auto second = pool.acquireEvent();
-    EXPECT_NE(first.get(), nullptr);
-    EXPECT_NE(second.get(), nullptr);
+    EXPECT_NE(*first, nullptr);
+    EXPECT_NE(*second, nullptr);
     EXPECT_EQ(pool.availableCount(), 0u);
     first.release();
     second.release();
@@ -100,7 +100,7 @@ TYPED_TEST(MpsEventPoolTypedTest, GrowChunkAllocatesInBlocks) {
         this->adapter().expectCreateEvents({makeEvent(0x200), makeEvent(0x201)});
     }
     auto first = pool.acquireEvent();
-    EXPECT_NE(first.get(), nullptr);
+    EXPECT_NE(*first, nullptr);
     EXPECT_EQ(pool.availableCount(), 1u);
     auto second = pool.acquireEvent();
     EXPECT_EQ(pool.availableCount(), 0u);
@@ -108,7 +108,7 @@ TYPED_TEST(MpsEventPoolTypedTest, GrowChunkAllocatesInBlocks) {
         this->adapter().expectCreateEvents({makeEvent(0x202), makeEvent(0x203)});
     }
     auto third = pool.acquireEvent();
-    EXPECT_NE(third.get(), nullptr);
+    EXPECT_NE(*third, nullptr);
     EXPECT_EQ(pool.availableCount(), 1u);
     first.release();
     second.release();
@@ -166,7 +166,7 @@ TYPED_TEST(MpsEventPoolTypedTest, MovedFromHandleIsInactive) {
     auto h1 = pool.acquireEvent();
     auto h2 = std::move(h1);
     EXPECT_FALSE(h1);
-    EXPECT_NE(h2.get(), nullptr);
+    EXPECT_NE(*h2, nullptr);
     h2.release();
     if constexpr (TypeParam::is_mock) {
         this->adapter().expectDestroyEvents({makeEvent(0x410)});
@@ -185,7 +185,7 @@ TYPED_TEST(MpsEventPoolTypedTest, DestructionReturnsHandleToPool) {
         auto h = pool.acquireEvent();
         EXPECT_EQ(pool.availableCount(), 0u);
         EXPECT_EQ(pool.inUseCount(), 1u);
-        EXPECT_NE(h.get(), nullptr);
+        EXPECT_NE(*h, nullptr);
     }
     EXPECT_EQ(pool.availableCount(), 1u);
     EXPECT_EQ(pool.inUseCount(), 0u);

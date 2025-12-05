@@ -36,7 +36,7 @@ public:
     template <class EncodeFn>
     void launch(std::size_t index, EncodeFn&& encode) {
         auto& lease = pipeline(index);
-        encode(lease.get());
+        encode(*lease);
     }
 
 #if ORTEAF_ENABLE_TEST

@@ -47,7 +47,7 @@ public:
     // Manual release helper for callers wanting explicit return.
     void release(FenceLease& lease) noexcept {
         if (lease) {
-            release(lease.get());
+            release(*lease);
         }
     }
 

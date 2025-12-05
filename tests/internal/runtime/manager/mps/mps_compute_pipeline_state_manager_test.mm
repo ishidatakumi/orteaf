@@ -247,9 +247,9 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest, AcquireCreatesAndCachesPipel
     auto lease1 = manager.acquire(key);
     EXPECT_EQ(lease0.handle(), lease1.handle());
     if constexpr (TypeParam::is_mock) {
-        EXPECT_EQ(lease0.get(), pipeline_handle);
+        EXPECT_EQ(*lease0, pipeline_handle);
     } else {
-        EXPECT_NE(lease0.get(), nullptr);
+        EXPECT_NE(*lease0, nullptr);
     }
 
     const auto snapshot = manager.debugState(lease0.handle());
@@ -345,9 +345,9 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest, ReleaseDestroysHandlesAndAll
     auto reacquired = manager.acquire(key);
     EXPECT_NE(reacquired.handle(), base::FunctionHandle{});
     if constexpr (TypeParam::is_mock) {
-        EXPECT_EQ(reacquired.get(), second_pipeline);
+        EXPECT_EQ(*reacquired, second_pipeline);
     } else {
-        EXPECT_NE(reacquired.get(), nullptr);
+        EXPECT_NE(*reacquired, nullptr);
     }
 }
 

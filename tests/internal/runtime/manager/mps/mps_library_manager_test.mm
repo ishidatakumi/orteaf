@@ -181,9 +181,9 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GetOrCreateAllocatesAndCachesLibrary) {
     auto lease1 = manager.acquire(key);
     EXPECT_EQ(lease0.handle(), lease1.handle());
     if constexpr (TypeParam::is_mock) {
-        EXPECT_EQ(lease0.get(), expected);
+        EXPECT_EQ(*lease0, expected);
     } else {
-        EXPECT_NE(lease0.get(), nullptr);
+        EXPECT_NE(*lease0, nullptr);
     }
 
     const auto snapshot = manager.debugState(lease0.handle());
@@ -223,9 +223,9 @@ TYPED_TEST(MpsLibraryManagerTypedTest, ReleasedLeaseDoesNotAffectLibrary) {
     auto reacquired = manager.acquire(key);
     EXPECT_EQ(reacquired.handle(), handle_id);
     if constexpr (TypeParam::is_mock) {
-        EXPECT_EQ(reacquired.get(), handle);
+        EXPECT_EQ(*reacquired, handle);
     } else {
-        EXPECT_NE(reacquired.get(), nullptr);
+        EXPECT_NE(*reacquired, nullptr);
     }
     reacquired.release();
 }
@@ -295,12 +295,12 @@ TYPED_TEST(MpsLibraryManagerTypedTest, PipelineManagerProvidesNestedFunctionMana
 
     auto library_lease = manager.acquire(mps_rt::LibraryKey::Named(*maybe_library));
     auto pipeline_manager_lease = manager.acquirePipelineManager(library_lease);
-    auto* pipeline_manager = pipeline_manager_lease.get();
+    auto* pipeline_manager = *pipeline_manager_lease;
     auto pipeline_lease = pipeline_manager->acquire(mps_rt::FunctionKey::Named(*maybe_function));
     if constexpr (TypeParam::is_mock) {
-        EXPECT_EQ(pipeline_lease.get(), pipeline_handle);
+        EXPECT_EQ(*pipeline_lease, pipeline_handle);
     } else {
-        EXPECT_NE(pipeline_lease.get(), nullptr);
+        EXPECT_NE(*pipeline_lease, nullptr);
     }
     const auto snapshot = pipeline_manager->debugState(pipeline_lease.handle());
     EXPECT_TRUE(snapshot.alive);
@@ -324,7 +324,7 @@ TYPED_TEST(MpsLibraryManagerTypedTest, PipelineManagerCanBeAcquiredByKey) {
     this->adapter().expectDestroyLibraries({lib_handle});
 
     auto pipeline_lease = manager.acquirePipelineManager(key);
-    EXPECT_NE(pipeline_lease.get(), nullptr);
+    EXPECT_NE(*pipeline_lease, nullptr);
     const auto snapshot = manager.debugState(pipeline_lease.handle());
     EXPECT_TRUE(snapshot.alive);
     pipeline_lease.release();

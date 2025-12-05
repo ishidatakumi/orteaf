@@ -76,8 +76,8 @@ TYPED_TEST(MpsFencePoolTypedTest, InitializePreallocatesFences) {
     EXPECT_EQ(pool.availableCount(), 2u);
     auto first = pool.acquireFence();
     auto second = pool.acquireFence();
-    EXPECT_NE(first.get(), nullptr);
-    EXPECT_NE(second.get(), nullptr);
+    EXPECT_NE(*first, nullptr);
+    EXPECT_NE(*second, nullptr);
     EXPECT_EQ(pool.availableCount(), 0u);
     first.release();
     second.release();
@@ -99,7 +99,7 @@ TYPED_TEST(MpsFencePoolTypedTest, GrowChunkAllocatesInBlocks) {
         this->adapter().expectCreateFences({makeFence(0x200), makeFence(0x201)});
     }
     auto first = pool.acquireFence();
-    EXPECT_NE(first.get(), nullptr);
+    EXPECT_NE(*first, nullptr);
     EXPECT_EQ(pool.availableCount(), 1u);
     auto second = pool.acquireFence();
     EXPECT_EQ(pool.availableCount(), 0u);
@@ -107,7 +107,7 @@ TYPED_TEST(MpsFencePoolTypedTest, GrowChunkAllocatesInBlocks) {
         this->adapter().expectCreateFences({makeFence(0x202), makeFence(0x203)});
     }
     auto third = pool.acquireFence();
-    EXPECT_NE(third.get(), nullptr);
+    EXPECT_NE(*third, nullptr);
     EXPECT_EQ(pool.availableCount(), 1u);
     first.release();
     second.release();
@@ -165,7 +165,7 @@ TYPED_TEST(MpsFencePoolTypedTest, MovedFromHandleIsInactive) {
     auto h1 = pool.acquireFence();
     auto h2 = std::move(h1);
     EXPECT_FALSE(h1);
-    EXPECT_NE(h2.get(), nullptr);
+    EXPECT_NE(*h2, nullptr);
     h2.release();
     if constexpr (TypeParam::is_mock) {
         this->adapter().expectDestroyFences({makeFence(0x410)});
@@ -184,7 +184,7 @@ TYPED_TEST(MpsFencePoolTypedTest, DestructionReturnsHandleToPool) {
         auto h = pool.acquireFence();
         EXPECT_EQ(pool.availableCount(), 0u);
         EXPECT_EQ(pool.inUseCount(), 1u);
-        EXPECT_NE(h.get(), nullptr);
+        EXPECT_NE(*h, nullptr);
     }
     EXPECT_EQ(pool.availableCount(), 1u);
     EXPECT_EQ(pool.inUseCount(), 0u);
