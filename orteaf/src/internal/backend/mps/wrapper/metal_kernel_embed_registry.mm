@@ -29,7 +29,7 @@ bool available(std::string_view library_name) {
 MPSLibrary_t createEmbeddedLibrary(MPSDevice_t device,
                                    std::string_view library_name,
                                    MPSError_t* error) {
-#if defined(MPS_AVAILABLE) && defined(__OBJC__)
+#if defined(ORTEAF_ENABLE_MPS) && defined(__OBJC__)
     if (!device) {
         if (error) { *error = createError("orteaf.mps.kernel", "Invalid MPS device"); }
         return nil;
