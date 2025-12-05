@@ -6,6 +6,8 @@
 #include <initializer_list>
 #include <string>
 #include <utility>
+#include "orteaf/internal/base/handle.h"
+#include "orteaf/internal/base/heap_vector.h"
 
 #include "orteaf/internal/runtime/manager/mps/mps_compute_pipeline_state_manager.h"
 #include "orteaf/internal/runtime/manager/mps/mps_library_manager.h"
@@ -38,6 +40,18 @@ public:
 
     bool initialized() const noexcept { return initialized_; }
 
+    template <typename PrivateOps>
+    void initialize(::orteaf::internal::base::DeviceHandle device,
+                    PrivateOps& ops) {
+        pipelines_.clear();
+        pipelines_.reserve(size_);
+        for (std::size_t i = 0; i < size_; ++i) {
+            const auto& key = keys_[i];
+            pipelines_.pushBack(ops.acquirePipeline(device, key.second, key.first));
+        }
+        initialized_ = true;
+    }
+
 #if ORTEAF_ENABLE_TEST
     const std::array<Key, N>& keysForTest() const noexcept { return keys_; }
     std::size_t sizeForTest() const noexcept { return size_; }
@@ -68,8 +82,7 @@ private:
         return false;
     }
 
-    std::array<PipelineLease, N> pipelines_{};
-    std::size_t pipeline_size_{0};
+    ::orteaf::internal::base::HeapVector<PipelineLease> pipelines_{};
     bool initialized_{false};
     std::array<Key, N> keys_{};
     std::size_t size_{0};

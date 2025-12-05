@@ -30,15 +30,6 @@ public:
     MpsKernelLauncher& operator=(MpsKernelLauncher&&) = default;
     virtual ~MpsKernelLauncher() = default;
 
-    // Acquire pipeline lazily; concrete acquisition is expected to be implemented by subclass.
-    virtual PipelineLease& pipeline(std::size_t index) = 0;
-
-    template <class EncodeFn>
-    void launch(std::size_t index, EncodeFn&& encode) {
-        auto& lease = pipeline(index);
-        encode(*lease);
-    }
-
 #if ORTEAF_ENABLE_TEST
     const Impl& implForTest() const noexcept { return *impl_; }
     Impl& implForTest() noexcept { return *impl_; }
