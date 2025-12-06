@@ -67,7 +67,7 @@ TEST(MpsKernelLauncherImplTest, InitializeAcquiresPipelinesInOrder) {
     impl.initialize<DummyPrivateOps>(device);
 
     // validate size and that initialized flag is set
-    EXPECT_TRUE(impl.initialized());
+    EXPECT_TRUE(impl.initialized(device));
     EXPECT_EQ(impl.sizeForTest(), 2u);
 
     EXPECT_EQ(DummyPrivateOps::last_device, device);
@@ -195,7 +195,8 @@ TEST(MpsKernelLauncherImplTest, CreateComputeEncoderBindsPipeline) {
     MockComputeFastOps::last_encoder = nullptr;
     MockComputeFastOps::last_pipeline = nullptr;
 
-    auto* encoder = impl.createComputeEncoder<MockComputeFastOps>(MockComputeFastOps::fake_buffer, 0);
+    auto* encoder =
+        impl.createComputeEncoder<MockComputeFastOps>(MockComputeFastOps::fake_buffer, device, 0);
 
     EXPECT_EQ(MockComputeFastOps::last_command_buffer, MockComputeFastOps::fake_buffer);
     EXPECT_EQ(MockComputeFastOps::last_encoder, MockComputeFastOps::fake_encoder);
@@ -211,12 +212,12 @@ TEST(MpsKernelLauncherImplTest, CreateComputeEncoderByNameAndIndex) {
 
     const base::DeviceHandle device{0};
     impl.initialize<DummyPrivateOps>(device);
-    ASSERT_TRUE(impl.initialized());
+    ASSERT_TRUE(impl.initialized(device));
     ASSERT_EQ(impl.sizeForTest(), 2u);
-    ASSERT_EQ(impl.pipelineCountForTest(), 2u);
+    ASSERT_EQ(impl.pipelineCountForTest(device), 2u);
     // Ensure pipeline storage exists (DummyPrivateOps returns null pipeline, but slot is present).
     ASSERT_NO_THROW({
-        auto& lease = impl.pipelineLeaseForTest(0);
+        auto& lease = impl.pipelineLeaseForTest(device, 0);
         (void)lease;
     });
 
@@ -225,7 +226,8 @@ TEST(MpsKernelLauncherImplTest, CreateComputeEncoderByNameAndIndex) {
     MockComputeFastOps::last_pipeline = nullptr;
 
     // By index
-    auto* enc_idx = impl.createComputeEncoder<MockComputeFastOps>(MockComputeFastOps::fake_buffer, 1);
+    auto* enc_idx =
+        impl.createComputeEncoder<MockComputeFastOps>(MockComputeFastOps::fake_buffer, device, 1);
     EXPECT_EQ(enc_idx, MockComputeFastOps::fake_encoder);
     EXPECT_EQ(MockComputeFastOps::last_command_buffer, MockComputeFastOps::fake_buffer);
     EXPECT_EQ(MockComputeFastOps::last_pipeline, nullptr);
@@ -236,7 +238,7 @@ TEST(MpsKernelLauncherImplTest, CreateComputeEncoderByNameAndIndex) {
     MockComputeFastOps::last_pipeline = nullptr;
 
     auto* enc_name = impl.createComputeEncoder<MockComputeFastOps>(MockComputeFastOps::fake_buffer,
-                                                                   "libA", "fnA");
+                                                                   device, "libA", "fnA");
     EXPECT_EQ(enc_name, MockComputeFastOps::fake_encoder);
     EXPECT_EQ(MockComputeFastOps::last_command_buffer, MockComputeFastOps::fake_buffer);
     EXPECT_EQ(MockComputeFastOps::last_pipeline, nullptr);
@@ -244,7 +246,7 @@ TEST(MpsKernelLauncherImplTest, CreateComputeEncoderByNameAndIndex) {
     // Missing pipeline returns nullptr and does not configure encoder
     MockComputeFastOps::last_encoder = nullptr;
     auto* enc_missing = impl.createComputeEncoder<MockComputeFastOps>(MockComputeFastOps::fake_buffer,
-                                                                      "missing", "missing");
+                                                                      device, "missing", "missing");
     EXPECT_EQ(enc_missing, nullptr);
 }
 
@@ -350,7 +352,8 @@ TEST(MpsKernelLauncherImplTest, DispatchOneShotByIndex) {
         EXPECT_EQ(encoder, MockComputeFastOps::fake_encoder);
     };
 
-    auto* command_buffer = impl.dispatchOneShot<MockComputeFastOps>(queue, 0, tg, tptg, binder);
+    auto* command_buffer =
+        impl.dispatchOneShot<MockComputeFastOps>(queue, device, 0, tg, tptg, binder);
 
     EXPECT_TRUE(binder_called);
     EXPECT_EQ(command_buffer, MockComputeFastOps::fake_buffer);
@@ -375,7 +378,7 @@ TEST(MpsKernelLauncherImplTest, DispatchOneShotByNameMissingReturnsNullptr) {
     ::orteaf::internal::backend::mps::MPSSize_t tg{1, 1, 1};
     ::orteaf::internal::backend::mps::MPSSize_t tptg{1, 1, 1};
 
-    auto* command_buffer = impl.dispatchOneShot<MockComputeFastOps>(queue, "missing", "missing", tg, tptg,
-                                                                    [](auto*) {});
+    auto* command_buffer = impl.dispatchOneShot<MockComputeFastOps>(queue, device, "missing", "missing",
+                                                                    tg, tptg, [](auto*) {});
     EXPECT_EQ(command_buffer, nullptr);
 }

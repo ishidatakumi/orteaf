@@ -43,24 +43,39 @@ public:
     MpsKernelLauncherImpl& operator=(MpsKernelLauncherImpl&&) = default;
     ~MpsKernelLauncherImpl() = default;
 
-    bool initialized() const noexcept { return initialized_; }
+    bool initialized(::orteaf::internal::base::DeviceHandle device) const noexcept {
+        const auto idx = findEntryIndex(device);
+        return idx != kInvalidIndex && device_pipelines_[idx].initialized;
+    }
 
     template <typename PrivateOps = ::orteaf::internal::runtime::ops::mps::MpsPrivateOps>
     void initialize(::orteaf::internal::base::DeviceHandle device) {
-        pipelines_.clear();
-        pipelines_.reserve(size_);
+        auto entry_idx = findEntryIndex(device);
+        if (entry_idx == kInvalidIndex) {
+            device_pipelines_.pushBack(DevicePipelines{device});
+            entry_idx = device_pipelines_.size() - 1;
+        }
+        auto& entry = device_pipelines_[entry_idx];
+        entry.pipelines.clear();
+        entry.pipelines.reserve(size_);
         for (std::size_t i = 0; i < size_; ++i) {
             const auto& key = keys_[i];
-            pipelines_.pushBack(PrivateOps::acquirePipeline(device, key.first, key.second));
+            entry.pipelines.pushBack(PrivateOps::acquirePipeline(device, key.first, key.second));
         }
-        initialized_ = true;
+        entry.initialized = true;
     }
 
 #if ORTEAF_ENABLE_TEST
     const std::array<Key, N>& keysForTest() const noexcept { return keys_; }
     std::size_t sizeForTest() const noexcept { return size_; }
-    PipelineLease& pipelineLeaseForTest(std::size_t index) { return pipelines_[index]; }
-    std::size_t pipelineCountForTest() const noexcept { return pipelines_.size(); }
+    PipelineLease& pipelineLeaseForTest(::orteaf::internal::base::DeviceHandle device, std::size_t index) {
+        auto idx = findEntryIndex(device);
+        return device_pipelines_[idx].pipelines[index];
+    }
+    std::size_t pipelineCountForTest(::orteaf::internal::base::DeviceHandle device) const noexcept {
+        auto idx = findEntryIndex(device);
+        return (idx == kInvalidIndex) ? 0 : device_pipelines_[idx].pipelines.size();
+    }
 #endif
 
     // Convenience: create a command buffer from a command queue without exposing
@@ -74,26 +89,35 @@ public:
     // Convenience: create a compute encoder and bind the pipeline in one step.
     template <typename FastOps = ::orteaf::internal::runtime::backend_ops::mps::MpsFastOps>
     ::orteaf::internal::backend::mps::MPSComputeCommandEncoder_t createComputeEncoder(
-        ::orteaf::internal::backend::mps::MPSCommandBuffer_t command_buffer, std::size_t pipeline_index) const {
-        if (!initialized_ || pipeline_index >= pipelines_.size()) {
+        ::orteaf::internal::backend::mps::MPSCommandBuffer_t command_buffer,
+        ::orteaf::internal::base::DeviceHandle device,
+        std::size_t pipeline_index) const {
+        const auto entry_idx = findEntryIndex(device);
+        if (entry_idx == kInvalidIndex) return nullptr;
+        const auto& entry = device_pipelines_[entry_idx];
+        if (!entry.initialized || pipeline_index >= entry.pipelines.size()) {
             return nullptr;
         }
         auto* encoder = FastOps::createComputeCommandEncoder(command_buffer);
-        FastOps::setPipelineState(encoder, pipelines_[pipeline_index].pointer());
+        FastOps::setPipelineState(encoder, entry.pipelines[pipeline_index].pointer());
         return encoder;
     }
 
     template <typename FastOps = ::orteaf::internal::runtime::backend_ops::mps::MpsFastOps>
     ::orteaf::internal::backend::mps::MPSComputeCommandEncoder_t createComputeEncoder(
         ::orteaf::internal::backend::mps::MPSCommandBuffer_t command_buffer,
+        ::orteaf::internal::base::DeviceHandle device,
         std::string_view library,
         std::string_view function) const {
         const std::size_t idx = findKeyIndex(library, function);
-        if (!initialized_ || idx >= pipelines_.size()) {
+        const auto entry_idx = findEntryIndex(device);
+        if (entry_idx == kInvalidIndex) return nullptr;
+        const auto& entry = device_pipelines_[entry_idx];
+        if (!entry.initialized || idx >= entry.pipelines.size()) {
             return nullptr;
         }
         auto* encoder = FastOps::createComputeCommandEncoder(command_buffer);
-        FastOps::setPipelineState(encoder, pipelines_[idx].pointer());
+        FastOps::setPipelineState(encoder, entry.pipelines[idx].pointer());
         return encoder;
     }
 
@@ -138,16 +162,18 @@ public:
     template <typename FastOps = ::orteaf::internal::runtime::backend_ops::mps::MpsFastOps, typename Binder>
     ::orteaf::internal::backend::mps::MPSCommandBuffer_t dispatchOneShot(
         ::orteaf::internal::backend::mps::MPSCommandQueue_t command_queue,
+        ::orteaf::internal::base::DeviceHandle device,
         std::size_t pipeline_index,
         ::orteaf::internal::backend::mps::MPSSize_t threadgroups,
         ::orteaf::internal::backend::mps::MPSSize_t threads_per_threadgroup,
         Binder&& binder) const {
-        if (!initialized_ || pipeline_index >= pipelines_.size()) {
-            return nullptr;
-        }
+        const auto entry_idx = findEntryIndex(device);
+        if (entry_idx == kInvalidIndex) return nullptr;
+        const auto& entry = device_pipelines_[entry_idx];
+        if (!entry.initialized || pipeline_index >= entry.pipelines.size()) return nullptr;
         auto* command_buffer = FastOps::createCommandBuffer(command_queue);
         auto* encoder = FastOps::createComputeCommandEncoder(command_buffer);
-        FastOps::setPipelineState(encoder, pipelines_[pipeline_index].pointer());
+        FastOps::setPipelineState(encoder, entry.pipelines[pipeline_index].pointer());
         static_cast<Binder&&>(binder)(encoder);
         FastOps::setThreadgroups(encoder, threadgroups, threads_per_threadgroup);
         FastOps::endEncoding(encoder);
@@ -158,16 +184,20 @@ public:
     template <typename FastOps = ::orteaf::internal::runtime::backend_ops::mps::MpsFastOps, typename Binder>
     ::orteaf::internal::backend::mps::MPSCommandBuffer_t dispatchOneShot(
         ::orteaf::internal::backend::mps::MPSCommandQueue_t command_queue,
+        ::orteaf::internal::base::DeviceHandle device,
         std::string_view library,
         std::string_view function,
         ::orteaf::internal::backend::mps::MPSSize_t threadgroups,
         ::orteaf::internal::backend::mps::MPSSize_t threads_per_threadgroup,
         Binder&& binder) const {
         const std::size_t idx = findKeyIndex(library, function);
-        if (!initialized_ || idx >= pipelines_.size()) {
+        const auto entry_idx = findEntryIndex(device);
+        if (entry_idx == kInvalidIndex) return nullptr;
+        const auto& entry = device_pipelines_[entry_idx];
+        if (!entry.initialized || idx >= entry.pipelines.size()) {
             return nullptr;
         }
-        return dispatchOneShot<FastOps>(command_queue, idx, threadgroups, threads_per_threadgroup,
+        return dispatchOneShot<FastOps>(command_queue, device, idx, threadgroups, threads_per_threadgroup,
                                         static_cast<Binder&&>(binder));
     }
 
@@ -183,7 +213,10 @@ private:
             return;
         }
         keys_[size_++] = Key{lib, func};
-        initialized_ = false;
+        for (auto& entry : device_pipelines_) {
+            entry.initialized = false;
+            entry.pipelines.clear();
+        }
     }
 
     std::size_t findKeyIndex(std::string_view library, std::string_view function) const noexcept {
@@ -196,6 +229,15 @@ private:
         return std::numeric_limits<std::size_t>::max();
     }
 
+    std::size_t findEntryIndex(::orteaf::internal::base::DeviceHandle device) const noexcept {
+        for (std::size_t i = 0; i < device_pipelines_.size(); ++i) {
+            if (device_pipelines_[i].device == device) {
+                return i;
+            }
+        }
+        return kInvalidIndex;
+    }
+
     bool isDuplicate(const LibraryKey& lib, const FunctionKey& func) const {
         for (std::size_t i = 0; i < size_; ++i) {
             const auto& key = keys_[i];
@@ -206,10 +248,16 @@ private:
         return false;
     }
 
-    ::orteaf::internal::base::HeapVector<PipelineLease> pipelines_{};
-    bool initialized_{false};
+    struct DevicePipelines {
+        ::orteaf::internal::base::DeviceHandle device{};
+        ::orteaf::internal::base::HeapVector<PipelineLease> pipelines{};
+        bool initialized{false};
+    };
+
+    ::orteaf::internal::base::HeapVector<DevicePipelines> device_pipelines_{};
     std::array<Key, N> keys_{};
     std::size_t size_{0};
+    static constexpr std::size_t kInvalidIndex = std::numeric_limits<std::size_t>::max();
 };
 
 }  // namespace orteaf::internal::runtime::mps

@@ -28,10 +28,10 @@ TEST(MpsKernelLauncherImplDeviceTest, InitializeWithEmbeddedLibraryRealDevice) {
     const base::DeviceHandle device{0};
     impl.initialize<>(device);
 
-    EXPECT_TRUE(impl.initialized());
+    EXPECT_TRUE(impl.initialized(device));
     ASSERT_EQ(impl.sizeForTest(), 1u);
 
-    auto& lease = impl.pipelineLeaseForTest(0);
+    auto& lease = impl.pipelineLeaseForTest(device, 0);
     EXPECT_NE(lease.pointer(), nullptr);
 
     public_ops.shutdown();
@@ -80,7 +80,7 @@ TEST(MpsKernelLauncherImplDeviceTest, DispatchOneShotExecutesEmbeddedIdentity) {
     ::orteaf::internal::backend::mps::MPSSize_t tg{kCount, 1, 1};
     ::orteaf::internal::backend::mps::MPSSize_t tptg{1, 1, 1};
 
-    auto* command_buffer = impl.dispatchOneShot<>(queue, 0, tg, tptg, [&](auto* encoder) {
+    auto* command_buffer = impl.dispatchOneShot<>(queue, device, 0, tg, tptg, [&](auto* encoder) {
         impl.setBuffer<>(encoder, buffer, 0, 0);
         impl.setBytes<>(encoder, &length, sizeof(length), 1);
     });
