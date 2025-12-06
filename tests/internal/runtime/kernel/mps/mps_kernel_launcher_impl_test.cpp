@@ -138,6 +138,26 @@ struct MockComputeFastOps {
         last_pipeline = pipeline;
     }
 
+    static void setBuffer(::orteaf::internal::backend::mps::MPSComputeCommandEncoder_t encoder,
+                          ::orteaf::internal::backend::mps::MPSBuffer_t buffer,
+                          std::size_t offset,
+                          std::size_t index) {
+        last_encoder_for_buffer = encoder;
+        last_buffer = buffer;
+        last_buffer_offset = offset;
+        last_buffer_index = index;
+    }
+
+    static void setBytes(::orteaf::internal::backend::mps::MPSComputeCommandEncoder_t encoder,
+                         const void* bytes,
+                         std::size_t length,
+                         std::size_t index) {
+        last_encoder_for_bytes = encoder;
+        last_bytes = bytes;
+        last_bytes_length = length;
+        last_bytes_index = index;
+    }
+
     static inline ::orteaf::internal::backend::mps::MPSCommandQueue_t last_queue{nullptr};
     static inline ::orteaf::internal::backend::mps::MPSCommandBuffer_t fake_buffer{
         reinterpret_cast<::orteaf::internal::backend::mps::MPSCommandBuffer_t>(0x10)};
@@ -146,6 +166,14 @@ struct MockComputeFastOps {
         reinterpret_cast<::orteaf::internal::backend::mps::MPSComputeCommandEncoder_t>(0x20)};
     static inline ::orteaf::internal::backend::mps::MPSComputeCommandEncoder_t last_encoder{nullptr};
     static inline ::orteaf::internal::backend::mps::MPSComputePipelineState_t last_pipeline{nullptr};
+    static inline ::orteaf::internal::backend::mps::MPSComputeCommandEncoder_t last_encoder_for_buffer{nullptr};
+    static inline ::orteaf::internal::backend::mps::MPSBuffer_t last_buffer{nullptr};
+    static inline std::size_t last_buffer_offset{0};
+    static inline std::size_t last_buffer_index{0};
+    static inline ::orteaf::internal::backend::mps::MPSComputeCommandEncoder_t last_encoder_for_bytes{nullptr};
+    static inline const void* last_bytes{nullptr};
+    static inline std::size_t last_bytes_length{0};
+    static inline std::size_t last_bytes_index{0};
 };
 
 }  // namespace
@@ -229,4 +257,46 @@ TEST(MpsKernelLauncherImplTest, CreateComputeEncoderByNameAndIndex) {
     auto* enc_missing = impl.createComputeEncoder<MockComputeFastOps>(MockComputeFastOps::fake_buffer,
                                                                       "missing", "missing");
     EXPECT_EQ(enc_missing, nullptr);
+}
+
+TEST(MpsKernelLauncherImplTest, EncoderSetBufferAndBytesForwarded) {
+    mps_rt::MpsKernelLauncherImpl<1> impl({
+        {"lib", "fn"},
+    });
+
+    // We don't need real pipelines; just need the helpers callable.
+    const base::DeviceHandle device{0};
+    impl.initialize<DummyPrivateOps>(device);
+
+    auto* encoder = MockComputeFastOps::fake_encoder;
+    auto* buffer = reinterpret_cast<::orteaf::internal::backend::mps::MPSBuffer_t>(0x30);
+    constexpr std::size_t kOffset = 16;
+    constexpr std::size_t kBufIndex = 2;
+
+    MockComputeFastOps::last_encoder_for_buffer = nullptr;
+    MockComputeFastOps::last_buffer = nullptr;
+    MockComputeFastOps::last_buffer_offset = 0;
+    MockComputeFastOps::last_buffer_index = 0;
+
+    impl.setBuffer<MockComputeFastOps>(encoder, buffer, kOffset, kBufIndex);
+
+    EXPECT_EQ(MockComputeFastOps::last_encoder_for_buffer, encoder);
+    EXPECT_EQ(MockComputeFastOps::last_buffer, buffer);
+    EXPECT_EQ(MockComputeFastOps::last_buffer_offset, kOffset);
+    EXPECT_EQ(MockComputeFastOps::last_buffer_index, kBufIndex);
+
+    // Bytes
+    int payload = 42;
+    constexpr std::size_t kBytesIndex = 3;
+    MockComputeFastOps::last_encoder_for_bytes = nullptr;
+    MockComputeFastOps::last_bytes = nullptr;
+    MockComputeFastOps::last_bytes_length = 0;
+    MockComputeFastOps::last_bytes_index = 0;
+
+    impl.setBytes<MockComputeFastOps>(encoder, &payload, sizeof(payload), kBytesIndex);
+
+    EXPECT_EQ(MockComputeFastOps::last_encoder_for_bytes, encoder);
+    EXPECT_EQ(MockComputeFastOps::last_bytes, &payload);
+    EXPECT_EQ(MockComputeFastOps::last_bytes_length, sizeof(payload));
+    EXPECT_EQ(MockComputeFastOps::last_bytes_index, kBytesIndex);
 }

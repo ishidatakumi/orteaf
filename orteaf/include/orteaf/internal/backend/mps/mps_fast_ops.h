@@ -23,6 +23,20 @@ struct MpsFastOps {
       ::orteaf::internal::backend::mps::MPSComputePipelineState_t pipeline) {
     ::orteaf::internal::backend::mps::setPipelineState(encoder, pipeline);
   }
+
+  static inline void setBuffer(::orteaf::internal::backend::mps::MPSComputeCommandEncoder_t encoder,
+                               ::orteaf::internal::backend::mps::MPSBuffer_t buffer,
+                               std::size_t offset,
+                               std::size_t index) {
+    ::orteaf::internal::backend::mps::setBuffer(encoder, buffer, offset, index);
+  }
+
+  static inline void setBytes(::orteaf::internal::backend::mps::MPSComputeCommandEncoder_t encoder,
+                              const void* bytes,
+                              std::size_t length,
+                              std::size_t index) {
+    ::orteaf::internal::backend::mps::setBytes(encoder, bytes, length, index);
+  }
 };
 
 } // namespace orteaf::internal::runtime::backend_ops::mps

@@ -97,6 +97,24 @@ public:
         return encoder;
     }
 
+    // Convenience: bind a buffer to the compute encoder.
+    template <typename FastOps = ::orteaf::internal::runtime::backend_ops::mps::MpsFastOps>
+    void setBuffer(::orteaf::internal::backend::mps::MPSComputeCommandEncoder_t encoder,
+                   ::orteaf::internal::backend::mps::MPSBuffer_t buffer,
+                   std::size_t offset,
+                   std::size_t index) const {
+        FastOps::setBuffer(encoder, buffer, offset, index);
+    }
+
+    // Convenience: bind raw bytes to the compute encoder.
+    template <typename FastOps = ::orteaf::internal::runtime::backend_ops::mps::MpsFastOps>
+    void setBytes(::orteaf::internal::backend::mps::MPSComputeCommandEncoder_t encoder,
+                  const void* bytes,
+                  std::size_t length,
+                  std::size_t index) const {
+        FastOps::setBytes(encoder, bytes, length, index);
+    }
+
 private:
     // Append a key constructed from raw identifiers. Marks the launcher as not initialized.
     void addKey(std::string library_identifier, std::string function_identifier) {
