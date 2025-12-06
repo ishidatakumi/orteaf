@@ -8,6 +8,7 @@
 #include <utility>
 #include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/base/heap_vector.h"
+#include "orteaf/internal/backend/mps/mps_fast_ops.h"
 #include "orteaf/internal/runtime/ops/mps/common/mps_common_ops.h"
 
 #include "orteaf/internal/runtime/manager/mps/mps_compute_pipeline_state_manager.h"
@@ -57,6 +58,14 @@ public:
     std::size_t sizeForTest() const noexcept { return size_; }
     PipelineLease& pipelineLeaseForTest(std::size_t index) { return pipelines_[index]; }
 #endif
+
+    // Convenience: create a command buffer from a command queue without exposing
+    // backend wrapper details to launcher users.
+    template <typename FastOps = ::orteaf::internal::runtime::backend_ops::mps::MpsFastOps>
+    ::orteaf::internal::backend::mps::MPSCommandBuffer_t createCommandBuffer(
+        ::orteaf::internal::backend::mps::MPSCommandQueue_t command_queue) const {
+        return FastOps::createCommandBuffer(command_queue);
+    }
 
 private:
     // Append a key constructed from raw identifiers. Marks the launcher as not initialized.

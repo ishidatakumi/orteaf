@@ -3,6 +3,7 @@
 #include "orteaf/internal/runtime/kernel/mps/mps_kernel_launcher_impl.h"
 #include "orteaf/internal/runtime/ops/mps/public/mps_public_ops.h"
 #include "orteaf/internal/backend/mps/wrapper/mps_device.h"
+#include "orteaf/internal/backend/mps/mps_fast_ops.h"
 #include "orteaf/internal/runtime/ops/mps/private/mps_private_ops.h"
 
 namespace base = orteaf::internal::base;
@@ -101,4 +102,35 @@ TEST(MpsKernelLauncherImplTest, InitializeWithEmbeddedLibraryRealDevice) {
     EXPECT_NE(lease.pointer(), nullptr);
 
     public_ops.shutdown();
+}
+
+namespace {
+
+struct MockFastOps {
+    static ::orteaf::internal::backend::mps::MPSCommandBuffer_t createCommandBuffer(
+        ::orteaf::internal::backend::mps::MPSCommandQueue_t command_queue) {
+        last_queue = command_queue;
+        return fake_buffer;
+    }
+
+    static inline ::orteaf::internal::backend::mps::MPSCommandQueue_t last_queue{nullptr};
+    static inline ::orteaf::internal::backend::mps::MPSCommandBuffer_t fake_buffer{
+        reinterpret_cast<::orteaf::internal::backend::mps::MPSCommandBuffer_t>(0x1)};
+};
+
+}  // namespace
+
+TEST(MpsKernelLauncherImplTest, CreateCommandBufferUsesFastOps) {
+    mps_rt::MpsKernelLauncherImpl<1> impl({
+        {"lib", "fn"},
+    });
+
+    MockFastOps::last_queue = nullptr;
+    ::orteaf::internal::backend::mps::MPSCommandQueue_t dummy_queue =
+        reinterpret_cast<::orteaf::internal::backend::mps::MPSCommandQueue_t>(0x2);
+
+    auto* buffer = impl.createCommandBuffer<MockFastOps>(dummy_queue);
+
+    EXPECT_EQ(MockFastOps::last_queue, dummy_queue);
+    EXPECT_EQ(buffer, MockFastOps::fake_buffer);
 }
