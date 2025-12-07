@@ -19,6 +19,7 @@
 #include "orteaf/internal/base/lease.h"
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/backend/mps/mps_slow_ops.h"
+#include "orteaf/internal/runtime/base/base_manager.h"
 
 namespace orteaf::internal::runtime::mps {
 
@@ -49,7 +50,23 @@ struct FunctionKeyHasher {
     }
 };
 
-class MpsComputePipelineStateManager {
+struct MpsComputePipelineStateManagerState {
+    FunctionKey key{};
+    ::orteaf::internal::backend::mps::MPSFunction_t function{nullptr};
+    ::orteaf::internal::backend::mps::MPSComputePipelineState_t pipeline_state{nullptr};
+    std::uint32_t generation{0};
+    std::uint32_t use_count{0};
+    bool alive{false};
+};
+
+struct MpsComputePipelineStateManagerTraits {
+    using DeviceType = ::orteaf::internal::backend::mps::MPSDevice_t;
+    using OpsType = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+    using StateType = MpsComputePipelineStateManagerState;
+    static constexpr const char *Name = "MPS compute pipeline state manager";
+};
+
+class MpsComputePipelineStateManager : public base::BaseManager<MpsComputePipelineStateManager, MpsComputePipelineStateManagerTraits> {
 public:
     using SlowOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
     using PipelineLease = ::orteaf::internal::base::Lease<
@@ -64,25 +81,12 @@ public:
     MpsComputePipelineStateManager& operator=(MpsComputePipelineStateManager&&) = default;
     ~MpsComputePipelineStateManager() = default;
 
-    void setGrowthChunkSize(std::size_t chunk) {
-        if (chunk == 0) {
-            ::orteaf::internal::diagnostics::error::throwError(
-                ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
-                "Growth chunk size must be > 0");
-        }
-        growth_chunk_size_ = chunk;
-    }
-
-    std::size_t growthChunkSize() const noexcept { return growth_chunk_size_; }
-
     void initialize(::orteaf::internal::backend::mps::MPSDevice_t device,
                     ::orteaf::internal::backend::mps::MPSLibrary_t library,
                     SlowOps *slow_ops,
                     std::size_t capacity);
 
     void shutdown();
-
-    std::size_t capacity() const noexcept { return states_.size(); }
 
     PipelineLease acquire(const FunctionKey& key);
     void release(PipelineLease& lease) noexcept;
@@ -103,17 +107,6 @@ public:
 #endif
 
 private:
-    struct State {
-        FunctionKey key{};
-        ::orteaf::internal::backend::mps::MPSFunction_t function{nullptr};
-        ::orteaf::internal::backend::mps::MPSComputePipelineState_t pipeline_state{nullptr};
-        std::uint32_t generation{0};
-        std::uint32_t use_count{0};
-        bool alive{false};
-    };
-
-    void ensureInitialized() const;
-
     void validateKey(const FunctionKey& key) const;
 
     void destroyState(State& state);
@@ -124,21 +117,11 @@ private:
         return const_cast<MpsComputePipelineStateManager*>(this)->ensureAliveState(handle);
     }
 
-    std::size_t allocateSlot();
-
-    void growStatePool(std::size_t additional);
-
     ::orteaf::internal::base::FunctionHandle encodeHandle(std::size_t index, std::uint32_t generation) const;
     void releaseHandle(::orteaf::internal::base::FunctionHandle handle) noexcept;
 
-    ::orteaf::internal::base::HeapVector<State> states_{};
-    ::orteaf::internal::base::HeapVector<std::size_t> free_list_{};
     std::unordered_map<FunctionKey, std::size_t, FunctionKeyHasher> key_to_index_{};
-    std::size_t growth_chunk_size_{1};
-    bool initialized_{false};
-    ::orteaf::internal::backend::mps::MPSDevice_t device_{nullptr};
     ::orteaf::internal::backend::mps::MPSLibrary_t library_{nullptr};
-    SlowOps *slow_ops_{nullptr};
 };
 
 }  // namespace orteaf::internal::runtime::mps

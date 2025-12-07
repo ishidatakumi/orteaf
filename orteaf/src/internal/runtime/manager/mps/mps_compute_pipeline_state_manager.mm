@@ -20,22 +20,20 @@ void MpsComputePipelineStateManager::initialize(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "MPS compute pipeline state manager requires valid ops");
   }
-  if (capacity > base::FunctionHandle::invalid_index()) {
+  if (capacity > ::orteaf::internal::base::FunctionHandle::invalid_index()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "Requested MPS compute pipeline capacity exceeds supported limit");
   }
   device_ = device;
   library_ = library;
-  slow_ops_ = slow_ops;
+  ops_ = slow_ops;
   states_.clear();
   free_list_.clear();
   key_to_index_.clear();
-  states_.reserve(capacity);
-  free_list_.reserve(capacity);
-  for (std::size_t i = 0; i < capacity; ++i) {
-    states_.emplaceBack();
-    free_list_.pushBack(i);
+  
+  if (capacity > 0) {
+    growPool(capacity);
   }
   initialized_ = true;
 }
@@ -52,7 +50,7 @@ void MpsComputePipelineStateManager::shutdown() {
   key_to_index_.clear();
   device_ = nullptr;
   library_ = nullptr;
-  slow_ops_ = nullptr;
+  ops_ = nullptr;
   initialized_ = false;
 }
 
@@ -68,16 +66,16 @@ MpsComputePipelineStateManager::acquire(const FunctionKey &key) {
   const std::size_t index = allocateSlot();
   State &state = states_[index];
   state.key = key;
-  state.function = slow_ops_->createFunction(library_, key.identifier);
+  state.function = ops_->createFunction(library_, key.identifier);
   if (state.function == nullptr) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "Failed to create MPS function for compute pipeline");
   }
     state.pipeline_state =
-      slow_ops_->createComputePipelineState(device_, state.function);
+      ops_->createComputePipelineState(device_, state.function);
   if (state.pipeline_state == nullptr) {
-    slow_ops_->destroyFunction(state.function);
+    ops_->destroyFunction(state.function);
     state.function = nullptr;
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
@@ -100,7 +98,7 @@ void MpsComputePipelineStateManager::release(PipelineLease &lease) noexcept {
 
 #if ORTEAF_ENABLE_TEST
 MpsComputePipelineStateManager::DebugState
-MpsComputePipelineStateManager::debugState(base::FunctionHandle handle) const {
+MpsComputePipelineStateManager::debugState(::orteaf::internal::base::FunctionHandle handle) const {
   DebugState snapshot{};
   snapshot.growth_chunk_size = growth_chunk_size_;
   const std::size_t index = static_cast<std::size_t>(handle.index);
@@ -120,14 +118,6 @@ MpsComputePipelineStateManager::debugState(base::FunctionHandle handle) const {
 }
 #endif
 
-void MpsComputePipelineStateManager::ensureInitialized() const {
-  if (!initialized_ || device_ == nullptr || library_ == nullptr) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-        "MPS compute pipeline state manager not initialized");
-  }
-}
-
 void MpsComputePipelineStateManager::validateKey(const FunctionKey &key) const {
   if (key.identifier.empty()) {
     ::orteaf::internal::diagnostics::error::throwError(
@@ -138,11 +128,11 @@ void MpsComputePipelineStateManager::validateKey(const FunctionKey &key) const {
 
 void MpsComputePipelineStateManager::destroyState(State &state) {
   if (state.pipeline_state != nullptr) {
-    slow_ops_->destroyComputePipelineState(state.pipeline_state);
+    ops_->destroyComputePipelineState(state.pipeline_state);
     state.pipeline_state = nullptr;
   }
   if (state.function != nullptr) {
-    slow_ops_->destroyFunction(state.function);
+    ops_->destroyFunction(state.function);
     state.function = nullptr;
   }
   state.use_count = 0;
@@ -150,7 +140,7 @@ void MpsComputePipelineStateManager::destroyState(State &state) {
 }
 
 MpsComputePipelineStateManager::State &
-MpsComputePipelineStateManager::ensureAliveState(base::FunctionHandle handle) {
+MpsComputePipelineStateManager::ensureAliveState(::orteaf::internal::base::FunctionHandle handle) {
   ensureInitialized();
   const std::size_t index = static_cast<std::size_t>(handle.index);
   if (index >= states_.size()) {
@@ -165,7 +155,7 @@ MpsComputePipelineStateManager::ensureAliveState(base::FunctionHandle handle) {
         "MPS compute pipeline state is inactive");
   }
   const std::uint32_t expected_generation = static_cast<std::uint32_t>(handle.generation);
-  if (static_cast<base::FunctionHandle::generation_type>(state.generation) != expected_generation) {
+  if (static_cast<::orteaf::internal::base::FunctionHandle::generation_type>(state.generation) != expected_generation) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "MPS compute pipeline handle is stale");
@@ -173,46 +163,14 @@ MpsComputePipelineStateManager::ensureAliveState(base::FunctionHandle handle) {
   return state;
 }
 
-std::size_t MpsComputePipelineStateManager::allocateSlot() {
-  if (free_list_.empty()) {
-    growStatePool(growth_chunk_size_);
-    if (free_list_.empty()) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          "No available MPS compute pipeline slots");
-    }
-  }
-  const std::size_t index = free_list_.back();
-  free_list_.resize(free_list_.size() - 1);
-  return index;
-}
-
-void MpsComputePipelineStateManager::growStatePool(std::size_t additional) {
-  if (additional == 0) {
-    return;
-  }
-  if (additional > (base::FunctionHandle::invalid_index() - states_.size())) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
-        "Requested MPS compute pipeline capacity exceeds supported limit");
-  }
-  const std::size_t start = states_.size();
-  states_.reserve(states_.size() + additional);
-  free_list_.reserve(free_list_.size() + additional);
-  for (std::size_t offset = 0; offset < additional; ++offset) {
-    states_.emplaceBack();
-    free_list_.pushBack(start + offset);
-  }
-}
-
-base::FunctionHandle
+::orteaf::internal::base::FunctionHandle
 MpsComputePipelineStateManager::encodeHandle(std::size_t index,
                                              std::uint32_t generation) const {
-  return base::FunctionHandle{static_cast<std::uint32_t>(index), static_cast<std::uint8_t>(generation)};
+  return ::orteaf::internal::base::FunctionHandle{static_cast<std::uint32_t>(index), static_cast<std::uint8_t>(generation)};
 }
 
-void MpsComputePipelineStateManager::releaseHandle(base::FunctionHandle handle) noexcept {
-  if (!initialized_ || device_ == nullptr || library_ == nullptr || slow_ops_ == nullptr) {
+void MpsComputePipelineStateManager::releaseHandle(::orteaf::internal::base::FunctionHandle handle) noexcept {
+  if (!initialized_ || device_ == nullptr || library_ == nullptr || ops_ == nullptr) {
     return;
   }
   const std::size_t index = static_cast<std::size_t>(handle.index);
@@ -223,7 +181,7 @@ void MpsComputePipelineStateManager::releaseHandle(base::FunctionHandle handle) 
   if (!state.alive) {
     return;
   }
-  if (static_cast<base::FunctionHandle::generation_type>(state.generation) != handle.generation) {
+  if (static_cast<::orteaf::internal::base::FunctionHandle::generation_type>(state.generation) != handle.generation) {
     return;
   }
   if (state.use_count > 0) {
