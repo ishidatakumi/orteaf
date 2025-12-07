@@ -103,13 +103,14 @@ if(APPLE)
             "-framework IOKit"
     )
     if(ORTEAF_ENABLE_MPS_INT)
-        target_link_libraries(orteaf
-            PUBLIC
-                "-framework Metal"
-                "-framework MetalPerformanceShaders"
-                "-framework Foundation"
-        )
-    endif()
+    target_link_libraries(orteaf
+        PUBLIC
+            "-framework Metal"
+            "-framework MetalPerformanceShaders"
+            "-framework MetalPerformanceShadersGraph"
+            "-framework Foundation"
+    )
+endif()
 endif()
 
 target_include_directories(orteaf
