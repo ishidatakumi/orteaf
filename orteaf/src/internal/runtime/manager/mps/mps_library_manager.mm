@@ -26,7 +26,6 @@ void MpsLibraryManager::initialize(
 
   device_ = device;
   ops_ = slow_ops;
-  initialized_ = true;
 
   states_.clear();
   free_list_.clear();
@@ -35,6 +34,7 @@ void MpsLibraryManager::initialize(
   if (capacity > 0) {
     growPool(capacity);
   }
+  initialized_ = true;
 }
 
 void MpsLibraryManager::shutdown() {

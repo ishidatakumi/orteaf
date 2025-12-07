@@ -52,7 +52,6 @@ public:
         }
         device_ = device;
         ops_ = ops;
-        initialized_ = true;
 #if ORTEAF_ENABLE_TEST
         total_created_ = 0;
 #endif
@@ -62,6 +61,7 @@ public:
         if (initial_capacity > 0) {
             growFreeList(initial_capacity);
         }
+        initialized_ = true;
     }
 
     void shutdown() {
