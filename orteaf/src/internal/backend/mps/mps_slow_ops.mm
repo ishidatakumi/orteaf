@@ -1,5 +1,6 @@
 #include "orteaf/internal/backend/mps/mps_slow_ops.h"
 #include "orteaf/internal/backend/mps/wrapper/metal_kernel_embed_api.h"
+#include "orteaf/internal/backend/mps/wrapper/mps_objc_bridge.h"
 
 namespace orteaf::internal::runtime::backend_ops::mps {
 
@@ -61,8 +62,15 @@ void MpsSlowOpsImpl::destroyFence(
 MpsSlowOpsImpl::createLibraryWithName(
     ::orteaf::internal::backend::mps::MPSDevice_t device,
     std::string_view name) {
-  return ::orteaf::internal::backend::mps::metal_kernel_embed::
+  auto library = ::orteaf::internal::backend::mps::metal_kernel_embed::
       createEmbeddedLibrary(device, name, nullptr);
+  if (library != nullptr) {
+    return library;
+  }
+  auto ns_name = ::orteaf::internal::backend::mps::toNsString(name);
+  library = ::orteaf::internal::backend::mps::createLibrary(device, ns_name, nullptr);
+  opaqueReleaseRetained(ns_name);
+  return library;
 }
 
 void MpsSlowOpsImpl::destroyLibrary(
