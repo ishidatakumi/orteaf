@@ -116,12 +116,12 @@ MpsGraphManager::debugState(::orteaf::internal::base::GraphHandle handle) const 
     snapshot.graph_allocated = state.graph != nullptr;
     snapshot.executable_allocated = state.executable != nullptr;
     snapshot.kind = state.key.kind;
-  snapshot.identifier = state.key.identifier;
-  snapshot.generation = state.generation;
-  snapshot.shape = state.key.shape;
-  snapshot.data_type = state.key.data_type;
-  snapshot.target_tensor_count = state.key.target_tensor_count;
-  snapshot.has_gradients = state.key.has_gradients;
+    snapshot.identifier = state.key.identifier;
+    snapshot.generation = state.generation;
+    snapshot.shape = state.key.shape;
+    snapshot.data_type = state.key.data_type;
+    snapshot.target_tensor_count = state.key.target_tensor_count;
+    snapshot.has_gradients = state.key.has_gradients;
   }
   return snapshot;
 }
