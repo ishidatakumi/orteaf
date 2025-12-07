@@ -228,17 +228,20 @@ std::size_t runGraphExecutable(
   [objc_feeds release];
 
   if (error != nil || results == nil ||
-      [results count] != target_tensor_count) {
+      [results count] < target_tensor_count) {
     using namespace ::orteaf::internal::diagnostics::error;
-    throwError(OrteafErrc::OperationFailed, "Failed to run MPSGraph executable");
+    throwError(OrteafErrc::OperationFailed,
+               "Failed to run MPSGraph executable: insufficient outputs");
   }
 
-  for (std::size_t i = 0; i < target_tensor_count; ++i) {
+  const std::size_t copy_count =
+      std::min<std::size_t>([results count], target_tensor_count);
+  for (std::size_t i = 0; i < copy_count; ++i) {
     MPSGraphTensorData* tensor_data = [results objectAtIndex:i];
     out_tensor_data[i] =
         (MPSGraphTensorData_t)opaqueFromObjcRetained(tensor_data);
   }
-  return target_tensor_count;
+  return copy_count;
 }
 
 void destroyGraphExecutable(MPSGraphExecutable_t executable) {
