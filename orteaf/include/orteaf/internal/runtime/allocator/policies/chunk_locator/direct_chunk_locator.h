@@ -120,7 +120,7 @@ public:
         return encodeId(i);
       }
     }
-    return BufferHandle{};
+    return BufferHandle::invalid();
   }
 
   void incrementUsed(BufferHandle handle) {

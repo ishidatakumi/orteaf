@@ -269,7 +269,7 @@ TEST(SegregatePool, ReleaseChunkFreesBackingAndForcesNewChunkOnNextAlloc) {
     ASSERT_TRUE(block.valid());
 
     pool.deallocate(block, 80, 64, params);
-    pool.releaseChunk();
+    pool.releaseChunk(params);
 
     MemoryBlock new_block = pool.allocate(80, 64, params);
     EXPECT_TRUE(new_block.valid());

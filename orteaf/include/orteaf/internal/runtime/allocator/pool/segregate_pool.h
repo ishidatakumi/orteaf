@@ -127,8 +127,10 @@ public:
     }
   }
 
-  void releaseChunk() {
+  void releaseChunk(LaunchParams &launch_params) {
     std::lock_guard<ThreadingPolicy> lock(threading_policy_);
+
+    processPendingReuses(launch_params);
 
     while (true) {
       const auto handle = chunk_locator_policy_.findReleasable();
