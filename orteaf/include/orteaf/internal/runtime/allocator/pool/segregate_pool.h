@@ -102,7 +102,7 @@ public:
         std::size_t freelist_index = 0;
 
         while (reuse_policy_.getReadyItem(block, freelist_index)) {
-            free_list_policy_.push(block, freelist_index, launch_params);
+            free_list_policy_.push(freelist_index, block, launch_params);
         }
     }
 
