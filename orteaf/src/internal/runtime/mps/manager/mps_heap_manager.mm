@@ -2,7 +2,7 @@
 
 #if ORTEAF_ENABLE_MPS
 
-namespace orteaf::internal::runtime::mps {
+namespace orteaf::internal::runtime::mps::manager {
 
 void MpsHeapManager::initialize(
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device, SlowOps *slow_ops,
@@ -191,6 +191,6 @@ MpsHeapManager::createHeap(const HeapDescriptorKey &key) {
   return heap;
 }
 
-} // namespace orteaf::internal::runtime::mps
+} // namespace orteaf::internal::runtime::mps::manager
 
 #endif // ORTEAF_ENABLE_MPS

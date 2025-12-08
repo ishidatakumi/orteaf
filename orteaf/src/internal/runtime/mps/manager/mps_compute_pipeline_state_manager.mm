@@ -2,7 +2,7 @@
 
 #if ORTEAF_ENABLE_MPS
 
-namespace orteaf::internal::runtime::mps {
+namespace orteaf::internal::runtime::mps::manager {
 
 void MpsComputePipelineStateManager::initialize(
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
@@ -196,6 +196,6 @@ void MpsComputePipelineStateManager::releaseHandle(::orteaf::internal::base::Fun
   free_list_.pushBack(index);
 }
 
-} // namespace orteaf::internal::runtime::mps
+} // namespace orteaf::internal::runtime::mps::manager
 
 #endif // ORTEAF_ENABLE_MPS

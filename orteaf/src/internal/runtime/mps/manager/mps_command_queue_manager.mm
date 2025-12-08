@@ -2,7 +2,7 @@
 
 #if ORTEAF_ENABLE_MPS
 
-namespace orteaf::internal::runtime::mps {
+namespace orteaf::internal::runtime::mps::manager {
 
 void MpsCommandQueueManager::initialize(
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device, SlowOps *slow_ops,
@@ -329,6 +329,6 @@ MpsCommandQueueManager::ensureActiveState(::orteaf::internal::base::CommandQueue
   }
   return state;
 }
-} // namespace orteaf::internal::runtime::mps
+} // namespace orteaf::internal::runtime::mps::manager
 
 #endif // ORTEAF_ENABLE_MPS

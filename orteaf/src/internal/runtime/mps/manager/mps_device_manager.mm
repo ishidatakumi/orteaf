@@ -2,7 +2,7 @@
 
 #if ORTEAF_ENABLE_MPS
 
-namespace orteaf::internal::runtime::mps {
+namespace orteaf::internal::runtime::mps::manager {
 
 void MpsDeviceManager::initialize(SlowOps *slow_ops) {
   shutdown();
@@ -230,6 +230,6 @@ MpsDeviceManager::ensureValid(::orteaf::internal::base::DeviceHandle handle) con
   return state;
 }
 
-} // namespace orteaf::internal::runtime::mps
+} // namespace orteaf::internal::runtime::mps::manager
 
 #endif // ORTEAF_ENABLE_MPS

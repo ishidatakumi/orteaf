@@ -2,11 +2,11 @@
 
 #if ORTEAF_ENABLE_MPS
 
-namespace orteaf::internal::runtime::mps {
-} // namespace orteaf::internal::runtime::mps
+namespace orteaf::internal::runtime::mps::manager {
+} // namespace orteaf::internal::runtime::mps::manager
 
 namespace orteaf::internal::runtime::base {
-template class ResourcePool<::orteaf::internal::runtime::mps::MpsEventPool, ::orteaf::internal::runtime::mps::EventPoolTraits>;
+template class ResourcePool<::orteaf::internal::runtime::mps::manager::MpsEventPool, ::orteaf::internal::runtime::mps::manager::EventPoolTraits>;
 }
 
 #endif // ORTEAF_ENABLE_MPS

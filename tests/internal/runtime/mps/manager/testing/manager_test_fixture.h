@@ -17,7 +17,7 @@ protected:
   using Adapter = ManagerAdapter<Manager, Provider>;
   using Context = typename Provider::Context;
 
-  // static_assert(::orteaf::internal::runtime::backend_ops::mps::MpsRuntimeBackendOps<SlowOps>);
+  // static_assert(::orteaf::internal::runtime::mps::platform::MpsRuntimeBackendOps<SlowOps>);
 
   void SetUp() override {
     adapter_.bind(manager_, context_);

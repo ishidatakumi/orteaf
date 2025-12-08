@@ -15,7 +15,7 @@
 #include "orteaf/internal/runtime/mps/platform/mps_slow_ops.h"
 #include "orteaf/internal/runtime/base/base_manager.h"
 
-namespace orteaf::internal::runtime::mps {
+namespace orteaf::internal::runtime::mps::manager {
 
 struct HeapDescriptorKey {
   std::size_t size_bytes{0};
@@ -74,7 +74,7 @@ struct MpsHeapManagerState {
 
 struct MpsHeapManagerTraits {
   using DeviceType = ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
-  using OpsType = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using OpsType = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using StateType = MpsHeapManagerState;
   static constexpr const char *Name = "MPS heap manager";
 };
@@ -82,7 +82,7 @@ struct MpsHeapManagerTraits {
 class MpsHeapManager
     : public base::BaseManager<MpsHeapManager, MpsHeapManagerTraits> {
 public:
-  using SlowOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using HeapLease = ::orteaf::internal::base::Lease<::orteaf::internal::base::HeapHandle,
                                                     ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t,
                                                     MpsHeapManager>;
@@ -142,6 +142,6 @@ private:
       key_to_index_{};
 };
 
-} // namespace orteaf::internal::runtime::mps
+} // namespace orteaf::internal::runtime::mps::manager
 
 #endif // ORTEAF_ENABLE_MPS

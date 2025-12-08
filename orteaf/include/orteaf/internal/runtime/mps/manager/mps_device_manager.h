@@ -21,21 +21,21 @@
 #include "orteaf/internal/runtime/mps/manager/mps_library_manager.h"
 #include "orteaf/internal/runtime/mps/manager/mps_graph_manager.h"
 
-namespace orteaf::internal::runtime::mps {
+namespace orteaf::internal::runtime::mps::manager {
 
 struct MpsDeviceManagerState {
-  using SlowOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device{nullptr};
   ::orteaf::internal::architecture::Architecture arch{
       ::orteaf::internal::architecture::Architecture::MpsGeneric};
   bool is_alive{false};
-  ::orteaf::internal::runtime::mps::MpsCommandQueueManager
+  ::orteaf::internal::runtime::mps::manager::MpsCommandQueueManager
       command_queue_manager{};
-  ::orteaf::internal::runtime::mps::MpsHeapManager heap_manager{};
-  ::orteaf::internal::runtime::mps::MpsLibraryManager library_manager{};
-  ::orteaf::internal::runtime::mps::MpsGraphManager graph_manager{};
-  ::orteaf::internal::runtime::mps::MpsEventPool event_pool{};
-  ::orteaf::internal::runtime::mps::MpsFencePool fence_pool{};
+  ::orteaf::internal::runtime::mps::manager::MpsHeapManager heap_manager{};
+  ::orteaf::internal::runtime::mps::manager::MpsLibraryManager library_manager{};
+  ::orteaf::internal::runtime::mps::manager::MpsGraphManager graph_manager{};
+  ::orteaf::internal::runtime::mps::manager::MpsEventPool event_pool{};
+  ::orteaf::internal::runtime::mps::manager::MpsFencePool fence_pool{};
 
   MpsDeviceManagerState() = default;
   MpsDeviceManagerState(const MpsDeviceManagerState &) = delete;
@@ -63,7 +63,7 @@ private:
 
 struct MpsDeviceManagerTraits {
   using DeviceType = void *; // Not used directly in initialize
-  using OpsType = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using OpsType = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using StateType = MpsDeviceManagerState;
   static constexpr const char *Name = "MPS device manager";
 };
@@ -71,25 +71,25 @@ struct MpsDeviceManagerTraits {
 class MpsDeviceManager
     : public base::BaseManager<MpsDeviceManager, MpsDeviceManagerTraits> {
 public:
-  using SlowOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
     using DeviceLease = ::orteaf::internal::base::Lease<
       void, ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t, MpsDeviceManager>;
   using CommandQueueManagerLease = ::orteaf::internal::base::Lease<
-      void, ::orteaf::internal::runtime::mps::MpsCommandQueueManager *,
+      void, ::orteaf::internal::runtime::mps::manager::MpsCommandQueueManager *,
       MpsDeviceManager>;
   using HeapManagerLease = ::orteaf::internal::base::Lease<
-      void, ::orteaf::internal::runtime::mps::MpsHeapManager *,
+      void, ::orteaf::internal::runtime::mps::manager::MpsHeapManager *,
       MpsDeviceManager>;
   using LibraryManagerLease = ::orteaf::internal::base::Lease<
-      void, ::orteaf::internal::runtime::mps::MpsLibraryManager *,
+      void, ::orteaf::internal::runtime::mps::manager::MpsLibraryManager *,
       MpsDeviceManager>;
   using GraphManagerLease = ::orteaf::internal::base::Lease<
-      void, ::orteaf::internal::runtime::mps::MpsGraphManager *,
+      void, ::orteaf::internal::runtime::mps::manager::MpsGraphManager *,
       MpsDeviceManager>;
   using EventPoolLease = ::orteaf::internal::base::Lease<
-      void, ::orteaf::internal::runtime::mps::MpsEventPool *, MpsDeviceManager>;
+      void, ::orteaf::internal::runtime::mps::manager::MpsEventPool *, MpsDeviceManager>;
   using FencePoolLease = ::orteaf::internal::base::Lease<
-      void, ::orteaf::internal::runtime::mps::MpsFencePool *, MpsDeviceManager>;
+      void, ::orteaf::internal::runtime::mps::manager::MpsFencePool *, MpsDeviceManager>;
 
   MpsDeviceManager() = default;
   MpsDeviceManager(const MpsDeviceManager &) = delete;
@@ -203,6 +203,6 @@ private:
   std::size_t graph_initial_capacity_{0};
 };
 
-} // namespace orteaf::internal::runtime::mps
+} // namespace orteaf::internal::runtime::mps::manager
 
 #endif // ORTEAF_ENABLE_MPS

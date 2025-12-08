@@ -21,7 +21,7 @@
 #include "orteaf/internal/runtime/mps/platform/mps_slow_ops.h"
 #include "orteaf/internal/runtime/base/base_manager.h"
 
-namespace orteaf::internal::runtime::mps {
+namespace orteaf::internal::runtime::mps::manager {
 
 enum class FunctionKeyKind : std::uint8_t {
     kNamed,
@@ -61,14 +61,14 @@ struct MpsComputePipelineStateManagerState {
 
 struct MpsComputePipelineStateManagerTraits {
     using DeviceType = ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
-    using OpsType = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+    using OpsType = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
     using StateType = MpsComputePipelineStateManagerState;
     static constexpr const char *Name = "MPS compute pipeline state manager";
 };
 
 class MpsComputePipelineStateManager : public base::BaseManager<MpsComputePipelineStateManager, MpsComputePipelineStateManagerTraits> {
 public:
-    using SlowOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+    using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
     using PipelineLease = ::orteaf::internal::base::Lease<
         ::orteaf::internal::base::FunctionHandle,
         ::orteaf::internal::runtime::mps::platform::wrapper::MPSComputePipelineState_t,

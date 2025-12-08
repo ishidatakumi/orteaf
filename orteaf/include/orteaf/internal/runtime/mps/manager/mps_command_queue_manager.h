@@ -18,7 +18,7 @@
 #include "orteaf/internal/runtime/mps/platform/mps_slow_ops.h"
 #include "orteaf/internal/runtime/base/base_manager.h"
 
-namespace orteaf::internal::runtime::mps {
+namespace orteaf::internal::runtime::mps::manager {
 
 /**
  * @brief Stub implementation of an MPS command queue manager.
@@ -29,7 +29,7 @@ namespace orteaf::internal::runtime::mps {
  */
 
 struct MpsCommandQueueManagerState {
-  using SlowOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandQueue_t command_queue{nullptr};
   bool in_use{false};
   bool on_free_list{true};
@@ -51,7 +51,7 @@ struct MpsCommandQueueManagerState {
 
 struct MpsCommandQueueManagerTraits {
   using DeviceType = ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
-  using OpsType = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using OpsType = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using StateType = MpsCommandQueueManagerState;
   static constexpr const char *Name = "MPS command queue manager";
 };
@@ -60,7 +60,7 @@ class MpsCommandQueueManager
     : public base::BaseManager<MpsCommandQueueManager,
                                MpsCommandQueueManagerTraits> {
 public:
-  using SlowOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
     using CommandQueueLease = ::orteaf::internal::base::Lease<
       ::orteaf::internal::base::CommandQueueHandle,
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandQueue_t,
@@ -135,6 +135,6 @@ private:
   }
 };
 
-} // namespace orteaf::internal::runtime::mps
+} // namespace orteaf::internal::runtime::mps::manager
 
 #endif // ORTEAF_ENABLE_MPS

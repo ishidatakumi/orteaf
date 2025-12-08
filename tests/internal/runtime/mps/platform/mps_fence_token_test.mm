@@ -8,12 +8,12 @@
 #include <gtest/gtest.h>
 #include <type_traits>
 
-#include "orteaf/internal/runtime/mps/resource/mps_fence_token.h"
-#include "orteaf/internal/runtime/mps/resource/mps_fence_ticket.h"
+#include "orteaf/internal/runtime/mps/platform/mps_slow_ops.h"
 #include "orteaf/internal/runtime/mps/platform/wrapper/mps_command_buffer.h"
 #include "orteaf/internal/runtime/mps/platform/wrapper/mps_command_queue.h"
 #include "orteaf/internal/runtime/mps/platform/wrapper/mps_device.h"
-#include "orteaf/internal/runtime/mps/platform/mps_slow_ops.h"
+#include "orteaf/internal/runtime/mps/resource/mps_fence_ticket.h"
+#include "orteaf/internal/runtime/mps/resource/mps_fence_token.h"
 
 namespace mps_wrapper = orteaf::internal::runtime::mps::platform::wrapper;
 namespace mps_res = orteaf::internal::runtime::mps::resource;
@@ -22,113 +22,117 @@ namespace base = orteaf::internal::base;
 
 class MpsFenceTokenTest : public ::testing::Test {
 protected:
-    void SetUp() override {
+  void SetUp() override {
 #if ORTEAF_ENABLE_MPS
-        device_ = mps_wrapper::getDevice();
-        if (device_ == nullptr) {
-            GTEST_SKIP() << "No Metal devices available";
-        }
-        queue_ = mps_wrapper::createCommandQueue(device_);
-        if (queue_ == nullptr) {
-            GTEST_SKIP() << "Failed to create command queue";
-        }
-        command_buffer_a_ = mps_wrapper::createCommandBuffer(queue_);
-        command_buffer_b_ = mps_wrapper::createCommandBuffer(queue_);
-        if (command_buffer_a_ == nullptr || command_buffer_b_ == nullptr) {
-            GTEST_SKIP() << "Failed to create command buffers";
-        }
-        fence_pool_.initialize(device_, &ops_, 2);
+    device_ = mps_wrapper::getDevice();
+    if (device_ == nullptr) {
+      GTEST_SKIP() << "No Metal devices available";
+    }
+    queue_ = mps_wrapper::createCommandQueue(device_);
+    if (queue_ == nullptr) {
+      GTEST_SKIP() << "Failed to create command queue";
+    }
+    command_buffer_a_ = mps_wrapper::createCommandBuffer(queue_);
+    command_buffer_b_ = mps_wrapper::createCommandBuffer(queue_);
+    if (command_buffer_a_ == nullptr || command_buffer_b_ == nullptr) {
+      GTEST_SKIP() << "Failed to create command buffers";
+    }
+    fence_pool_.initialize(device_, &ops_, 2);
 #else
-        GTEST_SKIP() << "MPS not enabled";
+    GTEST_SKIP() << "MPS not enabled";
 #endif
-    }
+  }
 
-    void TearDown() override {
+  void TearDown() override {
 #if ORTEAF_ENABLE_MPS
-        fence_pool_.shutdown();
-        if (command_buffer_a_ != nullptr) {
-            mps_wrapper::destroyCommandBuffer(command_buffer_a_);
-            command_buffer_a_ = nullptr;
-        }
-        if (command_buffer_b_ != nullptr) {
-            mps_wrapper::destroyCommandBuffer(command_buffer_b_);
-            command_buffer_b_ = nullptr;
-        }
-        if (queue_ != nullptr) {
-            mps_wrapper::destroyCommandQueue(queue_);
-            queue_ = nullptr;
-        }
-        if (device_ != nullptr) {
-            mps_wrapper::deviceRelease(device_);
-            device_ = nullptr;
-        }
+    fence_pool_.shutdown();
+    if (command_buffer_a_ != nullptr) {
+      mps_wrapper::destroyCommandBuffer(command_buffer_a_);
+      command_buffer_a_ = nullptr;
+    }
+    if (command_buffer_b_ != nullptr) {
+      mps_wrapper::destroyCommandBuffer(command_buffer_b_);
+      command_buffer_b_ = nullptr;
+    }
+    if (queue_ != nullptr) {
+      mps_wrapper::destroyCommandQueue(queue_);
+      queue_ = nullptr;
+    }
+    if (device_ != nullptr) {
+      mps_wrapper::deviceRelease(device_);
+      device_ = nullptr;
+    }
 #endif
-    }
+  }
 
 #if ORTEAF_ENABLE_MPS
-    mps_wrapper::MPSDevice_t device_{nullptr};
-    mps_wrapper::MPSCommandQueue_t queue_{nullptr};
-    mps_wrapper::MPSCommandBuffer_t command_buffer_a_{nullptr};
-    mps_wrapper::MPSCommandBuffer_t command_buffer_b_{nullptr};
-    mps_rt::MpsFencePool fence_pool_{};
-    ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOpsImpl ops_{};
-    base::CommandQueueHandle queue_id_{base::CommandQueueHandle{11}};
+  mps_wrapper::MPSDevice_t device_{nullptr};
+  mps_wrapper::MPSCommandQueue_t queue_{nullptr};
+  mps_wrapper::MPSCommandBuffer_t command_buffer_a_{nullptr};
+  mps_wrapper::MPSCommandBuffer_t command_buffer_b_{nullptr};
+  mps_rt::manager::MpsFencePool fence_pool_{};
+  ::orteaf::internal::runtime::mps::platform::MpsSlowOpsImpl ops_{};
+  base::CommandQueueHandle queue_id_{base::CommandQueueHandle{11}};
 #endif
 };
 
 #if ORTEAF_ENABLE_MPS
 
 TEST_F(MpsFenceTokenTest, DefaultConstructedIsEmpty) {
-    mps_res::MpsFenceToken token;
-    EXPECT_TRUE(token.empty());
-    EXPECT_EQ(token.size(), 0u);
+  mps_res::MpsFenceToken token;
+  EXPECT_TRUE(token.empty());
+  EXPECT_EQ(token.size(), 0u);
 }
 
 TEST_F(MpsFenceTokenTest, AddTicketsStoresAndOrders) {
-    mps_res::MpsFenceToken token;
-    auto handle_a = fence_pool_.acquireFence();
-    auto handle_b = fence_pool_.acquireFence();
+  mps_res::MpsFenceToken token;
+  auto handle_a = fence_pool_.acquireFence();
+  auto handle_b = fence_pool_.acquireFence();
 
-    mps_res::MpsFenceTicket ticket_a(queue_id_, command_buffer_a_, std::move(handle_a));
-    mps_res::MpsFenceTicket ticket_b(queue_id_, command_buffer_b_, std::move(handle_b));
+  mps_res::MpsFenceTicket ticket_a(queue_id_, command_buffer_a_,
+                                   std::move(handle_a));
+  mps_res::MpsFenceTicket ticket_b(queue_id_, command_buffer_b_,
+                                   std::move(handle_b));
 
-    token.addTicket(std::move(ticket_a));
-    token.addTicket(std::move(ticket_b));
+  token.addTicket(std::move(ticket_a));
+  token.addTicket(std::move(ticket_b));
 
-    ASSERT_EQ(token.size(), 2u);
-    EXPECT_EQ(token[0].commandQueueId(), queue_id_);
-    EXPECT_EQ(token[0].commandBuffer(), command_buffer_a_);
-    EXPECT_TRUE(token[0].hasFence());
+  ASSERT_EQ(token.size(), 2u);
+  EXPECT_EQ(token[0].commandQueueId(), queue_id_);
+  EXPECT_EQ(token[0].commandBuffer(), command_buffer_a_);
+  EXPECT_TRUE(token[0].hasFence());
 
-    EXPECT_EQ(token[1].commandQueueId(), queue_id_);
-    EXPECT_EQ(token[1].commandBuffer(), command_buffer_b_);
-    EXPECT_TRUE(token[1].hasFence());
+  EXPECT_EQ(token[1].commandQueueId(), queue_id_);
+  EXPECT_EQ(token[1].commandBuffer(), command_buffer_b_);
+  EXPECT_TRUE(token[1].hasFence());
 }
 
 TEST_F(MpsFenceTokenTest, MoveTransfersOwnership) {
-    mps_res::MpsFenceToken token;
-    auto handle = fence_pool_.acquireFence();
-    token.addTicket(mps_res::MpsFenceTicket(queue_id_, command_buffer_a_, std::move(handle)));
+  mps_res::MpsFenceToken token;
+  auto handle = fence_pool_.acquireFence();
+  token.addTicket(
+      mps_res::MpsFenceTicket(queue_id_, command_buffer_a_, std::move(handle)));
 
-    mps_res::MpsFenceToken moved(std::move(token));
-    EXPECT_EQ(moved.size(), 1u);
-    EXPECT_FALSE(moved.empty());
+  mps_res::MpsFenceToken moved(std::move(token));
+  EXPECT_EQ(moved.size(), 1u);
+  EXPECT_FALSE(moved.empty());
 
-    EXPECT_TRUE(token.empty());
-    EXPECT_EQ(token.size(), 0u);
+  EXPECT_TRUE(token.empty());
+  EXPECT_EQ(token.size(), 0u);
 }
 
 TEST_F(MpsFenceTokenTest, ClearRemovesAllTickets) {
-    mps_res::MpsFenceToken token;
-    auto handle = fence_pool_.acquireFence();
-    token.addTicket(mps_res::MpsFenceTicket(queue_id_, command_buffer_a_, std::move(handle)));
+  mps_res::MpsFenceToken token;
+  auto handle = fence_pool_.acquireFence();
+  token.addTicket(
+      mps_res::MpsFenceTicket(queue_id_, command_buffer_a_, std::move(handle)));
 
-    token.clear();
-    EXPECT_TRUE(token.empty());
-    EXPECT_EQ(token.size(), 0u);
+  token.clear();
+  EXPECT_TRUE(token.empty());
+  EXPECT_EQ(token.size(), 0u);
 }
 
 static_assert(!std::is_copy_constructible_v<mps_res::MpsFenceToken>);
 static_assert(!std::is_copy_assignable_v<mps_res::MpsFenceToken>);
 
-#endif  // ORTEAF_ENABLE_MPS
+#endif // ORTEAF_ENABLE_MPS

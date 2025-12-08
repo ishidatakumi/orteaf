@@ -7,11 +7,11 @@
 #include "orteaf/internal/runtime/mps/platform/mps_slow_ops.h"
 #include "orteaf/internal/runtime/mps/manager/mps_device_manager.h"
 
-namespace orteaf::internal::runtime::mps {
+namespace orteaf::internal::runtime::mps::manager {
 
 class MpsRuntimeManager {
-    using SlowOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
-    using SlowOpsImpl = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOpsImpl;
+    using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
+    using SlowOpsImpl = ::orteaf::internal::runtime::mps::platform::MpsSlowOpsImpl;
 
 public:
     MpsRuntimeManager() = default;

@@ -2,7 +2,7 @@
 
 #if ORTEAF_ENABLE_MPS
 
-namespace orteaf::internal::runtime::mps {
+namespace orteaf::internal::runtime::mps::manager {
 
 void MpsLibraryManager::initialize(
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device, SlowOps *slow_ops,
@@ -191,6 +191,6 @@ MpsLibraryManager::createLibrary(const LibraryKey &key) {
       "Unsupported MPS library key kind");
 }
 
-} // namespace orteaf::internal::runtime::mps
+} // namespace orteaf::internal::runtime::mps::manager
 
 #endif // ORTEAF_ENABLE_MPS

@@ -19,7 +19,7 @@
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/runtime/base/base_manager.h"
 
-namespace orteaf::internal::runtime::mps {
+namespace orteaf::internal::runtime::mps::manager {
 
 enum class GraphKeyKind : std::uint8_t { kNamed };
 
@@ -70,7 +70,7 @@ struct MpsGraphManagerState;
 
 struct MpsGraphManagerTraits {
   using DeviceType = ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
-  using OpsType = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using OpsType = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using StateType = struct MpsGraphManagerState;
   static constexpr const char* Name = "MPS graph manager";
 };
@@ -86,7 +86,7 @@ struct MpsGraphManagerState {
 class MpsGraphManager
     : public base::BaseManager<MpsGraphManager, MpsGraphManagerTraits> {
 public:
-  using SlowOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
     using GraphLease = ::orteaf::internal::base::Lease<
       ::orteaf::internal::base::GraphHandle,
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraphExecutable_t, MpsGraphManager>;

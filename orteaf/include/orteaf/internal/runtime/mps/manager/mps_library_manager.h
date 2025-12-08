@@ -18,7 +18,7 @@
 #include "orteaf/internal/runtime/base/base_manager.h"
 #include "orteaf/internal/runtime/mps/manager/mps_compute_pipeline_state_manager.h"
 
-namespace orteaf::internal::runtime::mps {
+namespace orteaf::internal::runtime::mps::manager {
 
 enum class LibraryKeyKind : std::uint8_t {
   kNamed,
@@ -59,7 +59,7 @@ struct MpsLibraryManagerState {
 
 struct MpsLibraryManagerTraits {
   using DeviceType = ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
-  using OpsType = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using OpsType = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using StateType = MpsLibraryManagerState;
   static constexpr const char *Name = "MPS library manager";
 };
@@ -67,7 +67,7 @@ struct MpsLibraryManagerTraits {
 class MpsLibraryManager
     : public base::BaseManager<MpsLibraryManager, MpsLibraryManagerTraits> {
 public:
-  using SlowOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOps;
+  using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using PipelineManager = MpsComputePipelineStateManager;
     using LibraryLease = ::orteaf::internal::base::Lease<
       ::orteaf::internal::base::LibraryHandle,
@@ -131,6 +131,6 @@ private:
   std::unordered_map<LibraryKey, std::size_t, LibraryKeyHasher> key_to_index_{};
 };
 
-} // namespace orteaf::internal::runtime::mps
+} // namespace orteaf::internal::runtime::mps::manager
 
 #endif // ORTEAF_ENABLE_MPS

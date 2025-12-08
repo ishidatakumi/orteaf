@@ -16,7 +16,7 @@
 namespace backend = orteaf::internal::backend;
 namespace base = orteaf::internal::base;
 namespace diag_error = orteaf::internal::diagnostics::error;
-namespace mps_rt = orteaf::internal::runtime::mps;
+namespace mps_rt = orteaf::internal::runtime::mps::manager;
 namespace mps_wrapper = orteaf::internal::runtime::mps::platform::wrapper;
 namespace testing_mps = orteaf::tests::runtime::mps::testing;
 using orteaf::tests::ExpectError;
