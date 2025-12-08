@@ -93,7 +93,23 @@ public:
         return block;
     }
 
-    void deallocate(const MemoryBlock& block, std::size_t size, std::size_t alignment, LaunchParams& launch_params);
+    void deallocate(const MemoryBlock& block, std::size_t size, std::size_t alignment, LaunchParams& launch_params) {
+        if (!block.valid() || size == 0) return;
+
+        if (size > max_block_size_) {
+            large_alloc_policy_.deallocate(block.handle, size, alignment);
+            return;
+        }
+
+        const std::size_t block_size = fast_free_policy_.get_block_size(min_block_size_, size);
+        const std::size_t list_idx =
+            std::countr_zero(std::bit_ceil(block_size)) -
+            std::countr_zero(std::bit_ceil(min_block_size_));
+
+        chunk_locator_policy_.incrementPending(block.handle);
+        reuse_policy_.scheduleForReuse(block, list_idx, {});
+        processPendingReuses(launch_params);
+    }
 
     void processPendingReuses(LaunchParams& launch_params) {
         reuse_policy_.processPending();
@@ -102,6 +118,7 @@ public:
         MemoryBlock block{};
 
         while (reuse_policy_.getReadyItem(freelist_index, block)) {
+            chunk_locator_policy_.decrementPendingAndUsed(block.handle);
             free_list_policy_.push(freelist_index, block, launch_params);
         }
     }

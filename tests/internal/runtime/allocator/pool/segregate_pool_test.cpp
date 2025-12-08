@@ -21,6 +21,7 @@ namespace {
 using ::orteaf::internal::backend::Backend;
 using ::orteaf::internal::runtime::allocator::MemoryBlock;
 using ::orteaf::internal::runtime::allocator::testing::MockCpuResourceImpl;
+using ::orteaf::internal::runtime::allocator::testing::MockCpuResource;
 namespace policies = ::orteaf::internal::runtime::allocator::policies;
 using CpuBufferView = ::orteaf::internal::runtime::cpu::resource::CpuBufferView;
 using ::testing::NiceMock;
@@ -34,25 +35,22 @@ struct MockResource {
     using MemoryBlock = ::orteaf::internal::runtime::allocator::MemoryBlock<Backend::Cpu>;
     using ReuseToken = ::orteaf::internal::runtime::base::BackendTraits<Backend::Cpu>::ReuseToken;
 
-    static void set(MockCpuResourceImpl* impl) { impl_ = impl; }
-    static void reset() { impl_ = nullptr; }
+    static void set(MockCpuResourceImpl* impl) { MockCpuResource::set(impl); }
+    static void reset() { MockCpuResource::reset(); }
 
-    BufferView allocate(std::size_t size, std::size_t alignment) {
-        return impl_ ? impl_->allocate(size, alignment) : BufferView{};
+    static BufferView allocate(std::size_t size, std::size_t alignment) {
+        return MockCpuResource::allocate(size, alignment);
     }
 
-    void deallocate(BufferView view, std::size_t size, std::size_t alignment) {
-        if (impl_) impl_->deallocate(view, size, alignment);
+    static void deallocate(BufferView view, std::size_t size, std::size_t alignment) {
+        MockCpuResource::deallocate(view, size, alignment);
     }
 
     static BufferView makeView(BufferView base, std::size_t offset, std::size_t size) {
-        return impl_ ? impl_->makeView(base, offset, size) : BufferView{base.raw(), offset, size};
+        return MockCpuResource::makeView(base, offset, size);
     }
 
-    bool isCompleted(const ReuseToken&) { return true; }
-
-private:
-    static inline MockCpuResourceImpl* impl_{nullptr};
+    static bool isCompleted(const ReuseToken&) { return true; }
 };
 
 struct MockResourceGuard {
@@ -164,6 +162,76 @@ TEST(SegregatePool, UsesLargeAllocWhenOverMaxSize) {
     EXPECT_TRUE(block.valid());
     EXPECT_EQ(block.view.size(), 300u);
     EXPECT_EQ(block.view.offset(), 0u);
+}
+
+TEST(SegregatePool, DeallocateReturnsBlockToFreelist) {
+    Pool pool;
+    Pool::Config cfg{};
+    MockResource resource{};
+    NiceMock<MockCpuResourceImpl> impl;
+    MockResourceGuard guard(&impl);
+    ON_CALL(impl, makeView).WillByDefault([](CpuBufferView base, std::size_t offset, std::size_t size) {
+        return CpuBufferView{base.raw(), offset, size};
+    });
+
+    cfg.fast_free.resource = &resource;
+    cfg.threading.resource = &resource;
+    cfg.large_alloc.resource = &resource;
+    cfg.chunk_locator.resource = &resource;
+    cfg.reuse.resource = &resource;
+    cfg.freelist.resource = &resource;
+    cfg.chunk_size = 256;
+    cfg.min_block_size = 64;
+    cfg.max_block_size = 256;
+    cfg.freelist.min_block_size = cfg.min_block_size;
+    cfg.freelist.max_block_size = cfg.max_block_size;
+    pool.initialize(cfg);
+
+    void* base = reinterpret_cast<void*>(0x3000);
+    EXPECT_CALL(impl, allocate(256, 0)).WillOnce(Return(CpuBufferView{base, 0, 256}));
+
+    Pool::LaunchParams params{};
+    MemoryBlock block = pool.allocate(80, 64, params);
+    ASSERT_TRUE(block.valid());
+    testing::Mock::VerifyAndClearExpectations(&impl);
+
+    pool.deallocate(block, 80, 64, params);
+
+    EXPECT_CALL(impl, allocate).Times(0);
+    MemoryBlock reused = pool.allocate(80, 64, params);
+    EXPECT_TRUE(reused.valid());
+    EXPECT_EQ(reused.view.size(), block.view.size());
+}
+
+TEST(SegregatePool, DeallocateLargeAllocUsesLargePolicy) {
+    Pool pool;
+    Pool::Config cfg{};
+    MockResource resource{};
+    NiceMock<MockCpuResourceImpl> impl;
+    MockResourceGuard guard(&impl);
+
+    cfg.fast_free.resource = &resource;
+    cfg.threading.resource = &resource;
+    cfg.large_alloc.resource = &resource;
+    cfg.chunk_locator.resource = &resource;
+    cfg.reuse.resource = &resource;
+    cfg.freelist.resource = &resource;
+    cfg.chunk_size = 256;
+    cfg.min_block_size = 64;
+    cfg.max_block_size = 128;
+    cfg.freelist.min_block_size = cfg.min_block_size;
+    cfg.freelist.max_block_size = cfg.max_block_size;
+    pool.initialize(cfg);
+
+    void* base = reinterpret_cast<void*>(0x4000);
+    EXPECT_CALL(impl, allocate(300, 16)).WillOnce(Return(CpuBufferView{base, 0, 300}));
+    EXPECT_CALL(impl, deallocate(testing::_, 300, 16)).Times(1);
+
+    Pool::LaunchParams params{};
+    MemoryBlock block = pool.allocate(300, 16, params);
+    ASSERT_TRUE(block.valid());
+
+    pool.deallocate(block, 300, 16, params);
 }
 
 }  // namespace
