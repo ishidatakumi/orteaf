@@ -35,7 +35,7 @@ public:
         resource_ = config.resource;
         configureBounds(config.min_block_size, config.max_block_size);
     }
-    
+
   void configureBounds(std::size_t min_block_size, std::size_t max_block_size) {
     ORTEAF_THROW_IF(resource_ == nullptr, InvalidState,
                     "HostStackFreelistPolicy is not initialized");
