@@ -108,7 +108,7 @@ public:
     }
   }
 
-  void removeBlocksInChunk(const MemoryBlock &chunk, std::size_t chunk_size) {
+  void removeBlocksInChunk(::orteaf::internal::base::BufferHandle handle) {
     for (auto &stack : stacks_) {
       if (stack.empty()) {
         continue;
@@ -120,7 +120,7 @@ public:
       while (!stack.empty()) {
         MemoryBlock top = std::move(stack.back());
         stack.resize(stack.size() - 1);
-        if (!chunk.view.contains(top.view, top.view.size())) {
+        if (top.handle != handle) {
           kept.pushBack(std::move(top));
         }
       }

@@ -86,7 +86,7 @@ public:
         resource_->initializeChunkAsFreelist(list_index, chunk.view, chunk_size, block_size, launch_params);
     }
 
-    void removeBlocksInChunk(const MemoryBlock& /*chunk*/, std::size_t /*chunk_size*/) {
+    void removeBlocksInChunk(::orteaf::internal::base::BufferHandle /*handle*/) {
         // デバイス側のみで管理するため未対応。
     }
 

@@ -131,8 +131,10 @@ TEST(DirectChunkLocator, PendingBlocksPreventRelease) {
   policy.incrementPending(handle);
 
   EXPECT_FALSE(policy.releaseChunk(handle));
+  EXPECT_FALSE(policy.findReleasable().isValid());
 
   policy.decrementPending(handle);
+  EXPECT_EQ(policy.findReleasable(), handle);
   EXPECT_TRUE(policy.releaseChunk(handle));
 
   MockCpuResource::reset();

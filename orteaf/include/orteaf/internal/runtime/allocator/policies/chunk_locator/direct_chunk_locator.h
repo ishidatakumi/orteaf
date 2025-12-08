@@ -113,6 +113,17 @@ public:
     return chunk ? chunk->size : 0;
   }
 
+  BufferHandle findReleasable() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    for (std::size_t i = 0; i < chunks_.size(); ++i) {
+      const ChunkInfo& chunk = chunks_[i];
+      if (chunk.alive && chunk.used == 0 && chunk.pending == 0) {
+        return encodeId(i);
+      }
+    }
+    return BufferHandle{};
+  }
+
   void incrementUsed(BufferHandle handle) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (auto *chunk = find(handle)) {

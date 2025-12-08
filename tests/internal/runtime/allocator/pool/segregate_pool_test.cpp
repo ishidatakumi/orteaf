@@ -234,4 +234,46 @@ TEST(SegregatePool, DeallocateLargeAllocUsesLargePolicy) {
     pool.deallocate(block, 300, 16, params);
 }
 
+TEST(SegregatePool, ReleaseChunkFreesBackingAndForcesNewChunkOnNextAlloc) {
+    Pool pool;
+    Pool::Config cfg{};
+    MockResource resource{};
+    NiceMock<MockCpuResourceImpl> impl;
+    MockResourceGuard guard(&impl);
+    ON_CALL(impl, makeView).WillByDefault([](CpuBufferView base, std::size_t offset, std::size_t size) {
+        return CpuBufferView{base.raw(), offset, size};
+    });
+
+    cfg.fast_free.resource = &resource;
+    cfg.threading.resource = &resource;
+    cfg.large_alloc.resource = &resource;
+    cfg.chunk_locator.resource = &resource;
+    cfg.reuse.resource = &resource;
+    cfg.freelist.resource = &resource;
+    cfg.chunk_size = 256;
+    cfg.min_block_size = 64;
+    cfg.max_block_size = 256;
+    cfg.freelist.min_block_size = cfg.min_block_size;
+    cfg.freelist.max_block_size = cfg.max_block_size;
+    pool.initialize(cfg);
+
+    void* base = reinterpret_cast<void*>(0x5000);
+    void* base2 = reinterpret_cast<void*>(0x6000);
+    EXPECT_CALL(impl, allocate(256, 0))
+        .WillOnce(Return(CpuBufferView{base, 0, 256}))
+        .WillOnce(Return(CpuBufferView{base2, 0, 256}));
+    EXPECT_CALL(impl, deallocate(testing::_, 256, 0)).Times(1);
+
+    Pool::LaunchParams params{};
+    MemoryBlock block = pool.allocate(80, 64, params);
+    ASSERT_TRUE(block.valid());
+
+    pool.deallocate(block, 80, 64, params);
+    pool.releaseChunk();
+
+    MemoryBlock new_block = pool.allocate(80, 64, params);
+    EXPECT_TRUE(new_block.valid());
+    EXPECT_EQ(new_block.view.raw(), base2);
+}
+
 }  // namespace

@@ -18,7 +18,7 @@ concept FreelistPolicy = requires(
     policy.push(list_index, block, launch_params);
     { policy.pop(list_index, launch_params) } -> std::same_as<typename Policy::MemoryBlock>;
     policy.expand(list_index, block, chunk_size, block_size, launch_params);
-    policy.removeBlocksInChunk(block, chunk_size);
+    policy.removeBlocksInChunk(block.handle);
     { policy.empty(list_index) } -> std::convertible_to<bool>;
     { policy.get_active_freelist_count() } -> std::convertible_to<std::size_t>;
     { policy.get_total_free_blocks() } -> std::convertible_to<std::size_t>;

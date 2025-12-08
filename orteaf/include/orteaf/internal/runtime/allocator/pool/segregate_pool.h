@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <bit>
-
 #include <orteaf/internal/backend/backend.h>
 #include <orteaf/internal/runtime/base/backend_traits.h>
 #include <orteaf/internal/runtime/allocator/memory_block.h>
@@ -123,10 +122,23 @@ public:
         }
     }
 
-    void releaseChunk();
+    void releaseChunk() {
+        std::lock_guard<ThreadingPolicy> lock(threading_policy_);
+
+        while (true) {
+            const auto handle = chunk_locator_policy_.findReleasable();
+            if (!handle.isValid()) break;
+
+            reuse_policy_.removeBlocksInChunk(handle);
+            free_list_policy_.removeBlocksInChunk(handle);
+
+            if (!chunk_locator_policy_.releaseChunk(handle)) {
+                break;
+            }
+        }
+    }
 
 private:
-
 
     void expandPool(std::size_t list_idx, std::size_t block_size, LaunchParams& launch_params) {
         const std::size_t num_blocks = (chunk_size_ + block_size - 1) / block_size;
