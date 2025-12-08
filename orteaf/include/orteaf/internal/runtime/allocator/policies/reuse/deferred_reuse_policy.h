@@ -102,9 +102,9 @@ public:
     return true;
   }
 
-  void removeBlocksInChunk(const BufferHandle &id) {
-    filterPending(id);
-    filterReady(id);
+  void removeBlocksInChunk(const BufferHandle &handle) {
+    filterPending(handle);
+    filterReady(handle);
   }
 
   void setTimeout(std::chrono::milliseconds timeout_ms) {
@@ -124,20 +124,20 @@ private:
     std::size_t freelist_index;
   };
 
-  void filterPending(const BufferHandle &id) {
+  void filterPending(const BufferHandle &handle) {
     ::orteaf::internal::base::HeapVector<PendingReuse> filtered;
     for (std::size_t i = 0; i < pending_queue_.size(); ++i) {
-      if (pending_queue_[i].block.id != id) {
+      if (pending_queue_[i].block.handle != handle) {
         filtered.pushBack(std::move(pending_queue_[i]));
       }
     }
     pending_queue_ = std::move(filtered);
   }
 
-  void filterReady(const BufferHandle &id) {
+  void filterReady(const BufferHandle &handle) {
     ::orteaf::internal::base::HeapVector<ReadyReuse> filtered;
     for (std::size_t i = 0; i < ready_queue_.size(); ++i) {
-      if (ready_queue_[i].block.id != id) {
+      if (ready_queue_[i].block.handle != handle) {
         filtered.pushBack(std::move(ready_queue_[i]));
       }
     }

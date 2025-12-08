@@ -90,7 +90,7 @@ public:
     const std::size_t base_offset = chunk.view.offset();
     for (std::size_t i = 0; i < num_blocks; ++i) {
       const std::size_t offset = base_offset + i * block_size;
-      MemoryBlock block{chunk.id,
+      MemoryBlock block{chunk.handle,
                         Resource::makeView(chunk.view, offset, block_size)};
       stacks_[list_index].pushBack(std::move(block));
     }

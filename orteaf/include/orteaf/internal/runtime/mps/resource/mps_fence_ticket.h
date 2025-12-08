@@ -17,11 +17,11 @@ public:
 
   MpsFenceTicket() noexcept = default;
   MpsFenceTicket(
-      ::orteaf::internal::base::CommandQueueHandle id,
+      ::orteaf::internal::base::CommandQueueHandle handle,
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
           command_buffer,
       MpsFenceLease &&fence_handle) noexcept
-      : command_queue_id_(id), command_buffer_(command_buffer),
+      : command_queue_handle_(handle), command_buffer_(command_buffer),
         fence_handle_(std::move(fence_handle)) {}
 
   MpsFenceTicket(const MpsFenceTicket &) = delete;
@@ -38,8 +38,9 @@ public:
 
   bool valid() const noexcept { return command_buffer_ != nullptr; }
 
-  ::orteaf::internal::base::CommandQueueHandle commandQueueId() const noexcept {
-    return command_queue_id_;
+  ::orteaf::internal::base::CommandQueueHandle
+  commandQueueHandle() const noexcept {
+    return command_queue_handle_;
   }
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
   commandBuffer() const noexcept {
@@ -50,9 +51,9 @@ public:
     return fence_handle_.value();
   }
 
-  MpsFenceTicket &
-  setCommandQueueId(::orteaf::internal::base::CommandQueueHandle id) noexcept {
-    command_queue_id_ = id;
+  MpsFenceTicket &setCommandQueueHandle(
+      ::orteaf::internal::base::CommandQueueHandle handle) noexcept {
+    command_queue_handle_ = handle;
     return *this;
   }
 
@@ -73,21 +74,21 @@ public:
       fence_handle_->release();
       fence_handle_.reset();
     }
-    command_queue_id_ = {};
+    command_queue_handle_ = {};
     command_buffer_ = nullptr;
   }
 
 private:
   void moveFrom(MpsFenceTicket &other) noexcept {
-    command_queue_id_ = other.command_queue_id_;
+    command_queue_handle_ = other.command_queue_handle_;
     command_buffer_ = other.command_buffer_;
     fence_handle_ = std::move(other.fence_handle_);
-    other.command_queue_id_ = {};
+    other.command_queue_handle_ = {};
     other.command_buffer_ = nullptr;
     other.fence_handle_.reset();
   }
 
-  ::orteaf::internal::base::CommandQueueHandle command_queue_id_{};
+  ::orteaf::internal::base::CommandQueueHandle command_queue_handle_{};
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
       command_buffer_{nullptr};
   std::optional<MpsFenceLease> fence_handle_{};

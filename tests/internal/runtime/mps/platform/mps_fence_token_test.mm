@@ -98,11 +98,11 @@ TEST_F(MpsFenceTokenTest, AddTicketsStoresAndOrders) {
   token.addTicket(std::move(ticket_b));
 
   ASSERT_EQ(token.size(), 2u);
-  EXPECT_EQ(token[0].commandQueueId(), queue_id_);
+  EXPECT_EQ(token[0].commandQueueHandle(), queue_id_);
   EXPECT_EQ(token[0].commandBuffer(), command_buffer_a_);
   EXPECT_TRUE(token[0].hasFence());
 
-  EXPECT_EQ(token[1].commandQueueId(), queue_id_);
+  EXPECT_EQ(token[1].commandQueueHandle(), queue_id_);
   EXPECT_EQ(token[1].commandBuffer(), command_buffer_b_);
   EXPECT_TRUE(token[1].hasFence());
 }

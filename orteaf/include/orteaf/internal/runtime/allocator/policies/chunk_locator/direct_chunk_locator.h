@@ -85,9 +85,9 @@ public:
    * @param id 解放するチャンクの BufferHandle
    * @return 解放に成功した場合 true
    */
-  bool releaseChunk(BufferHandle id) {
+  bool releaseChunk(BufferHandle handle) {
     std::lock_guard<std::mutex> lock(mutex_);
-    const std::size_t slot = indexFromId(id);
+    const std::size_t slot = indexFromId(handle);
     if (slot >= chunks_.size() || resource_ == nullptr) {
       return false;
     }
@@ -108,47 +108,47 @@ public:
    * @param id チャンクの BufferHandle
    * @return チャンクサイズ（無効な場合 0）
    */
-  std::size_t findChunkSize(BufferHandle id) const {
+  std::size_t findChunkSize(BufferHandle handle) const {
     std::lock_guard<std::mutex> lock(mutex_);
-    const ChunkInfo *chunk = find(id);
+    const ChunkInfo *chunk = find(handle);
     return chunk ? chunk->size : 0;
   }
 
-  void incrementUsed(BufferHandle id) {
+  void incrementUsed(BufferHandle handle) {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (auto *chunk = find(id)) {
+    if (auto *chunk = find(handle)) {
       ++chunk->used;
     }
   }
 
-  void decrementUsed(BufferHandle id) {
+  void decrementUsed(BufferHandle handle) {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (auto *chunk = find(id)) {
+    if (auto *chunk = find(handle)) {
       if (chunk->used > 0) {
         --chunk->used;
       }
     }
   }
 
-  void incrementPending(BufferHandle id) {
+  void incrementPending(BufferHandle handle) {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (auto *chunk = find(id)) {
+    if (auto *chunk = find(handle)) {
       ++chunk->pending;
     }
   }
 
-  void decrementPending(BufferHandle id) {
+  void decrementPending(BufferHandle handle) {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (auto *chunk = find(id)) {
+    if (auto *chunk = find(handle)) {
       if (chunk->pending > 0) {
         --chunk->pending;
       }
     }
   }
 
-  void decrementPendingAndUsed(BufferHandle id) {
+  void decrementPendingAndUsed(BufferHandle handle) {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (auto *chunk = find(id)) {
+    if (auto *chunk = find(handle)) {
       if (chunk->pending > 0) {
         --chunk->pending;
       }
@@ -163,9 +163,9 @@ public:
    * @param id チャンクの BufferHandle
    * @return 有効な場合 true
    */
-  bool isAlive(BufferHandle id) const {
+  bool isAlive(BufferHandle handle) const {
     std::lock_guard<std::mutex> lock(mutex_);
-    const ChunkInfo *chunk = find(id);
+    const ChunkInfo *chunk = find(handle);
     return chunk && chunk->alive;
   }
 
@@ -178,9 +178,9 @@ public:
                         kChunkMask};
   }
 
-  std::size_t indexFromId(BufferHandle id) const {
+  std::size_t indexFromId(BufferHandle handle) const {
     return static_cast<std::size_t>(
-        static_cast<BufferHandle::underlying_type>(id) & kChunkMask);
+        static_cast<BufferHandle::underlying_type>(handle) & kChunkMask);
   }
 
 private:
@@ -206,8 +206,8 @@ private:
   // ========================================================================
   // Internal methods
   // ========================================================================
-  ChunkInfo *find(BufferHandle id) {
-    const std::size_t slot = indexFromId(id);
+  ChunkInfo *find(BufferHandle handle) {
+    const std::size_t slot = indexFromId(handle);
     if (slot >= chunks_.size()) {
       return nullptr;
     }
@@ -215,8 +215,8 @@ private:
     return chunk.alive ? &chunk : nullptr;
   }
 
-  const ChunkInfo *find(BufferHandle id) const {
-    const std::size_t slot = indexFromId(id);
+  const ChunkInfo *find(BufferHandle handle) const {
+    const std::size_t slot = indexFromId(handle);
     if (slot >= chunks_.size()) {
       return nullptr;
     }

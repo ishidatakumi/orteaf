@@ -528,7 +528,7 @@ TEST(MpsKernelLauncherImplTest, DispatchOneShotAddsFenceTicketWhenProvided) {
 
   EXPECT_EQ(command_buffer, MockComputeFastOps::fake_buffer);
   ASSERT_EQ(token.size(), 1u);
-  EXPECT_EQ(token[0].commandQueueId(), queue_lease.handle());
+  EXPECT_EQ(token[0].commandQueueHandle(), queue_lease.handle());
   EXPECT_EQ(token[0].commandBuffer(), MockComputeFastOps::fake_buffer);
   EXPECT_TRUE(token[0].hasFence());
   EXPECT_EQ(MockComputeFastOps::last_encoder_for_fence_update,
@@ -562,7 +562,7 @@ TEST(MpsKernelLauncherImplTest, UpdateFenceReturnsTicketAndEncodesUpdate) {
   EXPECT_EQ(MockComputeFastOps::last_encoder_for_fence_update, encoder);
   EXPECT_EQ(MockComputeFastOps::last_fence_updated,
             nullptr); // DummyPrivateOps returns null fence
-  EXPECT_EQ(ticket.commandQueueId(), queue_handle);
+  EXPECT_EQ(ticket.commandQueueHandle(), queue_handle);
   EXPECT_EQ(ticket.commandBuffer(), command_buffer);
   EXPECT_TRUE(ticket.hasFence());
   EXPECT_EQ(ticket.fenceHandle().pointer(), nullptr);

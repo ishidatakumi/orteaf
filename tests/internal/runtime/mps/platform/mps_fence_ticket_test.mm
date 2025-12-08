@@ -76,7 +76,7 @@ TEST_F(MpsFenceTicketTest, DefaultConstructedIsInvalid) {
   mps_res::MpsFenceTicket ticket;
   EXPECT_FALSE(ticket.valid());
   EXPECT_FALSE(ticket.hasFence());
-  EXPECT_EQ(ticket.commandQueueId(), base::CommandQueueHandle{});
+  EXPECT_EQ(ticket.commandQueueHandle(), base::CommandQueueHandle{});
   EXPECT_EQ(ticket.commandBuffer(), nullptr);
 }
 
@@ -86,7 +86,7 @@ TEST_F(MpsFenceTicketTest, ValueConstructorStoresMembers) {
 
   EXPECT_TRUE(ticket.valid());
   EXPECT_TRUE(ticket.hasFence());
-  EXPECT_EQ(ticket.commandQueueId(), queue_id_);
+  EXPECT_EQ(ticket.commandQueueHandle(), queue_id_);
   EXPECT_EQ(ticket.commandBuffer(), command_buffer_);
   id<MTLFence> objc_fence =
       (__bridge id<MTLFence>)(ticket.fenceHandle().pointer());
@@ -100,13 +100,13 @@ TEST_F(MpsFenceTicketTest, SettersUpdateMembers) {
   mps_res::MpsFenceTicket ticket;
   auto handle = fence_pool_.acquireFence();
 
-  ticket.setCommandQueueId(queue_id_)
+  ticket.setCommandQueueHandle(queue_id_)
       .setCommandBuffer(command_buffer_)
       .setFenceHandle(std::move(handle));
 
   EXPECT_TRUE(ticket.valid());
   EXPECT_TRUE(ticket.hasFence());
-  EXPECT_EQ(ticket.commandQueueId(), queue_id_);
+  EXPECT_EQ(ticket.commandQueueHandle(), queue_id_);
   EXPECT_EQ(ticket.commandBuffer(), command_buffer_);
   EXPECT_TRUE(ticket.fenceHandle());
 }
@@ -119,7 +119,7 @@ TEST_F(MpsFenceTicketTest, MoveTransfersOwnership) {
 
   EXPECT_TRUE(moved.valid());
   EXPECT_TRUE(moved.hasFence());
-  EXPECT_EQ(moved.commandQueueId(), queue_id_);
+  EXPECT_EQ(moved.commandQueueHandle(), queue_id_);
   EXPECT_EQ(moved.commandBuffer(), command_buffer_);
   EXPECT_TRUE(moved.fenceHandle());
 
@@ -137,7 +137,7 @@ TEST_F(MpsFenceTicketTest, ResetClearsState) {
   EXPECT_FALSE(ticket.valid());
   EXPECT_FALSE(ticket.hasFence());
   EXPECT_EQ(ticket.commandBuffer(), nullptr);
-  EXPECT_EQ(ticket.commandQueueId(), base::CommandQueueHandle{});
+  EXPECT_EQ(ticket.commandQueueHandle(), base::CommandQueueHandle{});
 }
 
 static_assert(!std::is_copy_constructible_v<mps_res::MpsFenceTicket>);

@@ -46,13 +46,14 @@ public:
     return MemoryBlock(encodeId(index), buffer);
   }
 
-  void deallocate(BufferHandle id, std::size_t size, std::size_t alignment) {
+  void deallocate(BufferHandle handle, std::size_t size,
+                  std::size_t alignment) {
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!isLargeAlloc(id)) {
+    if (!isLargeAlloc(handle)) {
       return;
     }
 
-    const std::size_t index = indexFromId(id);
+    const std::size_t index = indexFromId(handle);
     if (index >= entries_.size()) {
       return;
     }
@@ -76,17 +77,18 @@ public:
     free_list_.pushBack(static_cast<std::size_t>(index));
   }
 
-  bool isLargeAlloc(BufferHandle id) const {
+  bool isLargeAlloc(BufferHandle handle) const {
     // 上位ビットでLarge/Chunkを判定
-    return (static_cast<BufferHandle::underlying_type>(id) & kLargeMask) != 0;
+    return (static_cast<BufferHandle::underlying_type>(handle) & kLargeMask) !=
+           0;
   }
 
-  bool isAlive(BufferHandle id) const {
-    if (!isLargeAlloc(id)) {
+  bool isAlive(BufferHandle handle) const {
+    if (!isLargeAlloc(handle)) {
       return false;
     }
     std::lock_guard<std::mutex> lock(mutex_);
-    const std::size_t index = indexFromId(id);
+    const std::size_t index = indexFromId(handle);
     return index < entries_.size() && entries_[index].in_use &&
            entries_[index].view;
   }
@@ -116,10 +118,10 @@ private:
                         kLargeMask};
   }
 
-  std::size_t indexFromId(BufferHandle id) const {
+  std::size_t indexFromId(BufferHandle handle) const {
     // Large判定ビットを落としてインデックスに戻す
     return static_cast<std::size_t>(
-        static_cast<BufferHandle::underlying_type>(id) & kIndexMask);
+        static_cast<BufferHandle::underlying_type>(handle) & kIndexMask);
   }
 
   std::size_t reserveSlot() {

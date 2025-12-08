@@ -52,8 +52,8 @@ struct CpuDeviceManager {
    * operating system's signals determine the value.
    */
   ::orteaf::internal::architecture::Architecture
-  getArch(::orteaf::internal::base::DeviceHandle id) const {
-    ensureValid(id);
+  getArch(::orteaf::internal::base::DeviceHandle handle) const {
+    ensureValid(handle);
     return state_.arch;
   }
 
@@ -63,8 +63,8 @@ struct CpuDeviceManager {
    * Only the primary device exists today, so this will be `true` when the
    * manager is initialized and the caller supplies `DeviceHandle{0}`.
    */
-  bool isAlive(::orteaf::internal::base::DeviceHandle id) const {
-    ensureValid(id);
+  bool isAlive(::orteaf::internal::base::DeviceHandle handle) const {
+    ensureValid(handle);
     return state_.is_alive;
   }
 
@@ -76,8 +76,8 @@ private:
    * what the rest of the runtime manager suite would expect from well-formed
    * getters.
    */
-  void ensureValid(::orteaf::internal::base::DeviceHandle id) const {
-    if (!initialized_ || id != kPrimaryDevice) {
+  void ensureValid(::orteaf::internal::base::DeviceHandle handle) const {
+    if (!initialized_ || handle != kPrimaryDevice) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
           "invalid CPU device");

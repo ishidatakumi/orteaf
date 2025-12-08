@@ -13,14 +13,14 @@ using BufferHandle = ::orteaf::internal::base::BufferHandle;
 template <backend::Backend B> struct MemoryBlock {
   using BufferView = typename base::BackendTraits<B>::BufferView;
 
-  BufferHandle id{};
+  BufferHandle handle{};
   BufferView view{};
 
   MemoryBlock() = default;
-  MemoryBlock(BufferHandle id, BufferView view)
-      : id(id), view(std::move(view)) {}
+  MemoryBlock(BufferHandle handle, BufferView view)
+      : handle(handle), view(std::move(view)) {}
 
-  bool valid() const { return id.isValid() && static_cast<bool>(view); }
+  bool valid() const { return handle.isValid() && static_cast<bool>(view); }
 };
 
 } // namespace orteaf::internal::runtime::allocator
