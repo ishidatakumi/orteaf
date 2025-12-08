@@ -1,4 +1,4 @@
-#include "orteaf/internal/runtime/manager/mps/mps_fence_pool.h"
+#include "orteaf/internal/runtime/mps/manager/mps_fence_pool.h"
 
 #if ORTEAF_ENABLE_MPS
 

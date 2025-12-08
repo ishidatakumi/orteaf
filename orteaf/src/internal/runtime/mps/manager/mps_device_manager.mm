@@ -1,4 +1,4 @@
-#include "orteaf/internal/runtime/manager/mps/mps_device_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_device_manager.h"
 
 #if ORTEAF_ENABLE_MPS
 

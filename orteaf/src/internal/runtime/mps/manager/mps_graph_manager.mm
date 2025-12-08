@@ -1,4 +1,4 @@
-#include "orteaf/internal/runtime/manager/mps/mps_graph_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_graph_manager.h"
 
 #if ORTEAF_ENABLE_MPS
 

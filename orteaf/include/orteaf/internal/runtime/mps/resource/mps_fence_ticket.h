@@ -7,7 +7,7 @@
 
 #include <orteaf/internal/runtime/mps/platform/wrapper/mps_event.h>
 #include <orteaf/internal/base/handle.h>
-#include <orteaf/internal/runtime/manager/mps/mps_fence_pool.h>
+#include <orteaf/internal/runtime/mps/manager/mps_fence_pool.h>
 
 namespace orteaf::internal::runtime::mps::resource {
 class MpsFenceTicket {

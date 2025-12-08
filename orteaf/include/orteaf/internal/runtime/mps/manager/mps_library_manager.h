@@ -16,7 +16,7 @@
 #include "orteaf/internal/base/lease.h"
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/runtime/base/base_manager.h"
-#include "orteaf/internal/runtime/manager/mps/mps_compute_pipeline_state_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_compute_pipeline_state_manager.h"
 
 namespace orteaf::internal::runtime::mps {
 

@@ -6,12 +6,12 @@
 #include <gmock/gmock.h>
 
 #include <orteaf/internal/runtime/mps/platform/mps_slow_ops.h>
-#include <tests/internal/runtime/manager/mps/testing/backend_mock.h>
+#include <tests/internal/runtime/mps/manager/testing/backend_mock.h>
 
 namespace orteaf::tests::runtime::mps::testing {
 
 template <class BackendOpsT, bool IsMockV> struct BackendOpsProvider {
-    using SlowOps = BackendOpsT;
+  using SlowOps = BackendOpsT;
   static constexpr bool is_mock = IsMockV;
 
   struct Context {
@@ -24,8 +24,7 @@ template <class BackendOpsT, bool IsMockV> struct BackendOpsProvider {
 
 // Real provider uses MpsSlowOpsImpl
 struct RealBackendOpsProvider {
-  using SlowOps =
-    ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOpsImpl;
+  using SlowOps = ::orteaf::internal::runtime::backend_ops::mps::MpsSlowOpsImpl;
   static constexpr bool is_mock = false;
 
   struct Context {

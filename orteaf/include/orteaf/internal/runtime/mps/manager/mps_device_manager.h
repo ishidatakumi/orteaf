@@ -14,12 +14,12 @@
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/runtime/mps/platform/mps_slow_ops.h"
 #include "orteaf/internal/runtime/base/base_manager.h"
-#include "orteaf/internal/runtime/manager/mps/mps_command_queue_manager.h"
-#include "orteaf/internal/runtime/manager/mps/mps_event_pool.h"
-#include "orteaf/internal/runtime/manager/mps/mps_heap_manager.h"
-#include "orteaf/internal/runtime/manager/mps/mps_fence_pool.h"
-#include "orteaf/internal/runtime/manager/mps/mps_library_manager.h"
-#include "orteaf/internal/runtime/manager/mps/mps_graph_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_command_queue_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_event_pool.h"
+#include "orteaf/internal/runtime/mps/manager/mps_heap_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_fence_pool.h"
+#include "orteaf/internal/runtime/mps/manager/mps_library_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_graph_manager.h"
 
 namespace orteaf::internal::runtime::mps {
 

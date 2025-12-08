@@ -2,7 +2,7 @@
 
 #if ORTEAF_ENABLE_MPS
 
-#include "orteaf/internal/runtime/manager/mps/mps_runtime_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_runtime_manager.h"
 
 namespace orteaf::internal::runtime::ops::mps {
 

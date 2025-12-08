@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "orteaf/internal/runtime/mps/platform/mps_slow_ops.h"
-#include "orteaf/internal/runtime/manager/mps/mps_device_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_device_manager.h"
 
 namespace orteaf::internal::runtime::mps {
 

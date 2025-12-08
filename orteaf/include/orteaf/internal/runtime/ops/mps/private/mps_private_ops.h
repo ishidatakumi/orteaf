@@ -6,7 +6,7 @@
 #include <utility>
 
 #include "orteaf/internal/base/handle.h"
-#include "orteaf/internal/runtime/manager/mps/mps_runtime_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_runtime_manager.h"
 #include "orteaf/internal/runtime/ops/mps/common/mps_common_ops.h"
 
 namespace orteaf::internal::runtime::ops::mps {

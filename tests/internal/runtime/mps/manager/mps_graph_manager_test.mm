@@ -4,8 +4,8 @@
 #include <cstdint>
 #include <vector>
 
-#include <orteaf/internal/runtime/manager/mps/mps_graph_manager.h>
-#include <tests/internal/runtime/manager/mps/testing/backend_mock.h>
+#include <orteaf/internal/runtime/mps/manager/mps_graph_manager.h>
+#include <tests/internal/runtime/mps/manager/testing/backend_mock.h>
 #include <tests/internal/testing/error_assert.h>
 
 namespace backend = orteaf::internal::backend;
@@ -39,9 +39,7 @@ mps_wrapper::MPSGraphTensorData_t makeTensorData(std::uintptr_t value) {
 
 class MpsGraphManagerTest : public ::testing::Test {
 protected:
-  void SetUp() override {
-    device_ = makeDevice(0xDEADBEEF);
-  }
+  void SetUp() override { device_ = makeDevice(0xDEADBEEF); }
 
   void TearDown() override { manager_.shutdown(); }
 
@@ -68,8 +66,8 @@ TEST_F(MpsGraphManagerTest, AcquireCachesExecutableForSameKey) {
   mps_wrapper::MPSGraphTensorData_t feed_data = makeTensorData(0x4040);
 
   EXPECT_CALL(mock_, createGraph()).WillOnce(::testing::Return(graph));
-  EXPECT_CALL(mock_, compileGraph(graph, device_, ::testing::_, 1, ::testing::_, 1,
-                                  ::testing::_, 0))
+  EXPECT_CALL(mock_, compileGraph(graph, device_, ::testing::_, 1, ::testing::_,
+                                  1, ::testing::_, 0))
       .WillOnce(::testing::Return(exe));
   EXPECT_CALL(mock_, destroyGraphExecutable(exe)).Times(1);
   EXPECT_CALL(mock_, destroyGraph(graph)).Times(1);
@@ -80,9 +78,8 @@ TEST_F(MpsGraphManagerTest, AcquireCachesExecutableForSameKey) {
   key.data_type = mps_wrapper::MpsGraphDataType::kFloat32;
   key.target_tensor_count = 1;
 
-  auto compile_fn = [&](mps_wrapper::MPSGraph_t g,
-                        mps_wrapper::MPSDevice_t dev,
-                        mps_rt::MpsGraphManager::SlowOps* ops) {
+  auto compile_fn = [&](mps_wrapper::MPSGraph_t g, mps_wrapper::MPSDevice_t dev,
+                        mps_rt::MpsGraphManager::SlowOps *ops) {
     mps_wrapper::MpsGraphFeed feed{target, feed_data};
     return ops->compileGraph(g, dev, &feed, 1, &target, 1, nullptr, 0);
   };
@@ -121,9 +118,8 @@ TEST_F(MpsGraphManagerTest, DifferentKeyShapeTriggersNewCompile) {
 
   manager_.initialize(device_, &mock_, /*capacity=*/2);
 
-  auto compile_fn = [&](mps_wrapper::MPSGraph_t g,
-                        mps_wrapper::MPSDevice_t dev,
-                        mps_rt::MpsGraphManager::SlowOps* ops) {
+  auto compile_fn = [&](mps_wrapper::MPSGraph_t g, mps_wrapper::MPSDevice_t dev,
+                        mps_rt::MpsGraphManager::SlowOps *ops) {
     mps_wrapper::MpsGraphFeed feed{target, feed_data};
     return ops->compileGraph(g, dev, &feed, 1, &target, 1, nullptr, 0);
   };
@@ -166,7 +162,7 @@ TEST_F(MpsGraphManagerTest, NullExecutableFromCompileThrowsAndCleansUp) {
   key.target_tensor_count = 1;
 
   auto compile_fn = [](mps_wrapper::MPSGraph_t, mps_wrapper::MPSDevice_t,
-                       mps_rt::MpsGraphManager::SlowOps*) {
+                       mps_rt::MpsGraphManager::SlowOps *) {
     return mps_wrapper::MPSGraphExecutable_t{};
   };
 

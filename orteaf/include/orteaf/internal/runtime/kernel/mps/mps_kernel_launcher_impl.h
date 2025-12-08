@@ -16,8 +16,8 @@
 #include "orteaf/internal/runtime/mps/resource/mps_fence_ticket.h"
 #include "orteaf/internal/runtime/ops/mps/common/mps_common_ops.h"
 
-#include "orteaf/internal/runtime/manager/mps/mps_compute_pipeline_state_manager.h"
-#include "orteaf/internal/runtime/manager/mps/mps_library_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_compute_pipeline_state_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_library_manager.h"
 
 namespace orteaf::internal::runtime::mps {
 

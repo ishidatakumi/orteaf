@@ -1,4 +1,4 @@
-#include "orteaf/internal/runtime/manager/mps/mps_command_queue_manager.h"
+#include <orteaf/internal/runtime/mps/manager/mps_command_queue_manager.h>
 
 #if ORTEAF_ENABLE_MPS
 
