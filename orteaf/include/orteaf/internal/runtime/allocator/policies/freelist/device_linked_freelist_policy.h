@@ -50,7 +50,7 @@ public:
     }
 
     void push(std::size_t list_index, const MemoryBlock& block,
-              const LaunchParams& launch_params) {
+              const LaunchParams& launch_params = {}) {
         ORTEAF_THROW_IF(resource_ == nullptr, InvalidState, "DeviceLinkedFreelistPolicy is not initialized");
         if (!block.valid()) return;
         ensureList(list_index);
@@ -58,7 +58,7 @@ public:
         resource_->pushFreelistNode(list_index, block.view, launch_params);
     }
 
-    MemoryBlock pop(std::size_t list_index, const LaunchParams& launch_params) {
+    MemoryBlock pop(std::size_t list_index, const LaunchParams& launch_params = {}) {
         ORTEAF_THROW_IF(resource_ == nullptr, InvalidState, "DeviceLinkedFreelistPolicy is not initialized");
         ensureList(list_index);
         auto view = resource_->popFreelistNode(list_index, launch_params);
@@ -76,7 +76,7 @@ public:
     std::size_t get_total_free_blocks() const { return 0; }  // 集計不可
 
     void expand(std::size_t list_index, const MemoryBlock& chunk, std::size_t chunk_size, std::size_t block_size,
-                const LaunchParams& launch_params) {
+                const LaunchParams& launch_params = {}) {
         ORTEAF_THROW_IF(resource_ == nullptr, InvalidState, "DeviceLinkedFreelistPolicy is not initialized");
         if (!chunk.valid() || block_size == 0) {
             return;
