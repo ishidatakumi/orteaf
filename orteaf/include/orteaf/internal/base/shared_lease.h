@@ -6,18 +6,14 @@
 
 namespace orteaf::internal::base {
 /**
- * @brief A generic shared lease implementation that manages a resource using
- * reference counting provided by the ManagerT.
- *
- * This class is copyable and movable. Copying increments the reference count
- * via `manager_->retain(handle_)`. Destruction or release decrements the
+ * via `manager_->acquire(handle_)`. Destruction or release decrements the
  * reference count via `manager_->release(handle_)`.
  *
  * @tparam HandleT The type of the handle used to identify the resource in the
  * manager.
  * @tparam ResourceT The type of the actual resource being managed.
  * @tparam ManagerT The type of the manager that owns the resource. Must provide
- * `retain(HandleT)` and `release(HandleT)`.
+ * `acquire(HandleT)` and `release(HandleT)`.
  */
 template <class HandleT, class ResourceT, class ManagerT> 
 class SharedLease {
