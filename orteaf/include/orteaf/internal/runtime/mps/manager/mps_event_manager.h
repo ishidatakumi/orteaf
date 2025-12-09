@@ -12,7 +12,7 @@
 
 namespace orteaf::internal::runtime::mps::manager {
 
-struct EventPoolTraits {
+struct EventManagerTraits {
   using ResourceType =
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSEvent_t;
   using StateType =
@@ -37,11 +37,11 @@ struct EventPoolTraits {
 
 class MpsEventManager
     : public ::orteaf::internal::runtime::base::ResourceManager<
-          MpsEventManager, EventPoolTraits> {
+          MpsEventManager, EventManagerTraits> {
 public:
   using Base =
       ::orteaf::internal::runtime::base::ResourceManager<MpsEventManager,
-                                                         EventPoolTraits>;
+                                                         EventManagerTraits>;
   using SlowOps = Base::Ops;
   using DeviceType = Base::Device;
   using EventHandle = Base::ResourceHandle;
@@ -64,7 +64,7 @@ public:
 namespace orteaf::internal::runtime::base {
 extern template class ResourceManager<
     ::orteaf::internal::runtime::mps::manager::MpsEventManager,
-    ::orteaf::internal::runtime::mps::manager::EventPoolTraits>;
+    ::orteaf::internal::runtime::mps::manager::EventManagerTraits>;
 }
 
 #endif // ORTEAF_ENABLE_MPS
