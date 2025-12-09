@@ -131,7 +131,7 @@ private:
 
   void doRelease() {
     if (manager_) {
-      manager_->release(handle_);
+      manager_->release(*this);
       manager_ = nullptr;
     }
   }
