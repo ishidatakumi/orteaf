@@ -73,6 +73,8 @@ public:
     return static_cast<F &&>(f)(resource_);
   }
 
+  HandleType &handle() { return handle_; }
+
 private:
   void release() {
     if (manager_) {
@@ -153,7 +155,7 @@ public:
 
   explicit operator bool() const { return control_block_ != nullptr; }
 
-  HandleType handle() const { return control_block_->handle_; }
+  HandleType &handle() { return control_block_->handle(); }
 
   void release() {
     if (control_block_) {
