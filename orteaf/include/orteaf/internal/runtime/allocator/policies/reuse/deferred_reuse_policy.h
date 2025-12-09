@@ -19,7 +19,7 @@ template <typename Resource, ::orteaf::internal::backend::Backend B>
 class DeferredReusePolicy {
 public:
   using BufferViewHandle = ::orteaf::internal::base::BufferViewHandle;
-  using MemoryBlock = ::orteaf::internal::runtime::allocator::MemoryBlock<B>;
+  using BufferResource = ::orteaf::internal::runtime::allocator::BufferResource<B>;
   using ReuseToken =
       typename ::orteaf::internal::runtime::base::BackendTraits<B>::ReuseToken;
 
@@ -34,7 +34,7 @@ public:
     timeout_ms_ = config.timeout_ms;
   }
 
-  void scheduleForReuse(MemoryBlock block, std::size_t freelist_index,
+  void scheduleForReuse(BufferResource block, std::size_t freelist_index,
                         ReuseToken reuse_token) {
     ORTEAF_THROW_IF(resource_ == nullptr, InvalidState,
                     "DeferredReusePolicy is not initialized");
@@ -94,7 +94,7 @@ public:
     }
   }
 
-  bool getReadyItem(std::size_t &freelist_index, MemoryBlock &block) {
+  bool getReadyItem(std::size_t &freelist_index, BufferResource &block) {
     if (ready_queue_.empty())
       return false;
     ReadyReuse item = std::move(ready_queue_.back());
@@ -116,14 +116,14 @@ public:
 
 private:
   struct PendingReuse {
-    MemoryBlock block;
+    BufferResource block;
     ReuseToken reuse_token;
     std::size_t freelist_index;
     std::chrono::steady_clock::time_point timestamp;
   };
 
   struct ReadyReuse {
-    MemoryBlock block;
+    BufferResource block;
     std::size_t freelist_index;
   };
 

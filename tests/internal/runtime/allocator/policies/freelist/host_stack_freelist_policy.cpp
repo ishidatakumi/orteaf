@@ -20,7 +20,7 @@ using ::testing::Sequence;
 namespace {
 
 using Policy = policies::HostStackFreelistPolicy<MockCpuResource, Backend::Cpu>;
-using MemoryBlock = Policy::MemoryBlock;
+using BufferResource = Policy::BufferResource;
 
 TEST(HostStackFreelistPolicy, ConfigureInitializesStacks) {
   Policy policy;
@@ -47,9 +47,9 @@ TEST(HostStackFreelistPolicy, PushAndPopAreLifoAndResizeStacks) {
     cfg.max_block_size = 128;
     policy.initialize(cfg);
 
-  MemoryBlock first{BufferViewHandle{1},
+  BufferResource first{BufferViewHandle{1},
                     CpuBufferView{reinterpret_cast<void *>(0x1), 0, 64}};
-  MemoryBlock second{BufferViewHandle{2},
+  BufferResource second{BufferViewHandle{2},
                      CpuBufferView{reinterpret_cast<void *>(0x1), 64, 64}};
 
   policy.push(2, first);
@@ -78,7 +78,7 @@ TEST(HostStackFreelistPolicy, ExpandSplitsChunkIntoBlocks) {
 
   void *base = reinterpret_cast<void *>(0x1000);
   CpuBufferView chunk_view{base, 0, 256};
-  MemoryBlock chunk{BufferViewHandle{3}, chunk_view};
+  BufferResource chunk{BufferViewHandle{3}, chunk_view};
 
   Sequence seq;
   EXPECT_CALL(impl, makeView(chunk_view, 0, 64))
@@ -119,7 +119,7 @@ TEST(HostStackFreelistPolicy, RemoveBlocksInChunkRemovesContainedBlocks) {
 
   void *base = reinterpret_cast<void *>(0x2000);
   CpuBufferView chunk_view{base, 0, 128};
-  MemoryBlock chunk{BufferViewHandle{4}, chunk_view};
+  BufferResource chunk{BufferViewHandle{4}, chunk_view};
 
   Sequence seq;
   EXPECT_CALL(impl, makeView(chunk_view, 0, 32))
@@ -136,7 +136,7 @@ TEST(HostStackFreelistPolicy, RemoveBlocksInChunkRemovesContainedBlocks) {
       .WillOnce(Return(CpuBufferView{base, 96, 32}));
 
   policy.expand(0, chunk, 128, 32);
-  MemoryBlock other{BufferViewHandle{99},
+  BufferResource other{BufferViewHandle{99},
                     CpuBufferView{reinterpret_cast<void *>(0xDEADBEEF), 0, 32}};
   policy.push(0, other);
   EXPECT_EQ(policy.get_total_free_blocks(), 5u);

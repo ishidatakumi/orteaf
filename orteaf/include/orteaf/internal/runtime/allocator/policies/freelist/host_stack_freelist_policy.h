@@ -21,7 +21,7 @@ namespace orteaf::internal::runtime::allocator::policies {
 template <typename Resource, ::orteaf::internal::backend::Backend B>
 class HostStackFreelistPolicy {
 public:
-  using MemoryBlock = ::orteaf::internal::runtime::allocator::MemoryBlock<B>;
+  using BufferResource = ::orteaf::internal::runtime::allocator::BufferResource<B>;
   using LaunchParams =
       typename ::orteaf::internal::runtime::base::BackendTraits<B>::KernelLaunchParams;
 
@@ -47,7 +47,7 @@ public:
     stacks_.resize(size_class_count_);
   }
 
-  void push(std::size_t list_index, const MemoryBlock &block,
+  void push(std::size_t list_index, const BufferResource &block,
             const LaunchParams& /*launch_params*/ = {}) {
     ORTEAF_THROW_IF(resource_ == nullptr, InvalidState,
                     "HostStackFreelistPolicy is not initialized");
@@ -57,14 +57,14 @@ public:
     stacks_[list_index].pushBack(block);
   }
 
-  MemoryBlock pop(std::size_t list_index,
+  BufferResource pop(std::size_t list_index,
                   const LaunchParams& /*launch_params*/ = {}) {
     ORTEAF_THROW_IF(resource_ == nullptr, InvalidState,
                     "HostStackFreelistPolicy is not initialized");
     if (list_index >= stacks_.size() || stacks_[list_index].empty()) {
       return {};
     }
-    MemoryBlock block = std::move(stacks_[list_index].back());
+    BufferResource block = std::move(stacks_[list_index].back());
     stacks_[list_index].resize(stacks_[list_index].size() - 1);
     return block;
   }
@@ -85,7 +85,7 @@ public:
     return total;
   }
 
-  void expand(std::size_t list_index, const MemoryBlock &chunk,
+  void expand(std::size_t list_index, const BufferResource &chunk,
               std::size_t chunk_size, std::size_t block_size,
               const LaunchParams& /*launch_params*/ = {}) {
     ORTEAF_THROW_IF(resource_ == nullptr, InvalidState,
@@ -102,7 +102,7 @@ public:
     const std::size_t base_offset = chunk.view.offset();
     for (std::size_t i = 0; i < num_blocks; ++i) {
       const std::size_t offset = base_offset + i * block_size;
-      MemoryBlock block{chunk.handle,
+      BufferResource block{chunk.handle,
                         Resource::makeView(chunk.view, offset, block_size)};
       stacks_[list_index].pushBack(std::move(block));
     }
@@ -114,11 +114,11 @@ public:
         continue;
       }
 
-      ::orteaf::internal::base::HeapVector<MemoryBlock> kept;
+      ::orteaf::internal::base::HeapVector<BufferResource> kept;
       kept.reserve(stack.size());
 
       while (!stack.empty()) {
-        MemoryBlock top = std::move(stack.back());
+        BufferResource top = std::move(stack.back());
         stack.resize(stack.size() - 1);
         if (top.handle != handle) {
           kept.pushBack(std::move(top));
@@ -132,7 +132,7 @@ public:
   }
 
 private:
-  using BlockStack = ::orteaf::internal::base::HeapVector<MemoryBlock>;
+  using BlockStack = ::orteaf::internal::base::HeapVector<BufferResource>;
 
   Resource *resource_{nullptr};
   ::orteaf::internal::base::HeapVector<BlockStack> stacks_{};

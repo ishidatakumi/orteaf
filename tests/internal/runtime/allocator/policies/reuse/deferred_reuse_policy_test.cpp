@@ -19,7 +19,7 @@ using Backend = ::orteaf::internal::backend::Backend;
 using BufferViewHandle = ::orteaf::internal::base::BufferViewHandle;
 using CpuView = ::orteaf::internal::runtime::cpu::resource::CpuBufferView;
 namespace {
-using MemoryBlock = allocator::MemoryBlock<Backend::Cpu>;
+using BufferResource = allocator::BufferResource<Backend::Cpu>;
 using CpuReuseToken =
     ::orteaf::internal::runtime::base::BackendTraits<Backend::Cpu>::ReuseToken;
 struct FakeResource;
@@ -35,10 +35,10 @@ struct FakeResource {
   }
 };
 
-MemoryBlock makeBlock(BufferViewHandle id,
+BufferResource makeBlock(BufferViewHandle id,
                       void *ptr = reinterpret_cast<void *>(0x10),
                       std::size_t size = 64) {
-  return MemoryBlock{id, CpuView{ptr, 0, size}};
+  return BufferResource{id, CpuView{ptr, 0, size}};
 }
 
 TEST(DeferredReusePolicy, InitializeFailsWithNullResource) {
@@ -56,14 +56,14 @@ TEST(DeferredReusePolicy, MovesCompletedToReady) {
     cfg.resource = &resource;
     policy.initialize(cfg);
 
-  MemoryBlock block = makeBlock(BufferViewHandle{1});
+  BufferResource block = makeBlock(BufferViewHandle{1});
   std::size_t freelist_index = 3;
   CpuReuseToken token{};
 
   policy.scheduleForReuse(block, freelist_index, token);
   EXPECT_EQ(policy.processPending(), 1u);
 
-  MemoryBlock out_block{};
+  BufferResource out_block{};
   std::size_t out_index = 0;
   EXPECT_TRUE(policy.getReadyItem(out_index, out_block));
   EXPECT_EQ(out_block.handle, block.handle);
@@ -78,7 +78,7 @@ TEST(DeferredReusePolicy, KeepsPendingWhenNotCompleted) {
     cfg.resource = &resource;
     policy.initialize(cfg);
 
-  MemoryBlock block = makeBlock(BufferViewHandle{2});
+  BufferResource block = makeBlock(BufferViewHandle{2});
   CpuReuseToken token{};
   policy.scheduleForReuse(block, 1, token);
 
@@ -99,8 +99,8 @@ TEST(DeferredReusePolicy, RemoveBlocksInChunkFiltersPendingAndReady) {
     policy.initialize(cfg);
 
   CpuReuseToken token{};
-  MemoryBlock block1 = makeBlock(BufferViewHandle{10});
-  MemoryBlock block2 =
+  BufferResource block1 = makeBlock(BufferViewHandle{10});
+  BufferResource block2 =
       makeBlock(BufferViewHandle{20}, reinterpret_cast<void *>(0x20));
 
   policy.scheduleForReuse(block1, 0, token);
@@ -114,7 +114,7 @@ TEST(DeferredReusePolicy, RemoveBlocksInChunkFiltersPendingAndReady) {
   policy.removeBlocksInChunk(block1.handle);
   policy.removeBlocksInChunk(block2.handle);
 
-  MemoryBlock out_block{};
+  BufferResource out_block{};
   std::size_t out_index = 0;
   EXPECT_FALSE(policy.getReadyItem(out_index, out_block));
   EXPECT_EQ(policy.getPendingReuseCount(), 0u);
@@ -142,7 +142,7 @@ TEST(DeferredReusePolicy, FlushPendingWaitsUntilComplete) {
   policy.flushPending();
   toggler.join();
 
-  MemoryBlock out_block{};
+  BufferResource out_block{};
   std::size_t out_index = 0;
   EXPECT_TRUE(policy.getReadyItem(out_index, out_block));
   EXPECT_FALSE(policy.hasPending());

@@ -18,7 +18,7 @@
 namespace {
 
 using ::orteaf::internal::backend::Backend;
-using ::orteaf::internal::runtime::allocator::MemoryBlock;
+using ::orteaf::internal::runtime::allocator::BufferResource;
 using ::orteaf::internal::runtime::allocator::testing::MockCpuResource;
 using ::orteaf::internal::runtime::allocator::testing::MockCpuResourceImpl;
 namespace policies = ::orteaf::internal::runtime::allocator::policies;
@@ -31,8 +31,8 @@ using ::testing::Return;
 // ---------------------------------------------------------------------------
 struct MockResource {
   using BufferView = CpuBufferView;
-  using MemoryBlock =
-      ::orteaf::internal::runtime::allocator::MemoryBlock<Backend::Cpu>;
+  using BufferResource =
+      ::orteaf::internal::runtime::allocator::BufferResource<Backend::Cpu>;
   using ReuseToken = ::orteaf::internal::runtime::base::BackendTraits<
       Backend::Cpu>::ReuseToken;
 
@@ -130,7 +130,7 @@ TEST(SegregatePool, AllocatesFromChunkWhenBelowMaxSize) {
       .WillOnce(Return(CpuBufferView{base, 0, 256}));
 
   Pool::LaunchParams params{};
-  MemoryBlock block = pool.allocate(80, 64, params);
+  BufferResource block = pool.allocate(80, 64, params);
 
   EXPECT_TRUE(block.valid());
   EXPECT_EQ(block.view.size(), block_size);
@@ -167,7 +167,7 @@ TEST(SegregatePool, UsesLargeAllocWhenOverMaxSize) {
       .WillOnce(Return(CpuBufferView{base, 0, 300}));
 
   Pool::LaunchParams params{};
-  MemoryBlock block = pool.allocate(300, 16, params);
+  BufferResource block = pool.allocate(300, 16, params);
 
   EXPECT_TRUE(block.valid());
   EXPECT_EQ(block.view.size(), 300u);
@@ -204,14 +204,14 @@ TEST(SegregatePool, DeallocateReturnsBlockToFreelist) {
       .WillOnce(Return(CpuBufferView{base, 0, 256}));
 
   Pool::LaunchParams params{};
-  MemoryBlock block = pool.allocate(80, 64, params);
+  BufferResource block = pool.allocate(80, 64, params);
   ASSERT_TRUE(block.valid());
   testing::Mock::VerifyAndClearExpectations(&impl);
 
   pool.deallocate(block, 80, 64, params);
 
   EXPECT_CALL(impl, allocate).Times(0);
-  MemoryBlock reused = pool.allocate(80, 64, params);
+  BufferResource reused = pool.allocate(80, 64, params);
   EXPECT_TRUE(reused.valid());
   EXPECT_EQ(reused.view.size(), block.view.size());
 }
@@ -242,7 +242,7 @@ TEST(SegregatePool, DeallocateLargeAllocUsesLargePolicy) {
   EXPECT_CALL(impl, deallocate(testing::_, 300, 16)).Times(1);
 
   Pool::LaunchParams params{};
-  MemoryBlock block = pool.allocate(300, 16, params);
+  BufferResource block = pool.allocate(300, 16, params);
   ASSERT_TRUE(block.valid());
 
   pool.deallocate(block, 300, 16, params);
@@ -281,13 +281,13 @@ TEST(SegregatePool, ReleaseChunkFreesBackingAndForcesNewChunkOnNextAlloc) {
   EXPECT_CALL(impl, deallocate(testing::_, 256, 0)).Times(1);
 
   Pool::LaunchParams params{};
-  MemoryBlock block = pool.allocate(80, 64, params);
+  BufferResource block = pool.allocate(80, 64, params);
   ASSERT_TRUE(block.valid());
 
   pool.deallocate(block, 80, 64, params);
   pool.releaseChunk(params);
 
-  MemoryBlock new_block = pool.allocate(80, 64, params);
+  BufferResource new_block = pool.allocate(80, 64, params);
   EXPECT_TRUE(new_block.valid());
   EXPECT_EQ(new_block.view.raw(), base2);
 }
@@ -330,7 +330,7 @@ TEST(SegregatePool, StatsTracking) {
 
   Pool::LaunchParams params{};
   // Allocation triggers expansion
-  MemoryBlock block = pool.allocate(64, 64, params);
+  BufferResource block = pool.allocate(64, 64, params);
   ASSERT_TRUE(block.valid());
 
   std::string stats_str = stats.toString();

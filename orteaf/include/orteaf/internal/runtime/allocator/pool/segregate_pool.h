@@ -16,7 +16,7 @@ template <typename BackendResource, typename FastFreePolicy,
           ::orteaf::internal::backend::Backend BackendType>
 class SegregatePool {
 public:
-  using MemoryBlock = typename BackendResource::MemoryBlock;
+  using BufferResource = typename BackendResource::BufferResource;
   using LaunchParams =
       typename ::orteaf::internal::runtime::base::BackendTraits<
           BackendType>::KernelLaunchParams;
@@ -62,10 +62,10 @@ public:
 
   const SegregatePoolStats<BackendType> &stats() const { return stats_; }
 
-  MemoryBlock allocate(std::size_t size, std::size_t alignment,
+  BufferResource allocate(std::size_t size, std::size_t alignment,
                        LaunchParams &launch_params) {
     if (size == 0)
-      return MemoryBlock{};
+      return BufferResource{};
 
     std::lock_guard<ThreadingPolicy> lock(threading_policy_);
 
@@ -82,7 +82,7 @@ public:
         std::countr_zero(std::bit_ceil(block_size)) -
         std::countr_zero(std::bit_ceil(min_block_size_));
 
-    MemoryBlock block = free_list_policy_.pop(list_idx, launch_params);
+    BufferResource block = free_list_policy_.pop(list_idx, launch_params);
 
     if (!block.valid()) {
       expandPool(list_idx, block_size, launch_params);
@@ -98,7 +98,7 @@ public:
     return block;
   }
 
-  void deallocate(const MemoryBlock &block, std::size_t size,
+  void deallocate(const BufferResource &block, std::size_t size,
                   std::size_t alignment, LaunchParams &launch_params) {
     if (!block.valid() || size == 0)
       return;
@@ -126,7 +126,7 @@ public:
     reuse_policy_.processPending();
 
     std::size_t freelist_index = 0;
-    MemoryBlock block{};
+    BufferResource block{};
 
     while (reuse_policy_.getReadyItem(freelist_index, block)) {
       chunk_locator_policy_.decrementPendingAndUsed(block.handle);
@@ -159,7 +159,7 @@ private:
     const std::size_t num_blocks = (chunk_size_ + block_size - 1) / block_size;
     const std::size_t actual_chunk_size = num_blocks * block_size;
 
-    MemoryBlock chunk = chunk_locator_policy_.addChunk(actual_chunk_size, 0);
+    BufferResource chunk = chunk_locator_policy_.addChunk(actual_chunk_size, 0);
     if (!chunk.valid())
       return;
 

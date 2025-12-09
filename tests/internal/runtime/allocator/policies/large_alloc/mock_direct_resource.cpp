@@ -47,7 +47,7 @@ private:
 };
 #endif // ORTEAF_CORE_DEBUG_ENABLED
 
-TEST(DirectResourceLargeAlloc, AllocateReturnsMemoryBlockWithId) {
+TEST(DirectResourceLargeAlloc, AllocateReturnsBufferResourceWithId) {
     policies::DirectResourceLargeAllocPolicy<MockCpuResource, Backend::Cpu> policy;
     MockCpuResource resource;
     policy.initialize({&resource});

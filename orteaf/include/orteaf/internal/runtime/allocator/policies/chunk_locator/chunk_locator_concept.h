@@ -36,7 +36,7 @@ concept ChunkLocator = requires(
     // 型エイリアスの存在確認
     typename T::BufferViewHandle;
     typename T::BufferView;
-    typename T::MemoryBlock;
+    typename T::BufferResource;
     typename T::Config;
 
     // 初期化
@@ -44,7 +44,7 @@ concept ChunkLocator = requires(
     { config.resource } -> std::convertible_to<Resource*>;
 
     // チャンク確保・解放
-    { locator.addChunk(size, alignment) } -> std::same_as<typename T::MemoryBlock>;
+    { locator.addChunk(size, alignment) } -> std::same_as<typename T::BufferResource>;
     { locator.releaseChunk(id) } -> std::same_as<bool>;
     { const_locator.findReleasable() } -> std::same_as<typename T::BufferViewHandle>;
 

@@ -25,7 +25,7 @@ namespace orteaf::internal::runtime::allocator::policies {
 template <typename Resource, ::orteaf::internal::backend::Backend B>
 class DeviceLinkedFreelistPolicy {
 public:
-    using MemoryBlock = ::orteaf::internal::runtime::allocator::MemoryBlock<B>;
+    using BufferResource = ::orteaf::internal::runtime::allocator::BufferResource<B>;
     using LaunchParams =
         typename ::orteaf::internal::runtime::base::BackendTraits<B>::KernelLaunchParams;
 
@@ -49,7 +49,7 @@ public:
         heads_.resize(size_class_count_);
     }
 
-    void push(std::size_t list_index, const MemoryBlock& block,
+    void push(std::size_t list_index, const BufferResource& block,
               const LaunchParams& launch_params = {}) {
         ORTEAF_THROW_IF(resource_ == nullptr, InvalidState, "DeviceLinkedFreelistPolicy is not initialized");
         if (!block.valid()) return;
@@ -58,7 +58,7 @@ public:
         resource_->pushFreelistNode(list_index, block.view, launch_params);
     }
 
-    MemoryBlock pop(std::size_t list_index, const LaunchParams& launch_params = {}) {
+    BufferResource pop(std::size_t list_index, const LaunchParams& launch_params = {}) {
         ORTEAF_THROW_IF(resource_ == nullptr, InvalidState, "DeviceLinkedFreelistPolicy is not initialized");
         ensureList(list_index);
         auto view = resource_->popFreelistNode(list_index, launch_params);
@@ -66,7 +66,7 @@ public:
         auto it = buffer_lookup_.find(view.raw());
         const ::orteaf::internal::base::BufferViewHandle id = (it != buffer_lookup_.end()) ? it->second
                                                                                        : ::orteaf::internal::base::BufferViewHandle{};
-        return MemoryBlock{id, view};
+        return BufferResource{id, view};
     }
 
     bool empty(std::size_t /*list_index*/) const { return false; }  // デバイス側のみで管理されるため不明
@@ -75,7 +75,7 @@ public:
 
     std::size_t get_total_free_blocks() const { return 0; }  // 集計不可
 
-    void expand(std::size_t list_index, const MemoryBlock& chunk, std::size_t chunk_size, std::size_t block_size,
+    void expand(std::size_t list_index, const BufferResource& chunk, std::size_t chunk_size, std::size_t block_size,
                 const LaunchParams& launch_params = {}) {
         ORTEAF_THROW_IF(resource_ == nullptr, InvalidState, "DeviceLinkedFreelistPolicy is not initialized");
         if (!chunk.valid() || block_size == 0) {
@@ -100,7 +100,7 @@ private:
     Resource* resource_{nullptr};
     std::size_t min_block_size_{64};
     std::size_t size_class_count_{0};
-    ::orteaf::internal::base::HeapVector<MemoryBlock> heads_{};  // unused placeholder per size class
+    ::orteaf::internal::base::HeapVector<BufferResource> heads_{};  // unused placeholder per size class
     std::unordered_map<void*, ::orteaf::internal::base::BufferViewHandle> buffer_lookup_{};
 };
 
