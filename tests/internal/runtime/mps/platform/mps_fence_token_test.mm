@@ -70,7 +70,7 @@ protected:
   mps_wrapper::MPSCommandQueue_t queue_{nullptr};
   mps_wrapper::MPSCommandBuffer_t command_buffer_a_{nullptr};
   mps_wrapper::MPSCommandBuffer_t command_buffer_b_{nullptr};
-  mps_rt::manager::MpsFencePool fence_pool_{};
+  mps_rt::manager::MpsFenceManager fence_pool_{};
   ::orteaf::internal::runtime::mps::platform::MpsSlowOpsImpl ops_{};
   base::CommandQueueHandle queue_id_{base::CommandQueueHandle{11}};
 #endif
@@ -86,8 +86,8 @@ TEST_F(MpsFenceTokenTest, DefaultConstructedIsEmpty) {
 
 TEST_F(MpsFenceTokenTest, AddTicketsStoresAndOrders) {
   mps_res::MpsFenceToken token;
-  auto handle_a = fence_pool_.acquireFence();
-  auto handle_b = fence_pool_.acquireFence();
+  auto handle_a = fence_pool_.acquire();
+  auto handle_b = fence_pool_.acquire();
 
   mps_res::MpsFenceTicket ticket_a(queue_id_, command_buffer_a_,
                                    std::move(handle_a));
@@ -109,7 +109,7 @@ TEST_F(MpsFenceTokenTest, AddTicketsStoresAndOrders) {
 
 TEST_F(MpsFenceTokenTest, MoveTransfersOwnership) {
   mps_res::MpsFenceToken token;
-  auto handle = fence_pool_.acquireFence();
+  auto handle = fence_pool_.acquire();
   token.addTicket(
       mps_res::MpsFenceTicket(queue_id_, command_buffer_a_, std::move(handle)));
 
@@ -123,7 +123,7 @@ TEST_F(MpsFenceTokenTest, MoveTransfersOwnership) {
 
 TEST_F(MpsFenceTokenTest, ClearRemovesAllTickets) {
   mps_res::MpsFenceToken token;
-  auto handle = fence_pool_.acquireFence();
+  auto handle = fence_pool_.acquire();
   token.addTicket(
       mps_res::MpsFenceTicket(queue_id_, command_buffer_a_, std::move(handle)));
 

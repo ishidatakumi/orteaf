@@ -19,7 +19,7 @@ class MpsPrivateOps {
   using PipelineLease = ::orteaf::internal::runtime::mps::manager::
       MpsComputePipelineStateManager::PipelineLease;
   using FenceLease =
-      ::orteaf::internal::runtime::mps::manager::MpsFencePool::FenceLease;
+      ::orteaf::internal::runtime::mps::manager::MpsFenceManager::FenceLease;
 
 public:
   MpsPrivateOps() = default;
@@ -43,7 +43,7 @@ public:
   static FenceLease acquireFence(DeviceHandle device) {
     Runtime &rt = MpsCommonOps::runtime();
     auto fence_pool = rt.deviceManager().acquireFencePool(device);
-    return fence_pool->acquireFence();
+    return fence_pool->acquire();
   }
 };
 

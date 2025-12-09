@@ -6,14 +6,14 @@
 #include <utility>
 
 #include <orteaf/internal/base/handle.h>
-#include <orteaf/internal/runtime/mps/manager/mps_fence_pool.h>
+#include <orteaf/internal/runtime/mps/manager/mps_fence_manager.h>
 #include <orteaf/internal/runtime/mps/platform/wrapper/mps_event.h>
 
 namespace orteaf::internal::runtime::mps::resource {
 class MpsFenceTicket {
 public:
   using MpsFenceLease =
-      ::orteaf::internal::runtime::mps::manager::MpsFencePool::FenceLease;
+      ::orteaf::internal::runtime::mps::manager::MpsFenceManager::FenceLease;
 
   MpsFenceTicket() noexcept = default;
   MpsFenceTicket(

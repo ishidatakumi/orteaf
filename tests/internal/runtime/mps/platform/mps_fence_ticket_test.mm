@@ -64,7 +64,7 @@ protected:
   mps_wrapper::MPSDevice_t device_{nullptr};
   mps_wrapper::MPSCommandQueue_t command_queue_{nullptr};
   mps_wrapper::MPSCommandBuffer_t command_buffer_{nullptr};
-  mps_rt::manager::MpsFencePool fence_pool_{};
+  mps_rt::manager::MpsFenceManager fence_pool_{};
   ::orteaf::internal::runtime::mps::platform::MpsSlowOpsImpl ops_{};
   base::CommandQueueHandle queue_id_{base::CommandQueueHandle{7}};
 #endif
@@ -81,7 +81,7 @@ TEST_F(MpsFenceTicketTest, DefaultConstructedIsInvalid) {
 }
 
 TEST_F(MpsFenceTicketTest, ValueConstructorStoresMembers) {
-  auto handle = fence_pool_.acquireFence();
+  auto handle = fence_pool_.acquire();
   mps_res::MpsFenceTicket ticket(queue_id_, command_buffer_, std::move(handle));
 
   EXPECT_TRUE(ticket.valid());
@@ -98,7 +98,7 @@ TEST_F(MpsFenceTicketTest, ValueConstructorStoresMembers) {
 
 TEST_F(MpsFenceTicketTest, SettersUpdateMembers) {
   mps_res::MpsFenceTicket ticket;
-  auto handle = fence_pool_.acquireFence();
+  auto handle = fence_pool_.acquire();
 
   ticket.setCommandQueueHandle(queue_id_)
       .setCommandBuffer(command_buffer_)
@@ -112,7 +112,7 @@ TEST_F(MpsFenceTicketTest, SettersUpdateMembers) {
 }
 
 TEST_F(MpsFenceTicketTest, MoveTransfersOwnership) {
-  auto handle = fence_pool_.acquireFence();
+  auto handle = fence_pool_.acquire();
   mps_res::MpsFenceTicket ticket(queue_id_, command_buffer_, std::move(handle));
 
   mps_res::MpsFenceTicket moved(std::move(ticket));
@@ -129,7 +129,7 @@ TEST_F(MpsFenceTicketTest, MoveTransfersOwnership) {
 }
 
 TEST_F(MpsFenceTicketTest, ResetClearsState) {
-  auto handle = fence_pool_.acquireFence();
+  auto handle = fence_pool_.acquire();
   mps_res::MpsFenceTicket ticket(queue_id_, command_buffer_, std::move(handle));
 
   ticket.reset();

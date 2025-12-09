@@ -33,7 +33,7 @@ class DummyPrivateOps {
 public:
   using PipelineLease =
       mps_rt::manager::MpsComputePipelineStateManager::PipelineLease;
-  using FenceLease = mps_rt::manager::MpsFencePool::FenceLease;
+  using FenceLease = mps_rt::manager::MpsFenceManager::FenceLease;
   static void reset() {
     last_device = {};
     last_library.clear();

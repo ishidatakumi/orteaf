@@ -219,7 +219,7 @@ public:
   void updateFence(
       ::orteaf::internal::runtime::mps::platform::wrapper::
           MPSComputeCommandEncoder_t encoder,
-      ::orteaf::internal::runtime::mps::manager::MpsFencePool::FenceLease
+      ::orteaf::internal::runtime::mps::manager::MpsFenceManager::FenceLease
           &fence) const {
     FastOps::updateFence(encoder, fence.pointer());
   }
@@ -228,11 +228,10 @@ public:
    */
   template <
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps>
-  void waitForFence(
-      ::orteaf::internal::runtime::mps::platform::wrapper::
-          MPSComputeCommandEncoder_t encoder,
-      const ::orteaf::internal::runtime::mps::manager::MpsFencePool::FenceLease
-          &fence) const {
+  void waitForFence(::orteaf::internal::runtime::mps::platform::wrapper::
+                        MPSComputeCommandEncoder_t encoder,
+                    const ::orteaf::internal::runtime::mps::manager::
+                        MpsFenceManager::FenceLease &fence) const {
     FastOps::waitForFence(encoder, fence.pointer());
   }
 
