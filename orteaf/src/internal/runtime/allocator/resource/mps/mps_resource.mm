@@ -8,7 +8,7 @@
 #include "orteaf/internal/diagnostics/error/error_macros.h"
 #include <limits>
 
-namespace orteaf::internal::backend::mps {
+namespace orteaf::internal::runtime::allocator::resource::mps {
 
 namespace {
 constexpr uint32_t kInvalidIndex = 0xffffffffu;
@@ -175,8 +175,9 @@ void MpsResource::initializeChunkAsFreelist(std::size_t list_index,
     head_ptr[1] = kInvalidIndex;
   }
   if (!list.out) {
-    list.out = ::orteaf::internal::runtime::mps::platform::wrapper::createBuffer(
-        staging_heap_, 2 * sizeof(uint32_t), staging_usage_);
+    list.out =
+        ::orteaf::internal::runtime::mps::platform::wrapper::createBuffer(
+            staging_heap_, 2 * sizeof(uint32_t), staging_usage_);
     ORTEAF_THROW_IF(
         ::orteaf::internal::runtime::mps::platform::wrapper::getBufferContents(
             list.out) == nullptr,
@@ -195,7 +196,8 @@ void MpsResource::initializeChunkAsFreelist(std::size_t list_index,
   }
 
   if (launch_params.device && launch_params.device.pointer() != device_) {
-    ORTEAF_THROW(InvalidParameter, "DeviceLease does not match resource device");
+    ORTEAF_THROW(InvalidParameter,
+                 "DeviceLease does not match resource device");
   }
   ORTEAF_THROW_IF(!launch_params.command_queue, InvalidParameter,
                   "CommandQueueLease must be provided for MPS freelist ops");
@@ -221,9 +223,9 @@ void MpsResource::initializeChunkAsFreelist(std::size_t list_index,
   freelist_launcher_.setBytes(encoder, &chunk_id, sizeof(uint32_t), 6);
   uint32_t old_head_offset = kInvalidIndex;
   uint32_t old_head_chunk = kInvalidIndex;
-  if (auto *head_ptr = static_cast<uint32_t *>(
-          ::orteaf::internal::runtime::mps::platform::wrapper::getBufferContents(
-              list.head))) {
+  if (auto *head_ptr =
+          static_cast<uint32_t *>(::orteaf::internal::runtime::mps::platform::
+                                      wrapper::getBufferContents(list.head))) {
     old_head_offset = head_ptr[0];
     old_head_chunk = head_ptr[1];
   }
@@ -257,9 +259,9 @@ MpsResource::popFreelistNode(std::size_t list_index,
 
   // Determine current head chunk to bind.
   BufferView current_chunk{};
-  if (auto *head_ptr = static_cast<uint32_t *>(
-          ::orteaf::internal::runtime::mps::platform::wrapper::getBufferContents(
-              list.head))) {
+  if (auto *head_ptr =
+          static_cast<uint32_t *>(::orteaf::internal::runtime::mps::platform::
+                                      wrapper::getBufferContents(list.head))) {
     const uint32_t head_chunk = head_ptr[1];
     if (head_chunk != kInvalidIndex && head_chunk < chunks_.size()) {
       current_chunk = chunks_[head_chunk];
@@ -367,7 +369,8 @@ void MpsResource::pushFreelistNode(std::size_t list_index, BufferView view,
   }
 
   if (launch_params.device && launch_params.device.pointer() != device_) {
-    ORTEAF_THROW(InvalidParameter, "DeviceLease does not match resource device");
+    ORTEAF_THROW(InvalidParameter,
+                 "DeviceLease does not match resource device");
   }
   ORTEAF_THROW_IF(!launch_params.command_queue, InvalidParameter,
                   "CommandQueueLease must be provided for MPS freelist ops");
@@ -425,4 +428,4 @@ void MpsResource::ensureList(std::size_t list_index) {
   }
 }
 
-} // namespace orteaf::internal::backend::mps
+} // namespace orteaf::internal::runtime::allocator::resource::mps
