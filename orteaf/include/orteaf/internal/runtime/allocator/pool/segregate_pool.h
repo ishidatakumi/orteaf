@@ -22,13 +22,14 @@ public:
           BackendType>::KernelLaunchParams;
 
   SegregatePool() = default;
+  explicit SegregatePool(BackendResource resource)
+      : resource_(std::move(resource)) {}
   SegregatePool(const SegregatePool &) = delete;
   SegregatePool &operator=(const SegregatePool &) = delete;
   SegregatePool(SegregatePool &&) noexcept = default;
   SegregatePool &operator=(SegregatePool &&) noexcept = default;
 
   struct Config {
-    typename BackendResource::Config resource{};
     typename FastFreePolicy::template Config<BackendResource> fast_free{};
     typename ThreadingPolicy::template Config<BackendResource> threading{};
     typename LargeAllocPolicy::Config large_alloc{};
@@ -42,7 +43,6 @@ public:
   };
 
   void initialize(const Config &config) {
-    resource_.initialize(config.resource);
     fast_free_policy_.initialize(config.fast_free);
     threading_policy_.initialize(config.threading);
     large_alloc_policy_.initialize(config.large_alloc);
@@ -61,6 +61,9 @@ public:
   ChunkLocatorPolicy &chunk_locator_policy() { return chunk_locator_policy_; }
   ReuseLocatorPolicy &reuse_policy() { return reuse_policy_; }
   FreeListPolicy &free_list_policy() { return free_list_policy_; }
+
+  BackendResource *resource() { return &resource_; }
+  const BackendResource *resource() const { return &resource_; }
 
   const SegregatePoolStats<BackendType> &stats() const { return stats_; }
 
