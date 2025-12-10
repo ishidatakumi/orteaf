@@ -119,8 +119,6 @@ public:
     pool_cfg.chunk_locator.resource = pool_.resource();
     pool_cfg.reuse.resource = pool_.resource();
     pool_cfg.freelist.resource = pool_.resource();
-    pool_cfg.freelist.min_block_size = pool_cfg.min_block_size;
-    pool_cfg.freelist.max_block_size = pool_cfg.max_block_size;
     pool_.initialize(pool_cfg);
 
     ops_context_.pool = &pool_;
