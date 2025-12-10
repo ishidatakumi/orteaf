@@ -12,6 +12,7 @@
 #include "orteaf/internal/base/lease.h"
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/runtime/base/base_manager.h"
+#include "orteaf/internal/runtime/mps/manager/mps_buffer_manager.h"
 #include "orteaf/internal/runtime/mps/manager/mps_command_queue_manager.h"
 #include "orteaf/internal/runtime/mps/manager/mps_event_manager.h"
 #include "orteaf/internal/runtime/mps/manager/mps_fence_manager.h"
@@ -38,6 +39,7 @@ struct MpsDeviceManagerState {
   ::orteaf::internal::runtime::mps::manager::MpsGraphManager graph_manager{};
   ::orteaf::internal::runtime::mps::manager::MpsEventManager event_pool{};
   ::orteaf::internal::runtime::mps::manager::MpsFenceManager fence_pool{};
+  ::orteaf::internal::runtime::mps::manager::MpsBufferManager buffer_manager{};
 
   MpsDeviceManagerState() = default;
   MpsDeviceManagerState(const MpsDeviceManagerState &) = delete;
@@ -94,6 +96,9 @@ public:
       MpsDeviceManager>;
   using FencePoolLease = ::orteaf::internal::base::Lease<
       void, ::orteaf::internal::runtime::mps::manager::MpsFenceManager *,
+      MpsDeviceManager>;
+  using BufferManagerLease = ::orteaf::internal::base::Lease<
+      void, ::orteaf::internal::runtime::mps::manager::MpsBufferManager *,
       MpsDeviceManager>;
 
   MpsDeviceManager() = default;
@@ -167,6 +172,10 @@ public:
   FencePoolLease
   acquireFencePool(::orteaf::internal::base::DeviceHandle handle);
   void release(FencePoolLease &lease) noexcept;
+
+  BufferManagerLease
+  acquireBufferManager(::orteaf::internal::base::DeviceHandle handle);
+  void release(BufferManagerLease &lease) noexcept;
 
   ::orteaf::internal::architecture::Architecture
   getArch(::orteaf::internal::base::DeviceHandle handle) const;
