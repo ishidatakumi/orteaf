@@ -36,6 +36,14 @@ struct MockResource {
   using ReuseToken = ::orteaf::internal::runtime::base::BackendTraits<
       Backend::Cpu>::ReuseToken;
 
+  struct Config {
+    // Empty config for mock resource
+  };
+
+  void initialize(const Config &) {
+    // No-op for mock resource
+  }
+
   static void set(MockCpuResourceImpl *impl) { MockCpuResource::set(impl); }
   static void reset() { MockCpuResource::reset(); }
 
@@ -72,18 +80,18 @@ using Pool = ::orteaf::internal::runtime::allocator::pool::SegregatePool<
     Backend::Cpu>;
 
 TEST(SegregatePool, InitializePropagatesToAllPolicies) {
-  Pool pool;
-  Pool::Config cfg{};
-  MockResource resource{};
   NiceMock<MockCpuResourceImpl> impl;
   MockResourceGuard guard(&impl);
 
-  cfg.fast_free.resource = &resource;
-  cfg.threading.resource = &resource;
-  cfg.large_alloc.resource = &resource;
-  cfg.chunk_locator.resource = &resource;
-  cfg.reuse.resource = &resource;
-  cfg.freelist.resource = &resource;
+  Pool pool(MockResource{});
+  Pool::Config cfg{};
+
+  cfg.fast_free.resource = pool.resource();
+  cfg.threading.resource = pool.resource();
+  cfg.large_alloc.resource = pool.resource();
+  cfg.chunk_locator.resource = pool.resource();
+  cfg.reuse.resource = pool.resource();
+  cfg.freelist.resource = pool.resource();
   cfg.min_block_size = 64;
   cfg.max_block_size = 256;
   cfg.freelist.min_block_size = cfg.min_block_size;
@@ -98,9 +106,6 @@ TEST(SegregatePool, InitializePropagatesToAllPolicies) {
 }
 
 TEST(SegregatePool, AllocatesFromChunkWhenBelowMaxSize) {
-  Pool pool;
-  Pool::Config cfg{};
-  MockResource resource{};
   NiceMock<MockCpuResourceImpl> impl;
   MockResourceGuard guard(&impl);
   ON_CALL(impl, makeView)
@@ -109,12 +114,15 @@ TEST(SegregatePool, AllocatesFromChunkWhenBelowMaxSize) {
             return CpuBufferView{base.raw(), offset, size};
           });
 
-  cfg.fast_free.resource = &resource;
-  cfg.threading.resource = &resource;
-  cfg.large_alloc.resource = &resource;
-  cfg.chunk_locator.resource = &resource;
-  cfg.reuse.resource = &resource;
-  cfg.freelist.resource = &resource;
+  Pool pool(MockResource{});
+  Pool::Config cfg{};
+
+  cfg.fast_free.resource = pool.resource();
+  cfg.threading.resource = pool.resource();
+  cfg.large_alloc.resource = pool.resource();
+  cfg.chunk_locator.resource = pool.resource();
+  cfg.reuse.resource = pool.resource();
+  cfg.freelist.resource = pool.resource();
   cfg.chunk_size = 256;
   cfg.min_block_size = 64;
   cfg.max_block_size = 256;
@@ -138,9 +146,6 @@ TEST(SegregatePool, AllocatesFromChunkWhenBelowMaxSize) {
 }
 
 TEST(SegregatePool, UsesLargeAllocWhenOverMaxSize) {
-  Pool pool;
-  Pool::Config cfg{};
-  MockResource resource{};
   NiceMock<MockCpuResourceImpl> impl;
   MockResourceGuard guard(&impl);
   ON_CALL(impl, makeView)
@@ -149,12 +154,15 @@ TEST(SegregatePool, UsesLargeAllocWhenOverMaxSize) {
             return CpuBufferView{base.raw(), offset, size};
           });
 
-  cfg.fast_free.resource = &resource;
-  cfg.threading.resource = &resource;
-  cfg.large_alloc.resource = &resource;
-  cfg.chunk_locator.resource = &resource;
-  cfg.reuse.resource = &resource;
-  cfg.freelist.resource = &resource;
+  Pool pool(MockResource{});
+  Pool::Config cfg{};
+
+  cfg.fast_free.resource = pool.resource();
+  cfg.threading.resource = pool.resource();
+  cfg.large_alloc.resource = pool.resource();
+  cfg.chunk_locator.resource = pool.resource();
+  cfg.reuse.resource = pool.resource();
+  cfg.freelist.resource = pool.resource();
   cfg.chunk_size = 256;
   cfg.min_block_size = 64;
   cfg.max_block_size = 128;
@@ -175,9 +183,6 @@ TEST(SegregatePool, UsesLargeAllocWhenOverMaxSize) {
 }
 
 TEST(SegregatePool, DeallocateReturnsBlockToFreelist) {
-  Pool pool;
-  Pool::Config cfg{};
-  MockResource resource{};
   NiceMock<MockCpuResourceImpl> impl;
   MockResourceGuard guard(&impl);
   ON_CALL(impl, makeView)
@@ -186,12 +191,15 @@ TEST(SegregatePool, DeallocateReturnsBlockToFreelist) {
             return CpuBufferView{base.raw(), offset, size};
           });
 
-  cfg.fast_free.resource = &resource;
-  cfg.threading.resource = &resource;
-  cfg.large_alloc.resource = &resource;
-  cfg.chunk_locator.resource = &resource;
-  cfg.reuse.resource = &resource;
-  cfg.freelist.resource = &resource;
+  Pool pool(MockResource{});
+  Pool::Config cfg{};
+
+  cfg.fast_free.resource = pool.resource();
+  cfg.threading.resource = pool.resource();
+  cfg.large_alloc.resource = pool.resource();
+  cfg.chunk_locator.resource = pool.resource();
+  cfg.reuse.resource = pool.resource();
+  cfg.freelist.resource = pool.resource();
   cfg.chunk_size = 256;
   cfg.min_block_size = 64;
   cfg.max_block_size = 256;
@@ -217,18 +225,18 @@ TEST(SegregatePool, DeallocateReturnsBlockToFreelist) {
 }
 
 TEST(SegregatePool, DeallocateLargeAllocUsesLargePolicy) {
-  Pool pool;
-  Pool::Config cfg{};
-  MockResource resource{};
   NiceMock<MockCpuResourceImpl> impl;
   MockResourceGuard guard(&impl);
 
-  cfg.fast_free.resource = &resource;
-  cfg.threading.resource = &resource;
-  cfg.large_alloc.resource = &resource;
-  cfg.chunk_locator.resource = &resource;
-  cfg.reuse.resource = &resource;
-  cfg.freelist.resource = &resource;
+  Pool pool(MockResource{});
+  Pool::Config cfg{};
+
+  cfg.fast_free.resource = pool.resource();
+  cfg.threading.resource = pool.resource();
+  cfg.large_alloc.resource = pool.resource();
+  cfg.chunk_locator.resource = pool.resource();
+  cfg.reuse.resource = pool.resource();
+  cfg.freelist.resource = pool.resource();
   cfg.chunk_size = 256;
   cfg.min_block_size = 64;
   cfg.max_block_size = 128;
@@ -249,9 +257,6 @@ TEST(SegregatePool, DeallocateLargeAllocUsesLargePolicy) {
 }
 
 TEST(SegregatePool, ReleaseChunkFreesBackingAndForcesNewChunkOnNextAlloc) {
-  Pool pool;
-  Pool::Config cfg{};
-  MockResource resource{};
   NiceMock<MockCpuResourceImpl> impl;
   MockResourceGuard guard(&impl);
   ON_CALL(impl, makeView)
@@ -260,12 +265,15 @@ TEST(SegregatePool, ReleaseChunkFreesBackingAndForcesNewChunkOnNextAlloc) {
             return CpuBufferView{base.raw(), offset, size};
           });
 
-  cfg.fast_free.resource = &resource;
-  cfg.threading.resource = &resource;
-  cfg.large_alloc.resource = &resource;
-  cfg.chunk_locator.resource = &resource;
-  cfg.reuse.resource = &resource;
-  cfg.freelist.resource = &resource;
+  Pool pool(MockResource{});
+  Pool::Config cfg{};
+
+  cfg.fast_free.resource = pool.resource();
+  cfg.threading.resource = pool.resource();
+  cfg.large_alloc.resource = pool.resource();
+  cfg.chunk_locator.resource = pool.resource();
+  cfg.reuse.resource = pool.resource();
+  cfg.freelist.resource = pool.resource();
   cfg.chunk_size = 256;
   cfg.min_block_size = 64;
   cfg.max_block_size = 256;
@@ -293,9 +301,6 @@ TEST(SegregatePool, ReleaseChunkFreesBackingAndForcesNewChunkOnNextAlloc) {
 }
 
 TEST(SegregatePool, StatsTracking) {
-  Pool pool;
-  Pool::Config cfg{};
-  MockResource resource{};
   NiceMock<MockCpuResourceImpl> impl;
   MockResourceGuard guard(&impl);
   ON_CALL(impl, makeView)
@@ -304,12 +309,15 @@ TEST(SegregatePool, StatsTracking) {
             return CpuBufferView{base.raw(), offset, size};
           });
 
-  cfg.fast_free.resource = &resource;
-  cfg.threading.resource = &resource;
-  cfg.large_alloc.resource = &resource;
-  cfg.chunk_locator.resource = &resource;
-  cfg.reuse.resource = &resource;
-  cfg.freelist.resource = &resource;
+  Pool pool(MockResource{});
+  Pool::Config cfg{};
+
+  cfg.fast_free.resource = pool.resource();
+  cfg.threading.resource = pool.resource();
+  cfg.large_alloc.resource = pool.resource();
+  cfg.chunk_locator.resource = pool.resource();
+  cfg.reuse.resource = pool.resource();
+  cfg.freelist.resource = pool.resource();
   cfg.chunk_size = 256;
   cfg.min_block_size = 64;
   cfg.max_block_size = 256;
