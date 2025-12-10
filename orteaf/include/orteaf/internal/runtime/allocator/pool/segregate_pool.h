@@ -1,11 +1,11 @@
 #pragma once
 
 #include <algorithm>
-#include <bit>
 #include <limits>
 #include <orteaf/internal/backend/backend.h>
 #include <orteaf/internal/runtime/allocator/buffer_resource.h>
 #include <orteaf/internal/runtime/allocator/pool/segregate_pool_stats.h>
+#include <orteaf/internal/runtime/allocator/size_class_utils.h>
 #include <orteaf/internal/runtime/base/backend_traits.h>
 
 namespace orteaf::internal::runtime::allocator::pool {
@@ -39,20 +39,25 @@ public:
 
     std::size_t chunk_size{16 * 1024 * 1024};
     std::size_t min_block_size{64};
-    std::size_t max_block_size{std::numeric_limits<std::size_t>::max()};
+    std::size_t max_block_size{16 * 1024 * 1024}; // デフォルトを適切な値に
   };
 
   void initialize(const Config &config) {
+    chunk_size_ = config.chunk_size;
+    min_block_size_ = config.min_block_size;
+    max_block_size_ = config.max_block_size;
+
+    // サイズクラス数を計算（SegregatePool が一元管理）
+    const std::size_t size_class_count =
+        sizeClassCount(min_block_size_, max_block_size_);
+
     fast_free_policy_.initialize(config.fast_free);
     threading_policy_.initialize(config.threading);
     large_alloc_policy_.initialize(config.large_alloc);
     chunk_locator_policy_.initialize(config.chunk_locator);
     reuse_policy_.initialize(config.reuse);
-    free_list_policy_.initialize(config.freelist);
-
-    chunk_size_ = config.chunk_size;
-    min_block_size_ = config.min_block_size;
-    max_block_size_ = config.max_block_size;
+    // freelist にサイズクラス数を渡す
+    free_list_policy_.initialize(config.freelist, size_class_count);
   }
 
   FastFreePolicy &fast_free_policy() { return fast_free_policy_; }
@@ -64,6 +69,9 @@ public:
 
   BackendResource *resource() { return &resource_; }
   const BackendResource *resource() const { return &resource_; }
+
+  std::size_t min_block_size() const { return min_block_size_; }
+  std::size_t max_block_size() const { return max_block_size_; }
 
   const SegregatePoolStats<BackendType> &stats() const { return stats_; }
 
@@ -81,11 +89,8 @@ public:
 
     processPendingReuses(launch_params);
 
-    const std::size_t block_size =
-        std::bit_ceil(std::max(min_block_size_, size));
-    const std::size_t list_idx =
-        std::countr_zero(std::bit_ceil(block_size)) -
-        std::countr_zero(std::bit_ceil(min_block_size_));
+    const std::size_t block_size = blockSizeFor(size);
+    const std::size_t list_idx = sizeClassIndex(block_size, min_block_size_);
 
     BufferResource block = free_list_policy_.pop(list_idx, launch_params);
 
@@ -118,9 +123,7 @@ public:
 
     const std::size_t block_size =
         fast_free_policy_.get_block_size(min_block_size_, size);
-    const std::size_t list_idx =
-        std::countr_zero(std::bit_ceil(block_size)) -
-        std::countr_zero(std::bit_ceil(min_block_size_));
+    const std::size_t list_idx = sizeClassIndex(block_size, min_block_size_);
 
     chunk_locator_policy_.incrementPending(block.handle);
     reuse_policy_.scheduleForReuse(block, list_idx, {});
@@ -159,6 +162,15 @@ public:
   }
 
 private:
+  /**
+   * @brief サイズに対応するブロックサイズを計算
+   */
+  std::size_t blockSizeFor(std::size_t size) const {
+    return sizeClassToBlockSize(
+        sizeClassIndex(std::max(min_block_size_, size), min_block_size_),
+        min_block_size_);
+  }
+
   void expandPool(std::size_t list_idx, std::size_t block_size,
                   LaunchParams &launch_params) {
     const std::size_t num_blocks = (chunk_size_ + block_size - 1) / block_size;
