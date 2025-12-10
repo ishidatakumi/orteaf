@@ -40,13 +40,10 @@ orteaf/
 - `ModuleImpl` / `Layer` 実装：標準レイヤや Model の実相。
 
 ### Internal 層
-- `RuntimeManager` と `RuntimeContextImpl`：ランタイム初期化と状態保持。Runtime 関連の詳細は [runtime 層アーキテクチャ計画](runtime-architecture.md) を参照。
-- `Allocator` / `MemSafe`：メモリ確保と安全管理。Allocator は runtime/allocator 以下で分類される。
-- `Dispatcher` / `KernelRegister`：OPS と Kernel の橋渡し。
-- `Backends`：CPU / CUDA / MPS を抽象化したバックエンド。
+- `Runtime`：Internal の中核。Backend ごとに異なる形をとり、それぞれのデバイスが最大限のパフォーマンスを発揮できるように柔軟性を確保している。
+-  `MemSafe`：Runtime で提供されるapiを用いて、メモリをさらに柔軟に、そして安全に使うことの出来る層。
+- `Dispatcher`：Runtime が提供するコンテキストと KernelRegister を使い、OPS から呼ばれる演算実体を選択する。
 - `Diagnostics`（`error/`, `log/`）：共通のエラー情報 (`OrteafError`)、致命的エラー (`fatal_error`) と例外ラッパーを提供し、統一的に throw / ログ / 統計連携を扱う。
-
-Internal 層の一角として runtime 特有のマネージャ群（RuntimeManager/RuntimeContext/Allocator）は `runtime/` 配下に配置し、manager と allocator の責務分離を明確化する。
 
 ## ビルド時オプション
 
@@ -73,50 +70,44 @@ Internal 層の一角として runtime 特有のマネージャ群（RuntimeMana
 ### メモリとテンソル
 ```mermaid
 graph BT
-
-    Backends --> RuntimeManager
-    RuntimeManager --> RuntimeContext
-    RuntimeContext --> Allocator
-    Allocator --> MemSafe
+    Runtime --> MemSafe
     MemSafe --> Tensor
 ```
-RuntimeManager がバックエンドを立ち上げ、RuntimeContext が環境情報を集約する。Allocator と MemSafe がメモリを準備し、最終的に TensorImpl を通じて Tensor ラッパーへ供給する。
+Runtime が最下層でバックエンドを立ち上げ、RuntimeContext が環境情報を集約する。この土台の上で Allocator と MemSafe がメモリを準備し、最終的に TensorImpl を通じて Tensor ラッパーへ供給する。
 
 ### 演算パイプライン
 ```mermaid
 graph BT
 
-    Backends --> Kernel
+    Runtime --> Kernel
     Kernel --> KernelRegister
     KernelRegister --> Dispatcher
     Dispatcher --> OPS
 
-    RuntimeContext --> Dispatcher
+    Runtime --> Dispatcher
+    Runtime --> Tensor
     Tensor --> Dispatcher
     Tensor --> OPS
 
     OPS --> Module
 ```
-拡張層で実装された Kernel は KernelRegister へ登録され、Dispatcher が RuntimeContext や Tensor の情報をもとに最適な実体を選択する。OPS は Module/Layer の演算ノードとして利用される。
+拡張層で実装された Kernel は Runtime が初期化した KernelRegister へ登録され、Runtime が保持する RuntimeContext や Tensor の情報を Dispatcher が参照して最適な実体を選択する。OPS は Runtime が用意するコンテキストの上で Module/Layer の演算ノードとして利用される。
 
 ### 全体像
 ```mermaid
 graph BT
 
-    Backends --> RuntimeManager
-    RuntimeManager --> RuntimeContext
-    RuntimeContext --> Allocator
-    Allocator --> MemSafe
+    Runtime --> MemSafe
     MemSafe --> Tensor
 
-    Backends --> Kernel
+    Runtime --> Kernel
     Kernel --> KernelRegister
     KernelRegister --> Dispatcher
     Dispatcher --> OPS
 
-    RuntimeContext --> Dispatcher
+    Runtime --> Dispatcher
     Tensor --> Dispatcher
     Tensor --> OPS
     OPS --> Module
 ```
-ユーザーは `Model`（= Module の集合）を操作し、内部では上記フローに従ってメモリ確保と演算が実行される。extension 層を拡張すれば Tensor 表現や Kernel を差し替えられるが、RuntimeManager など internal 層は既存実装を尊重する形で扱う。
+ユーザーは `Model`（= Module の集合）を操作し、内部では Runtime が唯一の基盤としてメモリ確保と演算パイプラインを起動する。extension 層を拡張すれば Tensor 表現や Kernel を差し替えられるが、RuntimeManager/RuntimeContext/Dispatcher を含む internal 層が提供する基盤の上で動作する。
