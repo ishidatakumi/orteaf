@@ -6,6 +6,7 @@
 
 #include <orteaf/internal/base/handle.h>
 #include <orteaf/internal/base/heap_vector.h>
+#include <orteaf/internal/runtime/allocator/buffer_resource.h>
 #include <orteaf/internal/runtime/base/backend_traits.h>
 #include <orteaf/internal/runtime/mps/manager/mps_library_manager.h>
 #include <orteaf/internal/runtime/mps/platform/wrapper/mps_buffer.h>
@@ -22,13 +23,14 @@ namespace orteaf::internal::runtime::allocator::resource::mps {
 class MpsResource {
 public:
   using BufferView = ::orteaf::internal::runtime::mps::resource::MpsBufferView;
+  using BufferResource = ::orteaf::internal::runtime::allocator::BufferResource<
+      ::orteaf::internal::backend::Backend::Mps>;
   using FenceToken = ::orteaf::internal::runtime::mps::resource::MpsFenceToken;
   using ReuseToken = ::orteaf::internal::runtime::mps::resource::MpsReuseToken;
   using MPSBuffer_t =
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSBuffer_t;
-  using LaunchParams =
-      ::orteaf::internal::runtime::base::BackendTraits<
-          ::orteaf::internal::backend::Backend::Mps>::KernelLaunchParams;
+  using LaunchParams = ::orteaf::internal::runtime::base::BackendTraits<
+      ::orteaf::internal::backend::Backend::Mps>::KernelLaunchParams;
 
   struct Config {
     ::orteaf::internal::base::DeviceHandle device_handle{};
@@ -76,8 +78,7 @@ public:
                              std::size_t size);
 
   void initializeChunkAsFreelist(std::size_t list_index, BufferView chunk,
-                                 std::size_t chunk_size,
-                                 std::size_t block_size,
+                                 std::size_t chunk_size, std::size_t block_size,
                                  const LaunchParams &launch_params = {});
   BufferView popFreelistNode(std::size_t list_index,
                              const LaunchParams &launch_params = {});
