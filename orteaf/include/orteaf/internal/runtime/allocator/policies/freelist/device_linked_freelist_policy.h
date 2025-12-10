@@ -1,10 +1,10 @@
 #pragma once
 
-#include <bit>
 #include <cstddef>
 #include <unordered_map>
 
 #include <orteaf/internal/backend/backend.h>
+#include <orteaf/internal/base/heap_vector.h>
 #include <orteaf/internal/diagnostics/error/error_macros.h>
 #include <orteaf/internal/runtime/allocator/buffer_resource.h>
 #include <orteaf/internal/runtime/allocator/policies/policy_config.h>
@@ -19,8 +19,8 @@ namespace orteaf::internal::runtime::allocator::policies {
  * カーネル経由で実行する前提。チャンク追加時に buffer と id の対応を保持し、
  * pop したブロックに元の BufferViewHandle を復元する。
  *
- * 制約: Resource はスレッド安全であること（内部で head を管理）。empty/総数は
- * Resource から取得できないため概算のみ。
+ * サイズクラスの計算（min/max_block_size）は SegregatePool が担当し、
+ * 本ポリシーは list_index のみを扱う。
  */
 template <typename Resource, ::orteaf::internal::backend::Backend B>
 class DeviceLinkedFreelistPolicy {
@@ -32,27 +32,23 @@ public:
           B>::KernelLaunchParams;
 
   struct Config : PolicyConfig<Resource> {
-    std::size_t min_block_size{64};
-    std::size_t max_block_size{0};
+    // サイズクラスの情報は SegregatePool が管理するため、
+    // ここには含めない
   };
 
-  void initialize(const Config &config) {
+  /**
+   * @brief ポリシーを初期化
+   * @param config リソースへのポインタを含む設定
+   * @param size_class_count サイズクラスの数（SegregatePool から渡される）
+   */
+  void initialize(const Config &config, std::size_t size_class_count = 0) {
     ORTEAF_THROW_IF_NULL(
         config.resource,
         "DeviceLinkedFreelistPolicy requires non-null Resource*");
-    ORTEAF_THROW_IF(config.max_block_size == 0, InvalidParameter,
-                    "max_block_size must be non-zero");
     resource_ = config.resource;
-    configureBounds(config.min_block_size, config.max_block_size);
-  }
-
-  void configureBounds(std::size_t min_block_size, std::size_t max_block_size) {
-    ORTEAF_THROW_IF(resource_ == nullptr, InvalidState,
-                    "DeviceLinkedFreelistPolicy is not initialized");
-    min_block_size_ = min_block_size;
-    size_class_count_ = std::countr_zero(std::bit_ceil(max_block_size)) -
-                        std::countr_zero(std::bit_ceil(min_block_size)) + 1;
-    heads_.resize(size_class_count_);
+    if (size_class_count > 0) {
+      heads_.resize(size_class_count);
+    }
   }
 
   void push(std::size_t list_index, const BufferResource &block,
@@ -61,8 +57,8 @@ public:
                     "DeviceLinkedFreelistPolicy is not initialized");
     if (!block.valid())
       return;
-    ensureList(list_index);
-    buffer_lookup_[block.view.raw()] = block.id;
+    ensureCapacity(list_index);
+    buffer_lookup_[block.view.raw()] = block.handle;
     resource_->pushFreelistNode(list_index, block.view, launch_params);
   }
 
@@ -70,16 +66,16 @@ public:
                      const LaunchParams &launch_params = {}) {
     ORTEAF_THROW_IF(resource_ == nullptr, InvalidState,
                     "DeviceLinkedFreelistPolicy is not initialized");
-    ensureList(list_index);
+    ensureCapacity(list_index);
     auto view = resource_->popFreelistNode(list_index, launch_params);
     if (!view)
       return {};
     auto it = buffer_lookup_.find(view.raw());
-    const ::orteaf::internal::base::BufferViewHandle id =
+    const ::orteaf::internal::base::BufferViewHandle handle =
         (it != buffer_lookup_.end())
             ? it->second
             : ::orteaf::internal::base::BufferViewHandle{};
-    return BufferResource{id, view};
+    return BufferResource{handle, view};
   }
 
   bool empty(std::size_t /*list_index*/) const {
@@ -98,8 +94,8 @@ public:
     if (!chunk.valid() || block_size == 0) {
       return;
     }
-    ensureList(list_index);
-    buffer_lookup_[chunk.view.raw()] = chunk.id;
+    ensureCapacity(list_index);
+    buffer_lookup_[chunk.view.raw()] = chunk.handle;
     resource_->initializeChunkAsFreelist(list_index, chunk.view, chunk_size,
                                          block_size, launch_params);
   }
@@ -110,15 +106,13 @@ public:
   }
 
 private:
-  void ensureList(std::size_t idx) {
+  void ensureCapacity(std::size_t idx) {
     if (idx >= heads_.size()) {
       heads_.resize(idx + 1);
     }
   }
 
   Resource *resource_{nullptr};
-  std::size_t min_block_size_{64};
-  std::size_t size_class_count_{0};
   ::orteaf::internal::base::HeapVector<BufferResource>
       heads_{}; // unused placeholder per size class
   std::unordered_map<void *, ::orteaf::internal::base::BufferViewHandle>
