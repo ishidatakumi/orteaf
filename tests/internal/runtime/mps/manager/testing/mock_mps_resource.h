@@ -41,6 +41,11 @@ public:
     std::size_t chunk_table_capacity{16};
   };
 
+  static constexpr ::orteaf::internal::backend::Backend
+  backend_type_static() noexcept {
+    return ::orteaf::internal::backend::Backend::Mps;
+  }
+
   StubMpsResource() = default;
   ~StubMpsResource() = default;
 

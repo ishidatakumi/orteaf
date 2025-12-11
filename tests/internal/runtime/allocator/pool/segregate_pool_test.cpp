@@ -89,7 +89,6 @@ using Pool = ::orteaf::internal::runtime::allocator::pool::SegregatePool<
     policies::DeferredReusePolicy<MockResource>,
     policies::HostStackFreelistPolicy<MockResource, Backend::Cpu>>;
 
-using BufferBlockType = BufferBlock<Backend::Cpu>;
 using BufferResourceType = BufferResource<Backend::Cpu>;
 
 TEST(SegregatePool, InitializePropagatesToAllPolicies) {
@@ -147,7 +146,7 @@ TEST(SegregatePool, AllocatesFromChunkWhenBelowMaxSize) {
       .WillOnce(Return(CpuBufferView{base, 0, 256}));
 
   Pool::LaunchParams params{};
-  BufferBlockType block = pool.allocate(80, 64, params);
+  BufferResourceType block = pool.allocate(80, 64, params);
 
   EXPECT_TRUE(block.valid());
   EXPECT_EQ(block.view.size(), block_size);
@@ -182,7 +181,7 @@ TEST(SegregatePool, UsesLargeAllocWhenOverMaxSize) {
       .WillOnce(Return(CpuBufferView{base, 0, 300}));
 
   Pool::LaunchParams params{};
-  BufferBlockType block = pool.allocate(300, 16, params);
+  BufferResourceType block = pool.allocate(300, 16, params);
 
   EXPECT_TRUE(block.valid());
   EXPECT_EQ(block.view.size(), 300u);
@@ -217,14 +216,14 @@ TEST(SegregatePool, DeallocateReturnsBlockToFreelist) {
       .WillOnce(Return(CpuBufferView{base, 0, 256}));
 
   Pool::LaunchParams params{};
-  BufferBlockType block = pool.allocate(80, 64, params);
+  BufferResourceType block = pool.allocate(80, 64, params);
   ASSERT_TRUE(block.valid());
   testing::Mock::VerifyAndClearExpectations(&impl);
 
-  pool.deallocate(BufferResourceType::fromBlock(block), 80, 64, params);
+  pool.deallocate(block, 80, 64, params);
 
   EXPECT_CALL(impl, allocate).Times(0);
-  BufferBlockType reused = pool.allocate(80, 64, params);
+  BufferResourceType reused = pool.allocate(80, 64, params);
   EXPECT_TRUE(reused.valid());
   EXPECT_EQ(reused.view.size(), block.view.size());
 }
@@ -253,10 +252,10 @@ TEST(SegregatePool, DeallocateLargeAllocUsesLargePolicy) {
   EXPECT_CALL(impl, deallocate(testing::_, 300, 16)).Times(1);
 
   Pool::LaunchParams params{};
-  BufferBlockType block = pool.allocate(300, 16, params);
+  BufferResourceType block = pool.allocate(300, 16, params);
   ASSERT_TRUE(block.valid());
 
-  pool.deallocate(BufferResourceType::fromBlock(block), 300, 16, params);
+  pool.deallocate(block, 300, 16, params);
 }
 
 TEST(SegregatePool, ReleaseChunkFreesBackingAndForcesNewChunkOnNextAlloc) {
@@ -290,13 +289,13 @@ TEST(SegregatePool, ReleaseChunkFreesBackingAndForcesNewChunkOnNextAlloc) {
   EXPECT_CALL(impl, deallocate(testing::_, 256, 0)).Times(1);
 
   Pool::LaunchParams params{};
-  BufferBlockType block = pool.allocate(80, 64, params);
+  BufferResourceType block = pool.allocate(80, 64, params);
   ASSERT_TRUE(block.valid());
 
-  pool.deallocate(BufferResourceType::fromBlock(block), 80, 64, params);
+  pool.deallocate(block, 80, 64, params);
   pool.releaseChunk(params);
 
-  BufferBlockType new_block = pool.allocate(80, 64, params);
+  BufferResourceType new_block = pool.allocate(80, 64, params);
   EXPECT_TRUE(new_block.valid());
   EXPECT_EQ(new_block.view.raw(), base2);
 }
@@ -337,7 +336,7 @@ TEST(SegregatePool, StatsTracking) {
 
   Pool::LaunchParams params{};
   // Allocation triggers expansion
-  BufferBlockType block = pool.allocate(64, 64, params);
+  BufferResourceType block = pool.allocate(64, 64, params);
   ASSERT_TRUE(block.valid());
 
   std::string stats_str = stats.toString();
@@ -348,7 +347,7 @@ TEST(SegregatePool, StatsTracking) {
     EXPECT_EQ(stats.poolExpansions(), 1u);
 
     // Deallocation
-    pool.deallocate(BufferResourceType::fromBlock(block), 64, 64, params);
+    pool.deallocate(block, 64, 64, params);
     EXPECT_EQ(stats.totalAllocations(), 1u);
     EXPECT_EQ(stats.totalDeallocations(), 1u);
     EXPECT_EQ(stats.activeAllocations(), 0u);
