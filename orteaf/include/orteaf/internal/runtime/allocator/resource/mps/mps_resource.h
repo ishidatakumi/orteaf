@@ -33,17 +33,16 @@ public:
   using MPSBuffer_t =
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSBuffer_t;
   struct LaunchParams {
-    ::orteaf::internal::base::DeviceHandle device_handle{};
+    ::orteaf::internal::base::DeviceHandle device_handle;
     ::orteaf::internal::runtime::mps::manager::MpsCommandQueueManager::
-        CommandQueueLease command_queue{};
+        CommandQueueLease command_queue;
   };
 
   static constexpr ::orteaf::internal::backend::Backend backend_type_static() {
     return ::orteaf::internal::backend::Backend::Mps;
   }
 
-  constexpr ::orteaf::internal::backend::Backend backend_type()
-      const noexcept {
+  constexpr ::orteaf::internal::backend::Backend backend_type() const noexcept {
     return backend_type_static();
   }
 
