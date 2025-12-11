@@ -25,9 +25,7 @@ public:
   using BufferBlock = ::orteaf::internal::runtime::allocator::BufferBlock<B>;
   using BufferView = typename BufferBlock::BufferView;
   using BufferViewHandle = typename BufferBlock::BufferViewHandle;
-  using LaunchParams =
-      typename ::orteaf::internal::runtime::base::BackendTraits<
-          B>::KernelLaunchParams;
+  using LaunchParams = typename Resource::LaunchParams;
 
   HostStackFreelistPolicy() = default;
   HostStackFreelistPolicy(const HostStackFreelistPolicy &) = delete;

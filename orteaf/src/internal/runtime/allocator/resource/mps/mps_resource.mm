@@ -17,10 +17,6 @@ void MpsResource::initialize(const Config &config) {
   device_handle_ = config.device_handle;
   heap_ = config.heap;
   usage_ = config.usage;
-  chunks_.reserve(config.chunk_table_capacity);
-  chunk_sizes_.reserve(config.chunk_table_capacity);
-  chunk_list_index_.reserve(config.chunk_table_capacity);
-  chunk_lookup_.reserve(config.chunk_table_capacity);
   initialized_ = (device_ != nullptr && heap_ != nullptr);
 }
 
@@ -107,7 +103,7 @@ void MpsResource::initializeChunkAsFreelist(std::size_t list_index,
 
 MpsResource::BufferView
 MpsResource::popFreelistNode(std::size_t list_index,
-                              const LaunchParams &launch_params) {
+                             const LaunchParams &launch_params) {
   return {};
 }
 

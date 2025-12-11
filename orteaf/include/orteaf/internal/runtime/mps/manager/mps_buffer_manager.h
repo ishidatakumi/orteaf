@@ -36,10 +36,9 @@ using MpsBufferPoolT =
         ::orteaf::internal::runtime::allocator::policies::
             DirectChunkLocatorPolicy<ResourceT, Backend::Mps>,
         ::orteaf::internal::runtime::allocator::policies::DeferredReusePolicy<
-            ResourceT, Backend::Mps>,
+            ResourceT>,
         ::orteaf::internal::runtime::allocator::policies::
-            HostStackFreelistPolicy<ResourceT, Backend::Mps>,
-        Backend::Mps>;
+            HostStackFreelistPolicy<ResourceT, Backend::Mps>>;
 
 // ============================================================================
 // Traits template (simplified - OpsType is just Pool*)
