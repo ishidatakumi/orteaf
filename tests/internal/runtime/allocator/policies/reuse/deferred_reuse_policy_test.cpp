@@ -9,7 +9,6 @@
 #include "orteaf/internal/backend/backend.h"
 #include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/runtime/allocator/buffer_resource.h"
-#include "orteaf/internal/runtime/base/backend_traits.h"
 #include "orteaf/internal/runtime/cpu/resource/cpu_buffer_view.h"
 #include "tests/internal/testing/error_assert.h"
 
@@ -20,16 +19,17 @@ using BufferViewHandle = ::orteaf::internal::base::BufferViewHandle;
 using CpuView = ::orteaf::internal::runtime::cpu::resource::CpuBufferView;
 namespace {
 using BufferResource = allocator::BufferResource<Backend::Cpu>;
-using CpuReuseToken =
-    ::orteaf::internal::runtime::base::BackendTraits<Backend::Cpu>::ReuseToken;
 struct FakeResource;
-using Policy = policies::DeferredReusePolicy<FakeResource, Backend::Cpu>;
+using Policy = policies::DeferredReusePolicy<FakeResource>;
 
 struct FakeResource {
+  using BufferResource = allocator::BufferResource<Backend::Cpu>;
+  using ReuseToken = int;
+
   std::atomic<bool> next_result{true};
   std::atomic<int> calls{0};
 
-  bool isCompleted(const CpuReuseToken & /*token*/) {
+  bool isCompleted(const ReuseToken & /*token*/) {
     ++calls;
     return next_result.load();
   }
@@ -59,7 +59,7 @@ TEST(DeferredReusePolicy, MovesCompletedToReady) {
 
   BufferResource block = makeBlock(BufferViewHandle{1});
   std::size_t freelist_index = 3;
-  CpuReuseToken token{};
+  FakeResource::ReuseToken token{};
 
   policy.scheduleForReuse(block, freelist_index, token);
   EXPECT_EQ(policy.processPending(), 1u);
@@ -80,7 +80,7 @@ TEST(DeferredReusePolicy, KeepsPendingWhenNotCompleted) {
   policy.initialize(cfg);
 
   BufferResource block = makeBlock(BufferViewHandle{2});
-  CpuReuseToken token{};
+  FakeResource::ReuseToken token{};
   policy.scheduleForReuse(block, 1, token);
 
   EXPECT_EQ(policy.processPending(), 0u);
@@ -99,7 +99,7 @@ TEST(DeferredReusePolicy, RemoveBlocksInChunkFiltersPendingAndReady) {
   cfg.resource = &resource;
   policy.initialize(cfg);
 
-  CpuReuseToken token{};
+  FakeResource::ReuseToken token{};
   BufferResource block1 = makeBlock(BufferViewHandle{10});
   BufferResource block2 =
       makeBlock(BufferViewHandle{20}, reinterpret_cast<void *>(0x20));
