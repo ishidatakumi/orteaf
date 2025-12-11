@@ -151,9 +151,7 @@ public:
         ResourceHandle{static_cast<typename ResourceHandle::index_type>(index),
                        static_cast<typename ResourceHandle::generation_type>(
                            state.generation)};
-    return ResourceLease{
-        static_cast<Derived *>(this), handle,
-        ResourceLease::makeResourcePointer(state.resource)};
+    return ResourceLease{static_cast<Derived *>(this), handle, state.resource};
   }
 
   ResourceLease acquire(ResourceHandle handle) {
@@ -181,9 +179,7 @@ public:
     // Increment ref count
     state.ref_count.fetch_add(1, std::memory_order_relaxed);
 
-    return ResourceLease{
-        static_cast<Derived *>(this), handle,
-        ResourceLease::makeResourcePointer(state.resource)};
+    return ResourceLease{static_cast<Derived *>(this), handle, state.resource};
   }
 
   void release(ResourceLease &lease) noexcept {
