@@ -6,7 +6,6 @@
 #include <orteaf/internal/runtime/allocator/buffer_resource.h>
 #include <orteaf/internal/runtime/allocator/pool/segregate_pool_stats.h>
 #include <orteaf/internal/runtime/allocator/size_class_utils.h>
-#include <orteaf/internal/runtime/base/backend_traits.h>
 
 namespace orteaf::internal::runtime::allocator::pool {
 template <typename BackendResource, typename FastFreePolicy,
@@ -17,9 +16,7 @@ template <typename BackendResource, typename FastFreePolicy,
 class SegregatePool {
 public:
   using BufferResource = typename BackendResource::BufferResource;
-  using LaunchParams =
-      typename ::orteaf::internal::runtime::base::BackendTraits<
-          BackendType>::KernelLaunchParams;
+  using LaunchParams = typename BackendResource::LaunchParams;
 
   SegregatePool() = default;
   explicit SegregatePool(BackendResource resource)
