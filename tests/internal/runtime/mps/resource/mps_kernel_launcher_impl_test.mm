@@ -423,8 +423,9 @@ TEST(MpsKernelLauncherImplTest, DispatchOneShotByIndex) {
     EXPECT_EQ(encoder, MockComputeFastOps::fake_encoder);
   };
 
-  auto *command_buffer = impl.dispatchOneShot<MockComputeFastOps>(
-      queue_lease, device, 0, tg, tptg, binder);
+  auto *command_buffer =
+      impl.dispatchOneShot<DummyPrivateOps, MockComputeFastOps>(
+          queue_lease, device, 0, tg, tptg, binder);
 
   EXPECT_TRUE(binder_called);
   EXPECT_EQ(command_buffer, MockComputeFastOps::fake_buffer);
@@ -456,8 +457,9 @@ TEST(MpsKernelLauncherImplTest, DispatchOneShotByNameMissingReturnsNullptr) {
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSSize_t tg{1, 1, 1};
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSSize_t tptg{1, 1, 1};
 
-  auto *command_buffer = impl.dispatchOneShot<MockComputeFastOps>(
-      queue_lease, device, "missing", "missing", tg, tptg, [](auto *) {});
+  auto *command_buffer =
+      impl.dispatchOneShot<DummyPrivateOps, MockComputeFastOps>(
+          queue_lease, device, "missing", "missing", tg, tptg, [](auto *) {});
   EXPECT_EQ(command_buffer, nullptr);
 }
 
@@ -521,7 +523,7 @@ TEST(MpsKernelLauncherImplTest, DispatchOneShotAddsFenceTicketWhenProvided) {
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t>(0xdead);
 
   auto *command_buffer =
-      impl.dispatchOneShot<MockComputeFastOps, DummyPrivateOps>(
+      impl.dispatchOneShot<DummyPrivateOps, MockComputeFastOps>(
           queue_lease, device, 0, tg, tptg, [](auto *) {}, &token);
 
   EXPECT_EQ(command_buffer, MockComputeFastOps::fake_buffer);

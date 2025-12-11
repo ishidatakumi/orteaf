@@ -21,6 +21,8 @@ public:
   using PipelineLease = typename Impl::PipelineLease;
   using KeyLiteral = typename Impl::KeyLiteral;
 
+  MpsKernelLauncher() = default;
+
   explicit MpsKernelLauncher(std::initializer_list<KeyLiteral> keys)
       : impl_(std::make_unique<Impl>(keys)) {}
 

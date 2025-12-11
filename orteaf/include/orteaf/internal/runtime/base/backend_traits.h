@@ -23,8 +23,6 @@
 #include <orteaf/internal/runtime/mps/resource/mps_fence_token.h>
 #include <orteaf/internal/runtime/mps/resource/mps_heap_region.h>
 #include <orteaf/internal/runtime/mps/resource/mps_reuse_token.h>
-#include <orteaf/internal/runtime/mps/manager/mps_command_queue_manager.h>
-#include <orteaf/internal/runtime/mps/manager/mps_device_manager.h>
 #endif
 
 namespace orteaf::internal::runtime::base {
@@ -83,14 +81,8 @@ template <> struct BackendTraits<::orteaf::internal::backend::Backend::Mps> {
   using FenceToken = ::orteaf::internal::runtime::mps::resource::MpsFenceToken;
   using ReuseToken = ::orteaf::internal::runtime::mps::resource::MpsReuseToken;
   struct KernelLaunchParams {
-    using DeviceLease =
-        ::orteaf::internal::runtime::mps::manager::MpsDeviceManager::
-            DeviceLease;
-    using CommandQueueLease =
-        ::orteaf::internal::runtime::mps::manager::MpsCommandQueueManager::
-            CommandQueueLease;
-    DeviceLease device{};                // optional; when empty falls back to resource device
-    CommandQueueLease command_queue{};   // optional; when empty a new queue is created
+    Device device{nullptr};
+    Stream command_queue{nullptr};
   };
 };
 #endif // ORTEAF_ENABLE_MPS

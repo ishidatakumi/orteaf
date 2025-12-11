@@ -26,7 +26,7 @@ TEST(MpsKernelLauncherImplDeviceTest, InitializeWithEmbeddedLibraryRealDevice) {
   });
 
   const base::DeviceHandle device{0};
-  impl.initialize<>(device);
+  impl.initialize<mps_rt::ops::MpsPrivateOps>(device);
 
   EXPECT_TRUE(impl.initialized(device));
   ASSERT_EQ(impl.sizeForTest(), 1u);
@@ -50,7 +50,7 @@ TEST(MpsKernelLauncherImplDeviceTest, DispatchOneShotExecutesEmbeddedIdentity) {
   });
 
   const base::DeviceHandle device{0};
-  impl.initialize<>(device);
+  impl.initialize<mps_rt::ops::MpsPrivateOps>(device);
 
   auto *device_handle =
       ::orteaf::internal::runtime::mps::platform::wrapper::getDevice(0);
@@ -97,7 +97,7 @@ TEST(MpsKernelLauncherImplDeviceTest, DispatchOneShotExecutesEmbeddedIdentity) {
       ::orteaf::internal::runtime::mps::manager::MpsCommandQueueManager::
           CommandQueueLease::makeForTest(base::CommandQueueHandle{0}, queue);
 
-  auto *command_buffer = impl.dispatchOneShot<>(
+  auto *command_buffer = impl.dispatchOneShot<mps_rt::ops::MpsPrivateOps>(
       queue_lease, device, 0, tg, tptg, [&](auto *encoder) {
         impl.setBuffer<>(encoder, buffer, 0, 0);
         impl.setBytes<>(encoder, &length, sizeof(length), 1);

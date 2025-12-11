@@ -14,16 +14,13 @@
 #include "orteaf/internal/runtime/allocator/policies/reuse/deferred_reuse_policy.h"
 #include "orteaf/internal/runtime/allocator/policies/threading/threading_policies.h"
 #include "orteaf/internal/runtime/allocator/pool/segregate_pool.h"
-#include "orteaf/internal/runtime/allocator/resource/mps/mps_resource.h"
-#include "orteaf/internal/runtime/base/backend_traits.h"
 #include "orteaf/internal/runtime/base/buffer_manager.h"
+#include "orteaf/internal/runtime/mps/platform/wrapper/mps_device.h"
 #include "orteaf/internal/runtime/mps/resource/mps_buffer_view.h"
 
 namespace orteaf::internal::runtime::mps::manager {
 
 using ::orteaf::internal::backend::Backend;
-using MpsResource =
-    ::orteaf::internal::runtime::allocator::resource::mps::MpsResource;
 
 // ============================================================================
 // Pool type alias template
@@ -44,46 +41,52 @@ using MpsBufferPoolT =
             HostStackFreelistPolicy<ResourceT, Backend::Mps>,
         Backend::Mps>;
 
-// Default pool type
-using MpsBufferPool = MpsBufferPoolT<MpsResource>;
-
 // ============================================================================
-// Ops context template
-// ============================================================================
-template <typename ResourceT> struct MpsBufferOpsT {
-  MpsBufferPoolT<ResourceT> *pool{nullptr};
-  typename MpsBufferPoolT<ResourceT>::LaunchParams launch_params{};
-};
-
-using MpsBufferOps = MpsBufferOpsT<MpsResource>;
-
-// ============================================================================
-// Traits template
+// Traits template (simplified - OpsType is just Pool*)
 // ============================================================================
 template <typename ResourceT> struct MpsBufferManagerTraitsT {
   using BufferType = ::orteaf::internal::runtime::allocator::Buffer;
   using StateType = ::orteaf::internal::runtime::base::BufferState<BufferType>;
   using DeviceType =
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
-  using OpsType = MpsBufferOpsT<ResourceT>;
+  using OpsType = MpsBufferPoolT<ResourceT>; // Simplified: just the pool
   using HandleType = ::orteaf::internal::base::BufferHandle;
 
   static constexpr const char *Name = "MPS buffer manager";
 
-  static BufferType allocate(OpsType *ops, std::size_t size,
-                             std::size_t alignment);
-  static void deallocate(OpsType *ops, BufferType &buffer);
-};
+  static BufferType allocate(OpsType *pool, std::size_t size,
+                             std::size_t alignment) {
+    if (pool == nullptr || size == 0) {
+      return {};
+    }
+    typename OpsType::LaunchParams params{};
+    auto res = pool->allocate(size, alignment, params);
+    if (!res.valid()) {
+      return {};
+    }
+    return BufferType{res, size, alignment};
+  }
 
-using MpsBufferManagerTraits = MpsBufferManagerTraitsT<MpsResource>;
+  static void deallocate(OpsType *pool, BufferType &buffer) {
+    if (pool == nullptr || !buffer.valid()) {
+      return;
+    }
+    auto res = buffer.asResource<Backend::Mps>();
+    if (!res.valid()) {
+      return;
+    }
+    typename OpsType::LaunchParams params{};
+    pool->deallocate(res, buffer.size(), buffer.alignment(), params);
+  }
+};
 
 // Forward declaration
 template <typename ResourceT> class MpsBufferManagerT;
 
 // ============================================================================
-// MpsBufferManagerT - Templated buffer manager
+// MpsBufferManagerT - Templated buffer manager (simplified)
 // ============================================================================
-template <typename ResourceT = MpsResource>
+template <typename ResourceT>
 class MpsBufferManagerT
     : public ::orteaf::internal::runtime::base::BufferManager<
           MpsBufferManagerT<ResourceT>, MpsBufferManagerTraitsT<ResourceT>> {
@@ -95,24 +98,65 @@ public:
   using BufferHandle = typename Base::BufferHandle;
   using BufferLease = typename Base::BufferLease;
   using DeviceType = typename Traits::DeviceType;
-  using Ops = typename Traits::OpsType;
   using Pool = MpsBufferPoolT<ResourceT>;
   using Resource = ResourceT;
 
-  struct Config {
-    typename Pool::Config pool{};
-    typename Resource::Config resource{};
-    std::size_t capacity{128};
+  struct PoolConfig {
+    std::size_t chunk_size{16 * 1024 * 1024};
+    std::size_t min_block_size{64};
+    std::size_t max_block_size{16 * 1024 * 1024};
   };
 
-  void initialize(DeviceType device, Ops *ops, const Config &config) {
+  MpsBufferManagerT() = default;
+  MpsBufferManagerT(const MpsBufferManagerT &) = delete;
+  MpsBufferManagerT &operator=(const MpsBufferManagerT &) = delete;
+
+  MpsBufferManagerT(MpsBufferManagerT &&other) noexcept
+      : Base(std::move(other)), pool_config_(std::move(other.pool_config_)),
+        resource_config_(std::move(other.resource_config_)),
+        backend_resource_(std::move(other.backend_resource_)),
+        pool_(std::move(other.pool_)) {}
+
+  MpsBufferManagerT &operator=(MpsBufferManagerT &&other) noexcept {
+    if (this != &other) {
+      Base::operator=(std::move(other));
+      pool_config_ = std::move(other.pool_config_);
+      resource_config_ = std::move(other.resource_config_);
+      backend_resource_ = std::move(other.backend_resource_);
+      pool_ = std::move(other.pool_);
+    }
+    return *this;
+  }
+
+  ~MpsBufferManagerT() = default;
+
+  // =========================================================================
+  // Configuration setters (call before initialize)
+  // =========================================================================
+  void setPoolConfig(const PoolConfig &config) { pool_config_ = config; }
+  const PoolConfig &poolConfig() const { return pool_config_; }
+
+  void setResourceConfig(const typename Resource::Config &config) {
+    resource_config_ = config;
+  }
+  const typename Resource::Config &resourceConfig() const {
+    return resource_config_;
+  }
+
+  // =========================================================================
+  // Lifecycle
+  // =========================================================================
+  void initialize(DeviceType device, std::size_t capacity) {
     shutdown();
 
-    backend_resource_.initialize(config.resource);
+    backend_resource_.initialize(resource_config_);
     pool_.~Pool();
     new (&pool_) Pool(std::move(backend_resource_));
 
-    typename Pool::Config pool_cfg = config.pool;
+    typename Pool::Config pool_cfg{};
+    pool_cfg.chunk_size = pool_config_.chunk_size;
+    pool_cfg.min_block_size = pool_config_.min_block_size;
+    pool_cfg.max_block_size = pool_config_.max_block_size;
     pool_cfg.fast_free.resource = pool_.resource();
     pool_cfg.threading.resource = pool_.resource();
     pool_cfg.large_alloc.resource = pool_.resource();
@@ -121,10 +165,7 @@ public:
     pool_cfg.freelist.resource = pool_.resource();
     pool_.initialize(pool_cfg);
 
-    ops_context_.pool = &pool_;
-    ops_context_.launch_params = typename Pool::LaunchParams{};
-
-    Base::initialize(device, &ops_context_, config.capacity);
+    Base::initialize(device, &pool_, capacity);
   }
 
   void shutdown() {
@@ -138,71 +179,43 @@ public:
     new (&backend_resource_) Resource{};
   }
 
-  struct TraitsAdapter {
-    static Buffer allocate(Ops *ops_ctx, std::size_t size,
-                           std::size_t alignment) {
-      if (ops_ctx == nullptr || ops_ctx->pool == nullptr) {
-        return {};
-      }
-      auto res =
-          ops_ctx->pool->allocate(size, alignment, ops_ctx->launch_params);
-      if (!res.valid()) {
-        return {};
-      }
-      return Buffer{res, size, alignment};
-    }
-
-    static void deallocate(Ops *ops_ctx, Buffer &buffer) {
-      if (ops_ctx == nullptr || ops_ctx->pool == nullptr) {
-        return;
-      }
-      auto res = buffer.asResource<Backend::Mps>();
-      if (!res.valid()) {
-        return;
-      }
-      ops_ctx->pool->deallocate(res, buffer.size(), buffer.alignment(),
-                                ops_ctx->launch_params);
-    }
-  };
+  Pool *pool() { return &pool_; }
+  const Pool *pool() const { return &pool_; }
 
 private:
   friend Base;
 
-  static Buffer allocate(Ops *ops, std::size_t size, std::size_t alignment) {
-    return TraitsAdapter::allocate(ops, size, alignment);
+  static Buffer allocate(Pool *pool, std::size_t size, std::size_t alignment) {
+    return Traits::allocate(pool, size, alignment);
   }
 
-  static void deallocate(Ops *ops, Buffer &buffer) {
-    TraitsAdapter::deallocate(ops, buffer);
+  static void deallocate(Pool *pool, Buffer &buffer) {
+    Traits::deallocate(pool, buffer);
   }
 
-  Ops ops_context_{};
+  // Configuration (set before initialize)
+  PoolConfig pool_config_{};
+  typename Resource::Config resource_config_{};
+
+  // Runtime state
   Resource backend_resource_{};
   Pool pool_{};
 };
 
+} // namespace orteaf::internal::runtime::mps::manager
+
 // ============================================================================
-// Default type alias
+// Default type alias (after namespace to avoid circular dependency)
+// Include mps_resource.h only when you need MpsBufferManager alias
 // ============================================================================
+#include "orteaf/internal/runtime/allocator/resource/mps/mps_resource.h"
+
+namespace orteaf::internal::runtime::mps::manager {
+using MpsResource =
+    ::orteaf::internal::runtime::allocator::resource::mps::MpsResource;
+using MpsBufferPool = MpsBufferPoolT<MpsResource>;
+using MpsBufferManagerTraits = MpsBufferManagerTraitsT<MpsResource>;
 using MpsBufferManager = MpsBufferManagerT<MpsResource>;
-
-// ============================================================================
-// Traits implementation
-// ============================================================================
-template <typename ResourceT>
-inline typename MpsBufferManagerTraitsT<ResourceT>::BufferType
-MpsBufferManagerTraitsT<ResourceT>::allocate(OpsType *ops, std::size_t size,
-                                             std::size_t alignment) {
-  return MpsBufferManagerT<ResourceT>::TraitsAdapter::allocate(ops, size,
-                                                               alignment);
-}
-
-template <typename ResourceT>
-inline void MpsBufferManagerTraitsT<ResourceT>::deallocate(OpsType *ops,
-                                                           BufferType &buffer) {
-  MpsBufferManagerT<ResourceT>::TraitsAdapter::deallocate(ops, buffer);
-}
-
 } // namespace orteaf::internal::runtime::mps::manager
 
 #endif // ORTEAF_ENABLE_MPS

@@ -195,13 +195,13 @@ void MpsResource::initializeChunkAsFreelist(std::size_t list_index,
     freelist_launcher_.initialize<ResourcePrivateOps>(device_handle_);
   }
 
-  if (launch_params.device && launch_params.device.pointer() != device_) {
+  if (launch_params.device && launch_params.device != device_) {
     ORTEAF_THROW(InvalidParameter,
                  "DeviceLease does not match resource device");
   }
   ORTEAF_THROW_IF(!launch_params.command_queue, InvalidParameter,
                   "CommandQueueLease must be provided for MPS freelist ops");
-  auto *command_queue = launch_params.command_queue.pointer();
+  auto *command_queue = launch_params.command_queue;
   ORTEAF_THROW_IF_NULL(command_queue, "Failed to create MPS command queue");
   auto *command_buffer = freelist_launcher_.createCommandBuffer(command_queue);
   ORTEAF_THROW_IF_NULL(command_buffer, "Failed to create MPS command buffer");
@@ -280,7 +280,7 @@ MpsResource::popFreelistNode(std::size_t list_index,
 
   ORTEAF_THROW_IF(!launch_params.command_queue, InvalidParameter,
                   "CommandQueueLease must be provided for MPS freelist ops");
-  auto *command_queue = launch_params.command_queue.pointer();
+  auto *command_queue = launch_params.command_queue;
   ORTEAF_THROW_IF_NULL(command_queue, "Failed to create MPS command queue");
   auto *command_buffer = freelist_launcher_.createCommandBuffer(command_queue);
   ORTEAF_THROW_IF_NULL(command_buffer, "Failed to create MPS command buffer");
@@ -368,13 +368,13 @@ void MpsResource::pushFreelistNode(std::size_t list_index, BufferView view,
     freelist_launcher_.initialize<ResourcePrivateOps>(device_handle_);
   }
 
-  if (launch_params.device && launch_params.device.pointer() != device_) {
+  if (launch_params.device && launch_params.device != device_) {
     ORTEAF_THROW(InvalidParameter,
                  "DeviceLease does not match resource device");
   }
   ORTEAF_THROW_IF(!launch_params.command_queue, InvalidParameter,
                   "CommandQueueLease must be provided for MPS freelist ops");
-  auto *command_queue = launch_params.command_queue.pointer();
+  auto *command_queue = launch_params.command_queue;
   ORTEAF_THROW_IF_NULL(command_queue, "Failed to create MPS command queue");
   auto *command_buffer = freelist_launcher_.createCommandBuffer(command_queue);
   ORTEAF_THROW_IF_NULL(command_buffer, "Failed to create MPS command buffer");

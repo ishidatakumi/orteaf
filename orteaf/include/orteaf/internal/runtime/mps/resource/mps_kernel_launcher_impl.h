@@ -5,7 +5,6 @@
 #include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/base/heap_vector.h"
 #include "orteaf/internal/runtime/mps/api/mps_runtime_api.h"
-#include "orteaf/internal/runtime/mps/platform/mps_fast_ops.h"
 #include "orteaf/internal/runtime/mps/platform/wrapper/mps_compute_command_encoder.h"
 #include "orteaf/internal/runtime/mps/resource/mps_fence_ticket.h"
 #include "orteaf/internal/runtime/mps/resource/mps_fence_token.h"
@@ -16,6 +15,7 @@
 #include <string_view>
 #include <utility>
 
+#include "orteaf/internal/runtime/mps/manager/mps_command_queue_manager.h"
 #include "orteaf/internal/runtime/mps/manager/mps_compute_pipeline_state_manager.h"
 #include "orteaf/internal/runtime/mps/manager/mps_library_manager.h"
 
@@ -297,6 +297,7 @@ public:
    * and commit. Returns the command buffer or nullptr.
    */
   template <
+      typename PrivateOps,
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps,
       typename PrivateOps =
           ::orteaf::internal::runtime::mps::api::MpsRuntimeApi,
@@ -340,6 +341,7 @@ public:
    * Returns the command buffer or nullptr.
    */
   template <
+      typename PrivateOps,
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps,
       typename PrivateOps =
           ::orteaf::internal::runtime::mps::api::MpsRuntimeApi,
@@ -364,7 +366,7 @@ public:
     if (!entry.initialized || idx >= entry.pipelines.size()) {
       return nullptr;
     }
-    return dispatchOneShot<FastOps, PrivateOps>(
+    return dispatchOneShot<PrivateOps, FastOps>(
         queue_lease, device, idx, threadgroups, threads_per_threadgroup,
         static_cast<Binder &&>(binder), fence_token);
   }
