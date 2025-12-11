@@ -3,6 +3,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <string>
 
 #include "orteaf/internal/base/handle.h"
@@ -76,7 +77,7 @@ public:
   using Ops = typename Traits::OpsType;
   using BufferHandle = typename Traits::HandleType;
   using BufferLease =
-      ::orteaf::internal::base::SharedLease<BufferHandle, BufferType,
+      ::orteaf::internal::base::SharedLease<BufferHandle, BufferType *,
                                             BufferManager>;
 
   BufferManager() = default;
@@ -165,7 +166,7 @@ public:
 
     state.in_use = true;
     state.ref_count.store(1, std::memory_order_relaxed);
-    return BufferLease{static_cast<Derived *>(this), handle, state.buffer};
+    return BufferLease{static_cast<Derived *>(this), handle, &state.buffer};
   }
 
   /**
@@ -192,7 +193,7 @@ public:
           std::string(Traits::Name) + " handle is stale");
     }
     state.ref_count.fetch_add(1, std::memory_order_relaxed);
-    return BufferLease{static_cast<Derived *>(this), handle, state.buffer};
+    return BufferLease{static_cast<Derived *>(this), handle, &state.buffer};
   }
 
   /**

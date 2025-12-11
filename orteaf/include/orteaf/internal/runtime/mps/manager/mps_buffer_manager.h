@@ -3,6 +3,7 @@
 #if ORTEAF_ENABLE_MPS
 
 #include <cstddef>
+#include <utility>
 
 #include "orteaf/internal/backend/backend.h"
 #include "orteaf/internal/base/handle.h"
@@ -31,14 +32,10 @@ using MpsBufferPoolT =
         ResourceT,
         ::orteaf::internal::runtime::allocator::policies::FastFreePolicy,
         ::orteaf::internal::runtime::allocator::policies::NoLockThreadingPolicy,
-        ::orteaf::internal::runtime::allocator::policies::
-            DirectResourceLargeAllocPolicy<ResourceT, Backend::Mps>,
-        ::orteaf::internal::runtime::allocator::policies::
-            DirectChunkLocatorPolicy<ResourceT, Backend::Mps>,
-        ::orteaf::internal::runtime::allocator::policies::DeferredReusePolicy<
-            ResourceT>,
-        ::orteaf::internal::runtime::allocator::policies::
-            HostStackFreelistPolicy<ResourceT, Backend::Mps>>;
+        ::orteaf::internal::runtime::allocator::policies::DirectResourceLargeAllocPolicy<ResourceT>,
+        ::orteaf::internal::runtime::allocator::policies::DirectChunkLocatorPolicy<ResourceT>,
+        ::orteaf::internal::runtime::allocator::policies::DeferredReusePolicy<ResourceT>,
+        ::orteaf::internal::runtime::allocator::policies::HostStackFreelistPolicy<ResourceT>>;
 
 // ============================================================================
 // Traits template (simplified - OpsType is just Pool*)
@@ -63,7 +60,7 @@ template <typename ResourceT> struct MpsBufferManagerTraitsT {
     if (!res.valid()) {
       return {};
     }
-    return BufferType{res, size, alignment};
+    return BufferType{std::move(res), size, alignment};
   }
 
   static void deallocate(OpsType *pool, BufferType &buffer) {
