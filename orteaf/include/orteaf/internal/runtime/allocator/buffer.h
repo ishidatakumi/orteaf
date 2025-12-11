@@ -19,23 +19,30 @@ class Buffer {
   using MpsResource = BufferResource<::orteaf::internal::backend::Backend::Mps>;
 #endif
 
-  using ResourceVariant = std::variant<
-      CpuResource
+  using ResourceVariant = std::variant<CpuResource
 #if ORTEAF_ENABLE_CUDA
-      , CudaResource
+                                       ,
+                                       CudaResource
 #endif
 #if ORTEAF_ENABLE_MPS
-      , MpsResource
+                                       ,
+                                       MpsResource
 #endif
-      >;
+                                       >;
 
 public:
   Buffer() = default;
 
+  // Move-only (BufferResource is not copyable)
+  Buffer(const Buffer &) = delete;
+  Buffer &operator=(const Buffer &) = delete;
+  Buffer(Buffer &&) = default;
+  Buffer &operator=(Buffer &&) = default;
+
   template <::orteaf::internal::backend::Backend B>
-  explicit Buffer(const BufferResource<B> &res, std::size_t size_bytes = 0,
+  explicit Buffer(BufferResource<B> res, std::size_t size_bytes = 0,
                   std::size_t alignment_bytes = 0)
-      : backend_(B), resource_(res), size_(size_bytes),
+      : backend_(B), resource_(std::move(res)), size_(size_bytes),
         alignment_(alignment_bytes) {}
 
   ::orteaf::internal::backend::Backend backend() const noexcept {
@@ -49,14 +56,17 @@ public:
   }
 
   template <::orteaf::internal::backend::Backend B>
-  BufferResource<B> asResource() const {
-    const auto *r = std::get_if<BufferResource<B>>(&resource_);
-    return (r && backend_ == B) ? *r : BufferResource<B>{};
+  BufferResource<B> &asResource() {
+    auto *r = std::get_if<BufferResource<B>>(&resource_);
+    static BufferResource<B> empty{};
+    return (r && backend_ == B) ? *r : empty;
   }
 
   template <::orteaf::internal::backend::Backend B>
-  explicit operator BufferResource<B>() const {
-    return asResource<B>();
+  const BufferResource<B> &asResource() const {
+    const auto *r = std::get_if<BufferResource<B>>(&resource_);
+    static const BufferResource<B> empty{};
+    return (r && backend_ == B) ? *r : empty;
   }
 
 private:
