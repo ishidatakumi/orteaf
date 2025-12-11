@@ -11,12 +11,13 @@ namespace orteaf::internal::runtime::allocator::pool {
 template <typename BackendResource, typename FastFreePolicy,
           typename ThreadingPolicy, typename LargeAllocPolicy,
           typename ChunkLocatorPolicy, typename ReuseLocatorPolicy,
-          typename FreeListPolicy,
-          ::orteaf::internal::backend::Backend BackendType>
+          typename FreeListPolicy>
 class SegregatePool {
 public:
   using BufferResource = typename BackendResource::BufferResource;
   using LaunchParams = typename BackendResource::LaunchParams;
+  static constexpr auto BackendType = BackendResource::backend_type_static();
+  using Stats = SegregatePoolStats<BackendType>;
 
   SegregatePool() = default;
   explicit SegregatePool(BackendResource resource)
@@ -34,7 +35,7 @@ public:
         chunk_locator_policy_(std::move(other.chunk_locator_policy_)),
         reuse_policy_(std::move(other.reuse_policy_)),
         free_list_policy_(std::move(other.free_list_policy_)),
-        backend_type_(other.backend_type_), stats_(std::move(other.stats_)) {}
+        stats_(std::move(other.stats_)) {}
 
   SegregatePool &operator=(SegregatePool &&other) noexcept {
     if (this != &other) {
@@ -48,7 +49,6 @@ public:
       chunk_locator_policy_ = std::move(other.chunk_locator_policy_);
       reuse_policy_ = std::move(other.reuse_policy_);
       free_list_policy_ = std::move(other.free_list_policy_);
-      backend_type_ = other.backend_type_;
       stats_ = std::move(other.stats_);
     }
     return *this;
@@ -100,7 +100,7 @@ public:
   std::size_t min_block_size() const { return min_block_size_; }
   std::size_t max_block_size() const { return max_block_size_; }
 
-  const SegregatePoolStats<BackendType> &stats() const { return stats_; }
+  const Stats &stats() const { return stats_; }
 
   BufferResource allocate(std::size_t size, std::size_t alignment,
                           LaunchParams &launch_params) {
@@ -224,8 +224,7 @@ private:
   ChunkLocatorPolicy chunk_locator_policy_;
   ReuseLocatorPolicy reuse_policy_;
   FreeListPolicy free_list_policy_;
-  ::orteaf::internal::backend::Backend backend_type_{BackendType};
-  SegregatePoolStats<BackendType> stats_;
+  Stats stats_;
 };
 
 } // namespace orteaf::internal::runtime::allocator::pool
