@@ -11,17 +11,15 @@
 #include "orteaf/internal/diagnostics/log/log.h"
 #include "orteaf/internal/runtime/allocator/buffer_resource.h"
 #include "orteaf/internal/runtime/allocator/policies/policy_config.h"
-#include "orteaf/internal/runtime/base/backend_traits.h"
 
 namespace orteaf::internal::runtime::allocator::policies {
 
-template <typename Resource, ::orteaf::internal::backend::Backend B>
+template <typename Resource>
 class DirectResourceLargeAllocPolicy {
 public:
   using BufferViewHandle = ::orteaf::internal::base::BufferViewHandle;
-  using BufferView =
-      typename ::orteaf::internal::runtime::base::BackendTraits<B>::BufferView;
-  using BufferBlock = ::orteaf::internal::runtime::allocator::BufferBlock<B>;
+  using BufferView = Resource::BufferView;
+  using BufferBlock = Resource::BufferBlock;
 
   DirectResourceLargeAllocPolicy() = default;
   DirectResourceLargeAllocPolicy(const DirectResourceLargeAllocPolicy &) =

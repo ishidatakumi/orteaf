@@ -19,13 +19,13 @@ namespace orteaf::internal::runtime::allocator::policies {
  * サイズクラスの計算（min/max_block_size）は SegregatePool が担当し、
  * 本ポリシーは list_index のみを扱う。
  */
-template <typename Resource, ::orteaf::internal::backend::Backend B>
+template <typename Resource>
 class HostStackFreelistPolicy {
 public:
-  using BufferBlock = ::orteaf::internal::runtime::allocator::BufferBlock<B>;
-  using BufferView = typename BufferBlock::BufferView;
-  using BufferViewHandle = typename BufferBlock::BufferViewHandle;
-  using LaunchParams = typename Resource::LaunchParams;
+  using BufferBlock = Resource::BufferBlock;
+  using BufferView = BufferBlock::BufferView;
+  using BufferViewHandle = BufferBlock::BufferViewHandle;
+  using LaunchParams = Resource::LaunchParams;
 
   HostStackFreelistPolicy() = default;
   HostStackFreelistPolicy(const HostStackFreelistPolicy &) = delete;
