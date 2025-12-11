@@ -5,40 +5,56 @@
 #include <cstddef>
 #include <utility>
 
-#include <orteaf/internal/runtime/mps/resource/mps_reuse_ticket.h>
 #include <orteaf/internal/base/small_vector.h>
+#include <orteaf/internal/runtime/mps/resource/mps_fence_token.h>
+#include <orteaf/internal/runtime/mps/resource/mps_reuse_ticket.h>
 
 namespace orteaf::internal::runtime::mps::resource {
 
 class MpsReuseToken {
 public:
-    using Ticket = MpsReuseTicket;
-    static constexpr std::size_t kInlineCapacity = 4;
+  using Ticket = MpsReuseTicket;
+  static constexpr std::size_t kInlineCapacity = 4;
 
-    MpsReuseToken() = default;
-    MpsReuseToken(const MpsReuseToken&) = delete;
-    MpsReuseToken& operator=(const MpsReuseToken&) = delete;
-    MpsReuseToken(MpsReuseToken&&) noexcept = default;
-    MpsReuseToken& operator=(MpsReuseToken&&) noexcept = default;
-    ~MpsReuseToken() = default;
+  static MpsReuseToken fromFenceToken(MpsFenceToken &&token) {
+    MpsReuseToken reuse_token;
+    for (const auto &ticket : token) {
+      reuse_token.addTicket(Ticket(ticket));
+    }
+    token.clear();
+    return reuse_token;
+  }
 
-    bool empty() const noexcept { return tickets_.empty(); }
-    std::size_t size() const noexcept { return tickets_.size(); }
+  MpsReuseToken() = default;
 
-    void addTicket(Ticket&& ticket) { tickets_.pushBack(std::move(ticket)); }
+  explicit MpsReuseToken(MpsFenceToken &&token)
+      : MpsReuseToken(fromFenceToken(std::move(token))) {}
 
-    void clear() noexcept { tickets_.clear(); }
+  MpsReuseToken(const MpsReuseToken &) = delete;
+  MpsReuseToken &operator=(const MpsReuseToken &) = delete;
+  MpsReuseToken(MpsReuseToken &&) noexcept = default;
+  MpsReuseToken &operator=(MpsReuseToken &&) noexcept = default;
+  ~MpsReuseToken() = default;
 
-    const Ticket& operator[](std::size_t index) const noexcept { return tickets_[index]; }
-    Ticket& operator[](std::size_t index) noexcept { return tickets_[index]; }
+  bool empty() const noexcept { return tickets_.empty(); }
+  std::size_t size() const noexcept { return tickets_.size(); }
 
-    const Ticket* begin() const noexcept { return tickets_.begin(); }
-    const Ticket* end() const noexcept { return tickets_.end(); }
-    Ticket* begin() noexcept { return tickets_.begin(); }
-    Ticket* end() noexcept { return tickets_.end(); }
+  void addTicket(Ticket &&ticket) { tickets_.pushBack(std::move(ticket)); }
+
+  void clear() noexcept { tickets_.clear(); }
+
+  const Ticket &operator[](std::size_t index) const noexcept {
+    return tickets_[index];
+  }
+  Ticket &operator[](std::size_t index) noexcept { return tickets_[index]; }
+
+  const Ticket *begin() const noexcept { return tickets_.begin(); }
+  const Ticket *end() const noexcept { return tickets_.end(); }
+  Ticket *begin() noexcept { return tickets_.begin(); }
+  Ticket *end() noexcept { return tickets_.end(); }
 
 private:
-    ::orteaf::internal::base::SmallVector<Ticket, kInlineCapacity> tickets_{};
+  ::orteaf::internal::base::SmallVector<Ticket, kInlineCapacity> tickets_{};
 };
 
 } // namespace orteaf::internal::runtime::mps::resource

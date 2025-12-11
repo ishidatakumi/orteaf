@@ -2,10 +2,9 @@
 
 #if ORTEAF_ENABLE_MPS
 
-#include <utility>
-
 #include <orteaf/internal/base/handle.h>
 #include <orteaf/internal/runtime/mps/platform/wrapper/mps_event.h>
+#include <orteaf/internal/runtime/mps/resource/mps_fence_ticket.h>
 
 namespace orteaf::internal::runtime::mps::resource {
 
@@ -18,6 +17,9 @@ public:
           command_buffer) noexcept
       : command_queue_handle_(handle), command_buffer_(command_buffer) {}
 
+  MpsReuseTicket(const MpsFenceTicket &fence_ticket) noexcept
+      : command_queue_handle_(fence_ticket.commandQueueHandle()),
+        command_buffer_(fence_ticket.commandBuffer()) {}
   MpsReuseTicket(const MpsReuseTicket &) = delete;
   MpsReuseTicket &operator=(const MpsReuseTicket &) = delete;
   MpsReuseTicket(MpsReuseTicket &&other) noexcept { moveFrom(other); }
