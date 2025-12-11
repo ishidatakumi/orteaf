@@ -25,9 +25,12 @@ namespace orteaf::internal::runtime::allocator::resource::mps {
 // buffers at offset 0.
 class MpsResource {
 public:
+  static constexpr auto BackendType = ::orteaf::internal::backend::Backend::Mps;
   using BufferView = ::orteaf::internal::runtime::mps::resource::MpsBufferView;
+  using BufferBlock = ::orteaf::internal::runtime::allocator::BufferBlock<
+      BackendType>;
   using BufferResource = ::orteaf::internal::runtime::allocator::BufferResource<
-      ::orteaf::internal::backend::Backend::Mps>;
+      BackendType>;
   using FenceToken = ::orteaf::internal::runtime::mps::resource::MpsFenceToken;
   using ReuseToken = ::orteaf::internal::runtime::mps::resource::MpsReuseToken;
   using MPSBuffer_t =
@@ -39,7 +42,7 @@ public:
   };
 
   static constexpr ::orteaf::internal::backend::Backend backend_type_static() {
-    return ::orteaf::internal::backend::Backend::Mps;
+    return BackendType;
   }
 
   constexpr ::orteaf::internal::backend::Backend backend_type() const noexcept {
