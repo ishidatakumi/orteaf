@@ -13,27 +13,22 @@
 
 #include <string>
 
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_size.h"
+#include "orteaf/internal/runtime/mps/platform/wrapper/mps_types.h"
 
 namespace orteaf::internal::runtime::mps::platform::wrapper {
-
-struct MPSDevice_st; using MPSDevice_t = MPSDevice_st*;
-struct MPSDeviceArray_st; using MPSDeviceArray_t = MPSDeviceArray_st*;
-
-static_assert(sizeof(MPSDevice_t) == sizeof(void*), "MPSDevice must be pointer-sized.");
 
 /**
  * @brief Get the system default Metal device.
  * @return Opaque device handle, or nullptr when unavailable/disabled.
  */
-MPSDevice_t getDevice();
+MpsDevice_t getDevice();
 
 /**
  * @brief Get a Metal device by index from the system list.
  * @param device_id Zero-based device index
  * @return Opaque device handle, or nullptr if out of range/unavailable.
  */
-MPSDevice_t getDevice(MPSInt_t device_id);
+MpsDevice_t getDevice(MpsInt_t device_id);
 
 /**
  * @brief Get the number of Metal devices available.
@@ -45,34 +40,34 @@ int getDeviceCount();
  * @brief Retain a device handle (increments reference count).
  * @param device Opaque device handle; nullptr is ignored.
  */
-void deviceRetain(MPSDevice_t device);
+void deviceRetain(MpsDevice_t device);
 
 /**
  * @brief Release a device handle (decrements reference count).
  * @param device Opaque device handle; nullptr is ignored.
  */
-void deviceRelease(MPSDevice_t device);
+void deviceRelease(MpsDevice_t device);
 
 /**
  * @brief Get an array of all Metal devices.
  * @return Opaque array handle, or nullptr when unavailable/disabled.
  */
-MPSDeviceArray_t getDeviceArray();
+MpsDeviceArray_t getDeviceArray();
 
 /**
  * @brief Human-readable device name (e.g., "Apple M4 Pro").
  */
-std::string getDeviceName(MPSDevice_t device);
+std::string getDeviceName(MpsDevice_t device);
 
 /**
  * @brief Vendor hint string for architecture detection (typically "apple").
  */
-std::string getDeviceVendor(MPSDevice_t device);
+std::string getDeviceVendor(MpsDevice_t device);
 
 /**
  * @brief Metal family hint (e.g., "m2", "m3", "m4") derived from device capabilities.
  */
-std::string getDeviceMetalFamily(MPSDevice_t device);
+std::string getDeviceMetalFamily(MpsDevice_t device);
 
 } // namespace orteaf::internal::runtime::mps::platform::wrapper
 

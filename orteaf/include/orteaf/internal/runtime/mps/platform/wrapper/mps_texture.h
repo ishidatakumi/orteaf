@@ -6,65 +6,57 @@
 
 #if ORTEAF_ENABLE_MPS
 
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_device.h"
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_heap.h"
-
 #include <cstddef>
 #include <cstdint>
 
+#include "orteaf/internal/runtime/mps/platform/wrapper/mps_types.h"
+
 namespace orteaf::internal::runtime::mps::platform::wrapper {
-
-struct MPSTextureDescriptor_st; using MPSTextureDescriptor_t = MPSTextureDescriptor_st*;
-struct MPSTexture_st; using MPSTexture_t = MPSTexture_st*;
-
-static_assert(sizeof(MPSTextureDescriptor_t) == sizeof(void*), "MPSTextureDescriptor must be pointer-sized.");
-static_assert(sizeof(MPSTexture_t) == sizeof(void*), "MPSTexture must be pointer-sized.");
-
-using MPSTextureType_t = std::uint32_t;
-using MPSPixelFormat_t = std::uint32_t;
-using MPSStorageMode_t = std::uint32_t;
-using MPSCPUCacheMode_t = std::uint32_t;
-using MPSHazardTrackingMode_t = std::uint32_t;
 
 /** Default values that mirror Metal enums. */
 inline constexpr MPSTextureType_t kMPSTextureType2D = 2;
 inline constexpr MPSPixelFormat_t kMPSPixelFormatRGBA8Unorm = 70; // MTLPixelFormatRGBA8Unorm
 
-/** Create an empty `MTLTextureDescriptor`. */
-[[nodiscard]] MPSTextureDescriptor_t createTextureDescriptor();
-/** Destroy a descriptor; ignores nullptr. */
-void destroyTextureDescriptor(MPSTextureDescriptor_t descriptor);
+[[nodiscard]] MpsTextureDescriptor_t createTextureDescriptor();
+void destroyTextureDescriptor(MpsTextureDescriptor_t descriptor);
 
-/** Configure the descriptor. */
-void setTextureDescriptorType(MPSTextureDescriptor_t descriptor, MPSTextureType_t type);
-void setTextureDescriptorPixelFormat(MPSTextureDescriptor_t descriptor, MPSPixelFormat_t pixel_format);
-void setTextureDescriptorWidth(MPSTextureDescriptor_t descriptor, std::size_t width);
-void setTextureDescriptorHeight(MPSTextureDescriptor_t descriptor, std::size_t height);
-void setTextureDescriptorDepth(MPSTextureDescriptor_t descriptor, std::size_t depth);
-void setTextureDescriptorArrayLength(MPSTextureDescriptor_t descriptor, std::size_t length);
-void setTextureDescriptorMipmapLevelCount(MPSTextureDescriptor_t descriptor, std::size_t mip_levels);
-void setTextureDescriptorStorageMode(MPSTextureDescriptor_t descriptor, MPSStorageMode_t storage_mode);
-void setTextureDescriptorCPUCacheMode(MPSTextureDescriptor_t descriptor, MPSCPUCacheMode_t cache_mode);
-void setTextureDescriptorHazardTrackingMode(MPSTextureDescriptor_t descriptor, MPSHazardTrackingMode_t hazard_mode);
+void setTextureDescriptorType(MpsTextureDescriptor_t descriptor,
+                              MPSTextureType_t type);
+void setTextureDescriptorPixelFormat(MpsTextureDescriptor_t descriptor,
+                                     MPSPixelFormat_t pixel_format);
+void setTextureDescriptorWidth(MpsTextureDescriptor_t descriptor,
+                               std::size_t width);
+void setTextureDescriptorHeight(MpsTextureDescriptor_t descriptor,
+                                std::size_t height);
+void setTextureDescriptorDepth(MpsTextureDescriptor_t descriptor,
+                               std::size_t depth);
+void setTextureDescriptorArrayLength(MpsTextureDescriptor_t descriptor,
+                                     std::size_t length);
+void setTextureDescriptorMipmapLevelCount(MpsTextureDescriptor_t descriptor,
+                                          std::size_t mip_levels);
+void setTextureDescriptorStorageMode(MpsTextureDescriptor_t descriptor,
+                                     MPSStorageMode_t storage_mode);
+void setTextureDescriptorCPUCacheMode(MpsTextureDescriptor_t descriptor,
+                                      MPSCPUCacheMode_t cache_mode);
+void setTextureDescriptorHazardTrackingMode(
+    MpsTextureDescriptor_t descriptor, MPSHazardTrackingMode_t hazard_mode);
 
-/** Create textures from device or heap. */
-[[nodiscard]] MPSTexture_t createTexture(MPSDevice_t device, MPSTextureDescriptor_t descriptor);
-[[nodiscard]] MPSTexture_t createTextureFromHeap(MPSHeap_t heap, MPSTextureDescriptor_t descriptor);
+[[nodiscard]] MpsTexture_t createTexture(MpsDevice_t device,
+                                        MpsTextureDescriptor_t descriptor);
+[[nodiscard]] MpsTexture_t createTextureFromHeap(MpsHeap_t heap,
+                                                 MpsTextureDescriptor_t descriptor);
 
-/** Destroy a texture; ignores nullptr. */
-void destroyTexture(MPSTexture_t texture);
+void destroyTexture(MpsTexture_t texture);
 
-/** Texture information helpers. */
-std::size_t textureWidth(MPSTexture_t texture);
-std::size_t textureHeight(MPSTexture_t texture);
-std::size_t textureDepth(MPSTexture_t texture);
-std::size_t textureMipmapLevelCount(MPSTexture_t texture);
-std::size_t textureArrayLength(MPSTexture_t texture);
-MPSPixelFormat_t texturePixelFormat(MPSTexture_t texture);
+std::size_t textureWidth(MpsTexture_t texture);
+std::size_t textureHeight(MpsTexture_t texture);
+std::size_t textureDepth(MpsTexture_t texture);
+std::size_t textureMipmapLevelCount(MpsTexture_t texture);
+std::size_t textureArrayLength(MpsTexture_t texture);
+MPSPixelFormat_t texturePixelFormat(MpsTexture_t texture);
 
-/** CPU access helpers (host read/write). */
-void getTextureBytes(MPSTexture_t texture,
-                     void* out_bytes,
+void getTextureBytes(MpsTexture_t texture,
+                     void *out_bytes,
                      std::size_t bytes_per_row,
                      std::size_t bytes_per_image,
                      std::size_t region_x,
@@ -76,8 +68,8 @@ void getTextureBytes(MPSTexture_t texture,
                      std::size_t mip_level = 0,
                      std::size_t slice = 0);
 
-void replaceTextureRegion(MPSTexture_t texture,
-                          const void* bytes,
+void replaceTextureRegion(MpsTexture_t texture,
+                          const void *bytes,
                           std::size_t bytes_per_row,
                           std::size_t bytes_per_image,
                           std::size_t region_x,

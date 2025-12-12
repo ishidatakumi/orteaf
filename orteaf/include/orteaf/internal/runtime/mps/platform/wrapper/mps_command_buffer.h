@@ -6,8 +6,9 @@
 
 #if ORTEAF_ENABLE_MPS
 
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_command_queue.h"
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_event.h"
+#include <cstdint>
+
+#include "orteaf/internal/runtime/mps/platform/wrapper/mps_types.h"
 
 namespace orteaf::internal::runtime::mps::platform::wrapper {
 
@@ -15,37 +16,39 @@ namespace orteaf::internal::runtime::mps::platform::wrapper {
  * @brief Create a command buffer from a command queue.
  * @return Opaque command buffer handle, or nullptr when unavailable/disabled.
  */
-MPSCommandBuffer_t createCommandBuffer(MPSCommandQueue_t command_queue);
+MpsCommandBuffer_t createCommandBuffer(MpsCommandQueue_t command_queue);
 
 /**
  * @brief Destroy a command buffer.
  */
-void destroyCommandBuffer(MPSCommandBuffer_t command_buffer);
+void destroyCommandBuffer(MpsCommandBuffer_t command_buffer);
 
 /**
  * @brief Encode a signal to an event with the given value.
  */
-void encodeSignalEvent(MPSCommandBuffer_t command_buffer, MPSEvent_t event, uint32_t value);
+void encodeSignalEvent(MpsCommandBuffer_t command_buffer, MpsEvent_t event,
+                       uint32_t value);
 
 /**
  * @brief Encode a wait on an event until it reaches the given value.
  */
-void encodeWait(MPSCommandBuffer_t command_buffer, MPSEvent_t event, uint32_t value);
+void encodeWait(MpsCommandBuffer_t command_buffer, MpsEvent_t event,
+                uint32_t value);
 
 /**
  * @brief Commit the command buffer for execution.
  */
-void commit(MPSCommandBuffer_t command_buffer);
+void commit(MpsCommandBuffer_t command_buffer);
 
 /**
  * @brief Check if the command buffer has completed execution.
  */
-bool isCompleted(MPSCommandBuffer_t command_buffer);
+bool isCompleted(MpsCommandBuffer_t command_buffer);
 
 /**
  * @brief Block until the command buffer has completed execution.
  */
-void waitUntilCompleted(MPSCommandBuffer_t command_buffer);
+void waitUntilCompleted(MpsCommandBuffer_t command_buffer);
 
 } // namespace orteaf::internal::runtime::mps::platform::wrapper
 

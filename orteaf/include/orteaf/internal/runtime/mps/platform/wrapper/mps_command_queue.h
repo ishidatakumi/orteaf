@@ -10,26 +10,22 @@
 
 #if ORTEAF_ENABLE_MPS
 
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_device.h"
+#include "orteaf/internal/runtime/mps/platform/wrapper/mps_types.h"
 
 namespace orteaf::internal::runtime::mps::platform::wrapper {
-
-struct MPSCommandQueue_st; using MPSCommandQueue_t = MPSCommandQueue_st*;
-
-static_assert(sizeof(MPSCommandQueue_t) == sizeof(void*), "MPSCommandQueue must be pointer-sized.");
 
 /**
  * @brief Create a command queue for a device.
  * @param device Opaque Metal device handle
  * @return Opaque command queue handle, or nullptr when unavailable/disabled.
  */
-MPSCommandQueue_t createCommandQueue(MPSDevice_t device);
+MpsCommandQueue_t createCommandQueue(MpsDevice_t device);
 
 /**
  * @brief Destroy a command queue.
  * @param command_queue Opaque queue handle; nullptr is ignored.
  */
-void destroyCommandQueue(MPSCommandQueue_t command_queue);
+void destroyCommandQueue(MpsCommandQueue_t command_queue);
 
 } // namespace orteaf::internal::runtime::mps::platform::wrapper
 

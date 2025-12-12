@@ -6,15 +6,9 @@
 
 #if ORTEAF_ENABLE_MPS
 
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_function.h"
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_device.h"
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_error.h"
+#include "orteaf/internal/runtime/mps/platform/wrapper/mps_types.h"
 
 namespace orteaf::internal::runtime::mps::platform::wrapper {
-
-struct MPSComputePipelineState_st; using MPSComputePipelineState_t = MPSComputePipelineState_st*;
-
-static_assert(sizeof(MPSComputePipelineState_t) == sizeof(void*), "MPSComputePipelineState must be pointer-sized.");
 
 /**
  * @brief Create a compute pipeline state from a function.
@@ -23,12 +17,13 @@ static_assert(sizeof(MPSComputePipelineState_t) == sizeof(void*), "MPSComputePip
  * @param error Optional error object out (bridged to NSError**)
  * @return Opaque pipeline state, or nullptr when unavailable/disabled.
  */
-MPSComputePipelineState_t createComputePipelineState(MPSDevice_t device, MPSFunction_t function, MPSError_t* error = nullptr);
+MpsComputePipelineState_t createComputePipelineState(
+    MpsDevice_t device, MpsFunction_t function, MpsError_t *error = nullptr);
 
 /**
  * @brief Destroy a pipeline state; ignores nullptr.
  */
-void destroyComputePipelineState(MPSComputePipelineState_t pipeline_state);
+void destroyComputePipelineState(MpsComputePipelineState_t pipeline_state);
 
 } // namespace orteaf::internal::runtime::mps::platform::wrapper
 

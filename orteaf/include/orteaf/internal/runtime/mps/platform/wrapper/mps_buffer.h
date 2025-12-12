@@ -6,17 +6,13 @@
 
 #if ORTEAF_ENABLE_MPS
 
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_heap.h"
-
 #include <cstddef>
+
+#include "orteaf/internal/runtime/mps/platform/wrapper/mps_types.h"
 
 namespace orteaf::internal::runtime::mps::platform::wrapper {
 
-struct MPSBuffer_st; using MPSBuffer_t = MPSBuffer_st*;
-using MPSBufferUsage_t = unsigned long;
-inline constexpr MPSBufferUsage_t kMPSDefaultBufferUsage = 0;
-
-static_assert(sizeof(MPSBuffer_t) == sizeof(void*), "MPSBuffer must be pointer-sized.");
+inline constexpr MpsBufferUsage_t kMPSDefaultBufferUsage = 0;
 
 /**
  * @brief Create a new Metal buffer.
@@ -25,7 +21,8 @@ static_assert(sizeof(MPSBuffer_t) == sizeof(void*), "MPSBuffer must be pointer-s
  * @param usage Resource options bitmask (defaults to 0)
  * @return Opaque buffer handle, or nullptr when unavailable/disabled.
  */
-MPSBuffer_t createBuffer(MPSHeap_t heap, size_t size, MPSBufferUsage_t usage = kMPSDefaultBufferUsage);
+MpsBuffer_t createBuffer(MpsHeap_t heap, size_t size,
+                         MpsBufferUsage_t usage = kMPSDefaultBufferUsage);
 
 /**
  * @brief Create a new Metal buffer at an explicit heap offset.
@@ -35,22 +32,24 @@ MPSBuffer_t createBuffer(MPSHeap_t heap, size_t size, MPSBufferUsage_t usage = k
  * @param usage Resource options bitmask (defaults to 0)
  * @return Opaque buffer handle, or nullptr when unavailable/disabled.
  */
-MPSBuffer_t createBufferWithOffset(MPSHeap_t heap, size_t size, size_t offset, MPSBufferUsage_t usage = kMPSDefaultBufferUsage);
+MpsBuffer_t createBufferWithOffset(
+    MpsHeap_t heap, size_t size, size_t offset,
+    MpsBufferUsage_t usage = kMPSDefaultBufferUsage);
 
 /**
  * @brief Destroy a Metal buffer; ignores nullptr.
  */
-void destroyBuffer(MPSBuffer_t buffer);
+void destroyBuffer(MpsBuffer_t buffer);
 
 /**
  * @brief Get raw CPU pointer to buffer contents (const).
  */
-const void* getBufferContentsConst(MPSBuffer_t buffer);
+const void *getBufferContentsConst(MpsBuffer_t buffer);
 
 /**
  * @brief Get raw CPU pointer to buffer contents (mutable).
  */
-void* getBufferContents(MPSBuffer_t buffer);
+void *getBufferContents(MpsBuffer_t buffer);
 
 } // namespace orteaf::internal::runtime::mps::platform::wrapper
 

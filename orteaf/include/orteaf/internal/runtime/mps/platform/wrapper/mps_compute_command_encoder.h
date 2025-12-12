@@ -6,36 +6,33 @@
 
 #if ORTEAF_ENABLE_MPS
 
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_command_buffer.h"
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_buffer.h"
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_compute_pipeline_state.h"
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_size.h"
-
 #include <cstddef>
+
+#include "orteaf/internal/runtime/mps/platform/wrapper/mps_types.h"
 
 namespace orteaf::internal::runtime::mps::platform::wrapper {
 
-struct MPSComputeCommandEncoder_st; using MPSComputeCommandEncoder_t = MPSComputeCommandEncoder_st*;
-
-static_assert(sizeof(MPSComputeCommandEncoder_t) == sizeof(void*), "MPSComputeCommandEncoder must be pointer-sized.");
-
 /** Create a compute command encoder from a command buffer. */
-MPSComputeCommandEncoder_t createComputeCommandEncoder(MPSCommandBuffer_t command_buffer);
+MpsComputeCommandEncoder_t createComputeCommandEncoder(
+    MpsCommandBuffer_t command_buffer);
 /** Destroy a compute command encoder; ignores nullptr. */
-void destroyComputeCommandEncoder(MPSComputeCommandEncoder_t compute_command_encoder);
+void destroyComputeCommandEncoder(MpsComputeCommandEncoder_t compute_command_encoder);
 /** End encoding on the compute command encoder. */
-void endEncoding(MPSComputeCommandEncoder_t compute_command_encoder);
+void endEncoding(MpsComputeCommandEncoder_t compute_command_encoder);
 
 /** Bind a compute pipeline state. */
-void setPipelineState(MPSComputeCommandEncoder_t compute_command_encoder, MPSComputePipelineState_t pipeline_state);
+void setPipelineState(MpsComputeCommandEncoder_t compute_command_encoder,
+                      MpsComputePipelineState_t pipeline_state);
 /** Bind a buffer at the given index with an offset. */
-void setBuffer(MPSComputeCommandEncoder_t compute_command_encoder, MPSBuffer_t buffer, size_t offset, size_t index);
+void setBuffer(MpsComputeCommandEncoder_t compute_command_encoder,
+               MpsBuffer_t buffer, size_t offset, size_t index);
 /** Bind raw bytes at the given index. */
-void setBytes(MPSComputeCommandEncoder_t compute_command_encoder, const void* bytes, size_t length, size_t index);
+void setBytes(MpsComputeCommandEncoder_t compute_command_encoder,
+              const void* bytes, size_t length, size_t index);
 /** Dispatch threadgroups with the specified sizes. */
-void setThreadgroups(MPSComputeCommandEncoder_t compute_command_encoder,
-                      MPSSize_t threadgroups,
-                      MPSSize_t threads_per_threadgroup);
+void setThreadgroups(MpsComputeCommandEncoder_t compute_command_encoder,
+                     MpsSize_t threadgroups,
+                     MpsSize_t threads_per_threadgroup);
 
 } // namespace orteaf::internal::runtime::mps::platform::wrapper
 

@@ -6,31 +6,26 @@
 
 #if ORTEAF_ENABLE_MPS
 
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_device.h"
-#include "orteaf/internal/runtime/mps/platform/wrapper/mps_command_queue.h"
+#include <cstdint>
+
+#include "orteaf/internal/runtime/mps/platform/wrapper/mps_types.h"
 
 namespace orteaf::internal::runtime::mps::platform::wrapper {
 
-struct MPSEvent_st;
-struct MPSCommandBuffer_st;
-using MPSEvent_t = MPSEvent_st*;
-using MPSCommandBuffer_t = MPSCommandBuffer_st*;
-
-static_assert(sizeof(MPSCommandBuffer_t) == sizeof(void*), "MPSCommandBuffer must be pointer-sized.");
-static_assert(sizeof(MPSEvent_t) == sizeof(void*), "MPSEvent_t must be pointer-sized.");
-
 /** Create a shared event for a device (initial value = 0). */
-MPSEvent_t createEvent(MPSDevice_t device);
+MpsEvent_t createEvent(MpsDevice_t device);
 /** Destroy a shared event; ignores nullptr. */
-void destroyEvent(MPSEvent_t event);
+void destroyEvent(MpsEvent_t event);
 /** Record/signal event from a command buffer; or set directly when null. */
-void recordEvent(MPSEvent_t event, MPSCommandBuffer_t command_buffer, uint64_t value = 1);
+void recordEvent(MpsEvent_t event, MpsCommandBuffer_t command_buffer,
+                 uint64_t value = 1);
 /** Check if event's signaledValue >= expected_value. */
-bool queryEvent(MPSEvent_t event, uint64_t expected_value = 1);
+bool queryEvent(MpsEvent_t event, uint64_t expected_value = 1);
 /** Get current signaledValue for the event. */
-uint64_t eventValue(MPSEvent_t event);
+uint64_t eventValue(MpsEvent_t event);
 /** Encode wait in a command buffer until event reaches value. */
-void waitEvent(MPSCommandBuffer_t command_buffer, MPSEvent_t event, uint64_t value = 1);
+void waitEvent(MpsCommandBuffer_t command_buffer, MpsEvent_t event,
+               uint64_t value = 1);
 
 } // namespace orteaf::internal::runtime::mps::platform::wrapper
 
