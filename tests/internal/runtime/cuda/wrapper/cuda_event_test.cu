@@ -36,19 +36,19 @@ protected:
         }
     }
 
-    cuda::CUdevice_t device_{0};
-    cuda::CUcontext_t context_ = nullptr;
+    cuda::CudaDevice_t device_{0};
+    cuda::CudaContext_t context_ = nullptr;
 };
 
 TEST_F(CudaEventTest, CreateEventSucceeds) {
-    cuda::CUevent_t event = cuda::createEvent();
+    cuda::CudaEvent_t event = cuda::createEvent();
     EXPECT_NE(event, nullptr);
     cuda::destroyEvent(event);
 }
 
 TEST_F(CudaEventTest, CreateMultipleEvents) {
-    cuda::CUevent_t event1 = cuda::createEvent();
-    cuda::CUevent_t event2 = cuda::createEvent();
+    cuda::CudaEvent_t event1 = cuda::createEvent();
+    cuda::CudaEvent_t event2 = cuda::createEvent();
     EXPECT_NE(event1, nullptr);
     EXPECT_NE(event2, nullptr);
     EXPECT_NE(event1, event2);
@@ -57,7 +57,7 @@ TEST_F(CudaEventTest, CreateMultipleEvents) {
 }
 
 TEST_F(CudaEventTest, DestroyEventSucceeds) {
-    cuda::CUevent_t event = cuda::createEvent();
+    cuda::CudaEvent_t event = cuda::createEvent();
     EXPECT_NO_THROW(cuda::destroyEvent(event));
 }
 
@@ -66,15 +66,15 @@ TEST_F(CudaEventTest, DestroyEventNullptrNoOp) {
 }
 
 TEST_F(CudaEventTest, RecordEventSucceeds) {
-    cuda::CUstream_t stream = cuda::getStream();
-    cuda::CUevent_t event = cuda::createEvent();
+    cuda::CudaStream_t stream = cuda::getStream();
+    cuda::CudaEvent_t event = cuda::createEvent();
     EXPECT_NO_THROW(cuda::recordEvent(event, stream));
     cuda::destroyEvent(event);
     cuda::releaseStream(stream);
 }
 
 TEST_F(CudaEventTest, RecordEventNullptrEventThrows) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::NullPointer,
         [&]() { cuda::recordEvent(nullptr, stream); });
@@ -82,7 +82,7 @@ TEST_F(CudaEventTest, RecordEventNullptrEventThrows) {
 }
 
 TEST_F(CudaEventTest, RecordEventNullptrStreamThrows) {
-    cuda::CUevent_t event = cuda::createEvent();
+    cuda::CudaEvent_t event = cuda::createEvent();
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::NullPointer,
         [&]() { cuda::recordEvent(event, nullptr); });
@@ -90,8 +90,8 @@ TEST_F(CudaEventTest, RecordEventNullptrStreamThrows) {
 }
 
 TEST_F(CudaEventTest, QueryEventSucceeds) {
-    cuda::CUstream_t stream = cuda::getStream();
-    cuda::CUevent_t event = cuda::createEvent();
+    cuda::CudaStream_t stream = cuda::getStream();
+    cuda::CudaEvent_t event = cuda::createEvent();
     bool before = cuda::queryEvent(event);
     (void)before;
     cuda::recordEvent(event, stream);
@@ -107,9 +107,9 @@ TEST_F(CudaEventTest, QueryEventNullptrReturnsTrue) {
 }
 
 TEST_F(CudaEventTest, WaitEventSucceeds) {
-    cuda::CUstream_t stream1 = cuda::getStream();
-    cuda::CUstream_t stream2 = cuda::getStream();
-    cuda::CUevent_t event = cuda::createEvent();
+    cuda::CudaStream_t stream1 = cuda::getStream();
+    cuda::CudaStream_t stream2 = cuda::getStream();
+    cuda::CudaEvent_t event = cuda::createEvent();
     cuda::recordEvent(event, stream1);
     EXPECT_NO_THROW(cuda::waitEvent(stream2, event));
     cuda::synchronizeStream(stream1);
@@ -120,7 +120,7 @@ TEST_F(CudaEventTest, WaitEventSucceeds) {
 }
 
 TEST_F(CudaEventTest, WaitEventNullptrStreamThrows) {
-    cuda::CUevent_t event = cuda::createEvent();
+    cuda::CudaEvent_t event = cuda::createEvent();
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::NullPointer,
         [&]() { cuda::waitEvent(nullptr, event); });
@@ -128,7 +128,7 @@ TEST_F(CudaEventTest, WaitEventNullptrStreamThrows) {
 }
 
 TEST_F(CudaEventTest, WaitEventNullptrEventThrows) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::NullPointer,
         [&]() { cuda::waitEvent(stream, nullptr); });
@@ -136,8 +136,8 @@ TEST_F(CudaEventTest, WaitEventNullptrEventThrows) {
 }
 
 TEST_F(CudaEventTest, EventSynchronization) {
-    cuda::CUstream_t stream = cuda::getStream();
-    cuda::CUevent_t event = cuda::createEvent();
+    cuda::CudaStream_t stream = cuda::getStream();
+    cuda::CudaEvent_t event = cuda::createEvent();
     cuda::recordEvent(event, stream);
 
     bool completed = false;
@@ -156,8 +156,8 @@ TEST_F(CudaEventTest, EventSynchronization) {
 }
 
 TEST_F(CudaEventTest, EventLifecycle) {
-    cuda::CUstream_t stream = cuda::getStream();
-    cuda::CUevent_t event = cuda::createEvent();
+    cuda::CudaStream_t stream = cuda::getStream();
+    cuda::CudaEvent_t event = cuda::createEvent();
     cuda::recordEvent(event, stream);
     bool ready = cuda::queryEvent(event);
     EXPECT_TRUE(ready || !ready);

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "orteaf/internal/backend/backend.h"
+#include "orteaf/internal/base/heap_vector.h"
 #include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/diagnostics/error/error_macros.h"
 #include "orteaf/internal/diagnostics/log/log.h"

@@ -34,19 +34,19 @@ protected:
         }
     }
 
-    cuda::CUdevice_t device_{0};
-    cuda::CUcontext_t context_ = nullptr;
+    cuda::CudaDevice_t device_{0};
+    cuda::CudaContext_t context_ = nullptr;
 };
 
 TEST_F(CudaStreamTest, GetStreamSucceeds) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     EXPECT_NE(stream, nullptr);
     cuda::releaseStream(stream);
 }
 
 TEST_F(CudaStreamTest, CreateMultipleStreams) {
-    cuda::CUstream_t stream1 = cuda::getStream();
-    cuda::CUstream_t stream2 = cuda::getStream();
+    cuda::CudaStream_t stream1 = cuda::getStream();
+    cuda::CudaStream_t stream2 = cuda::getStream();
     EXPECT_NE(stream1, nullptr);
     EXPECT_NE(stream2, nullptr);
     EXPECT_NE(stream1, stream2);
@@ -55,7 +55,7 @@ TEST_F(CudaStreamTest, CreateMultipleStreams) {
 }
 
 TEST_F(CudaStreamTest, ReleaseStreamSucceeds) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     EXPECT_NO_THROW(cuda::releaseStream(stream));
 }
 
@@ -64,7 +64,7 @@ TEST_F(CudaStreamTest, ReleaseStreamNullptrNoOp) {
 }
 
 TEST_F(CudaStreamTest, SynchronizeStreamSucceeds) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     EXPECT_NO_THROW(cuda::synchronizeStream(stream));
     cuda::releaseStream(stream);
 }
@@ -76,9 +76,9 @@ TEST_F(CudaStreamTest, SynchronizeStreamNullptrThrows) {
 }
 
 TEST_F(CudaStreamTest, WaitStreamSucceeds) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     constexpr size_t size = sizeof(uint32_t);
-    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t dev_ptr = cuda::alloc(size);
     EXPECT_NE(dev_ptr, 0);
     EXPECT_NO_THROW(cuda::writeStream(stream, dev_ptr, 42));
     EXPECT_NO_THROW(cuda::waitStream(stream, dev_ptr, 42));
@@ -87,9 +87,9 @@ TEST_F(CudaStreamTest, WaitStreamSucceeds) {
 }
 
 TEST_F(CudaStreamTest, WriteStreamSucceeds) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     constexpr size_t size = sizeof(uint32_t);
-    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t dev_ptr = cuda::alloc(size);
     EXPECT_NE(dev_ptr, 0);
     EXPECT_NO_THROW(cuda::writeStream(stream, dev_ptr, 123));
     cuda::free(dev_ptr, size);
@@ -98,7 +98,7 @@ TEST_F(CudaStreamTest, WriteStreamSucceeds) {
 
 TEST_F(CudaStreamTest, WaitStreamNullptrThrows) {
     constexpr size_t size = sizeof(uint32_t);
-    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t dev_ptr = cuda::alloc(size);
     EXPECT_NE(dev_ptr, 0);
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::NullPointer,
@@ -107,7 +107,7 @@ TEST_F(CudaStreamTest, WaitStreamNullptrThrows) {
 }
 
 TEST_F(CudaStreamTest, WaitStreamZeroAddrThrows) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
         [&]() { cuda::waitStream(stream, 0, 42); });
@@ -116,7 +116,7 @@ TEST_F(CudaStreamTest, WaitStreamZeroAddrThrows) {
 
 TEST_F(CudaStreamTest, WriteStreamNullptrThrows) {
     constexpr size_t size = sizeof(uint32_t);
-    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t dev_ptr = cuda::alloc(size);
     EXPECT_NE(dev_ptr, 0);
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::NullPointer,
@@ -125,7 +125,7 @@ TEST_F(CudaStreamTest, WriteStreamNullptrThrows) {
 }
 
 TEST_F(CudaStreamTest, WriteStreamZeroAddrThrows) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
         [&]() { cuda::writeStream(stream, 0, 123); });
@@ -133,7 +133,7 @@ TEST_F(CudaStreamTest, WriteStreamZeroAddrThrows) {
 }
 
 TEST_F(CudaStreamTest, StreamLifecycle) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     EXPECT_NE(stream, nullptr);
     cuda::synchronizeStream(stream);
     cuda::releaseStream(stream);

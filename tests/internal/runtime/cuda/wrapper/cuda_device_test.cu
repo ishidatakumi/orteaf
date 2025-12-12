@@ -35,7 +35,7 @@ TEST_F(CudaDeviceTest, GetDeviceCountSucceeds) {
 TEST_F(CudaDeviceTest, GetDeviceForValidIndex) {
     int count = cuda::getDeviceCount();
     if (count > 0) {
-        cuda::CUdevice_t device = cuda::getDevice(0);
+        cuda::CudaDevice_t device = cuda::getDevice(0);
         // CUdevice is an integer type, and device 0 can legitimately be 0
         // Verify the device is valid by querying its compute capability
         EXPECT_NO_THROW(cuda::getComputeCapability(device));
@@ -77,7 +77,7 @@ TEST_F(CudaDeviceTest, GetDeviceInvalidIndexThrows) {
 TEST_F(CudaDeviceTest, GetComputeCapabilitySucceeds) {
     int count = cuda::getDeviceCount();
     if (count > 0) {
-        cuda::CUdevice_t device = cuda::getDevice(0);
+        cuda::CudaDevice_t device = cuda::getDevice(0);
         cuda::ComputeCapability cap = cuda::getComputeCapability(device);
         EXPECT_GE(cap.major, 0);
         EXPECT_GE(cap.minor, 0);
@@ -96,7 +96,7 @@ TEST_F(CudaDeviceTest, GetComputeCapabilityInvalidDeviceThrows) {
     int count = cuda::getDeviceCount();
     if (count > 0) {
         // Use an invalid device handle (e.g., -1 or a value beyond valid range)
-        cuda::CUdevice_t invalid_device = static_cast<cuda::CUdevice_t>(-1);
+        cuda::CudaDevice_t invalid_device = static_cast<cuda::CudaDevice_t>(-1);
         ::orteaf::tests::ExpectError(
             ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
             [&] { cuda::getComputeCapability(invalid_device); });
@@ -125,7 +125,7 @@ TEST_F(CudaDeviceTest, GetSmCountCalculation) {
 TEST_F(CudaDeviceTest, GetSmCountFromRealDevice) {
     int count = cuda::getDeviceCount();
     if (count > 0) {
-        cuda::CUdevice_t device = cuda::getDevice(0);
+        cuda::CudaDevice_t device = cuda::getDevice(0);
         cuda::ComputeCapability cap = cuda::getComputeCapability(device);
         int sm_count = cuda::getSmCount(cap);
         EXPECT_GT(sm_count, 0);
@@ -142,9 +142,9 @@ TEST_F(CudaDeviceTest, EnumerateMultipleDevices) {
     int count = cuda::getDeviceCount();
     if (count > 1) {
         // Get all devices
-        std::vector<cuda::CUdevice_t> devices;
+        std::vector<cuda::CudaDevice_t> devices;
         for (int i = 0; i < count; ++i) {
-            cuda::CUdevice_t device = cuda::getDevice(static_cast<uint32_t>(i));
+            cuda::CudaDevice_t device = cuda::getDevice(static_cast<uint32_t>(i));
             // CUdevice is an integer type, and device 0 can legitimately be 0
             // We verify device validity by querying compute capability below
             devices.push_back(device);

@@ -40,8 +40,8 @@ protected:
         }
     }
     
-    cuda::CUdevice_t device_{0};
-    cuda::CUcontext_t context_ = nullptr;
+    cuda::CudaDevice_t device_{0};
+    cuda::CudaContext_t context_ = nullptr;
 };
 
 /**
@@ -49,7 +49,7 @@ protected:
  */
 TEST_F(CudaAllocCopyTest, AllocDeviceMemorySucceeds) {
     constexpr size_t size = 1024;
-    cuda::CUdeviceptr_t ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t ptr = cuda::alloc(size);
     EXPECT_NE(ptr, 0);
     
     cuda::free(ptr, size);
@@ -81,7 +81,7 @@ TEST_F(CudaAllocCopyTest, AllocLargeSizeFails) {
  */
 TEST_F(CudaAllocCopyTest, FreeDeviceMemorySucceeds) {
     constexpr size_t size = 1024;
-    cuda::CUdeviceptr_t ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t ptr = cuda::alloc(size);
     EXPECT_NE(ptr, 0);
     
     EXPECT_NO_THROW(cuda::free(ptr, size));
@@ -101,9 +101,9 @@ TEST_F(CudaAllocCopyTest, MultipleAllocations) {
     constexpr size_t size = 256;
     constexpr int num_allocs = 10;
     
-    std::vector<cuda::CUdeviceptr_t> ptrs;
+    std::vector<cuda::CudaDevicePtr_t> ptrs;
     for (int i = 0; i < num_allocs; ++i) {
-        cuda::CUdeviceptr_t ptr = cuda::alloc(size);
+        cuda::CudaDevicePtr_t ptr = cuda::alloc(size);
         EXPECT_NE(ptr, 0);
         ptrs.push_back(ptr);
     }
@@ -118,10 +118,10 @@ TEST_F(CudaAllocCopyTest, MultipleAllocations) {
  * @brief Test that asynchronous device memory allocation succeeds.
  */
 TEST_F(CudaAllocCopyTest, AllocStreamSucceeds) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     constexpr size_t size = 1024;
     
-    cuda::CUdeviceptr_t ptr = cuda::allocStream(size, stream);
+    cuda::CudaDevicePtr_t ptr = cuda::allocStream(size, stream);
     EXPECT_NE(ptr, 0);
     
     cuda::synchronizeStream(stream);
@@ -144,7 +144,7 @@ TEST_F(CudaAllocCopyTest, AllocStreamNullptrThrows) {
  * @brief Test that alloc_stream with zero size throws.
  */
 TEST_F(CudaAllocCopyTest, AllocStreamZeroBytesFails) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
         [&] { cuda::allocStream(0, stream); });
@@ -155,10 +155,10 @@ TEST_F(CudaAllocCopyTest, AllocStreamZeroBytesFails) {
  * @brief Test that asynchronous device memory deallocation works.
  */
 TEST_F(CudaAllocCopyTest, FreeStreamSucceeds) {
-    cuda::CUstream_t stream = cuda::getStream();
+    cuda::CudaStream_t stream = cuda::getStream();
     constexpr size_t size = 1024;
     
-    cuda::CUdeviceptr_t ptr = cuda::allocStream(size, stream);
+    cuda::CudaDevicePtr_t ptr = cuda::allocStream(size, stream);
     cuda::synchronizeStream(stream);
     
     EXPECT_NO_THROW(cuda::freeStream(ptr, size, stream));
@@ -171,7 +171,7 @@ TEST_F(CudaAllocCopyTest, FreeStreamSucceeds) {
  */
 TEST_F(CudaAllocCopyTest, FreeStreamNullptrThrows) {
     constexpr size_t size = 1024;
-    cuda::CUdeviceptr_t ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t ptr = cuda::alloc(size);
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::NullPointer,
         [&] { cuda::freeStream(ptr, size, nullptr); });
@@ -239,7 +239,7 @@ TEST_F(CudaAllocCopyTest, FreeHostNullptrThrows) {
  */
 TEST_F(CudaAllocCopyTest, CopyToHostSucceeds) {
     constexpr size_t size = sizeof(int);
-    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t dev_ptr = cuda::alloc(size);
     EXPECT_NE(dev_ptr, 0);
     
     // Write value to device memory via copy_to_device
@@ -259,7 +259,7 @@ TEST_F(CudaAllocCopyTest, CopyToHostSucceeds) {
  */
 TEST_F(CudaAllocCopyTest, CopyToDeviceSucceeds) {
     constexpr size_t size = sizeof(int);
-    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t dev_ptr = cuda::alloc(size);
     EXPECT_NE(dev_ptr, 0);
     
     int host_value = 456;
@@ -280,7 +280,7 @@ TEST_F(CudaAllocCopyTest, CopyDifferentSizes) {
     std::vector<size_t> sizes = {1, 4, 16, 64, 256, 1024, 4096};
     
     for (size_t size : sizes) {
-        cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+        cuda::CudaDevicePtr_t dev_ptr = cuda::alloc(size);
         EXPECT_NE(dev_ptr, 0);
         
         std::vector<uint8_t> host_data(size, 0xAB);
@@ -300,7 +300,7 @@ TEST_F(CudaAllocCopyTest, CopyDifferentSizes) {
  */
 TEST_F(CudaAllocCopyTest, CopyToHostInvalidPointerThrows) {
     constexpr size_t size = sizeof(int);
-    cuda::CUdeviceptr_t invalid_ptr = static_cast<cuda::CUdeviceptr_t>(-1);
+    cuda::CudaDevicePtr_t invalid_ptr = static_cast<cuda::CudaDevicePtr_t>(-1);
     std::array<std::byte, sizeof(int)> host_buffer{};
     void* host_ptr = host_buffer.data();
     ASSERT_NE(host_ptr, nullptr);
@@ -326,7 +326,7 @@ TEST_F(CudaAllocCopyTest, CopyToHostZeroPtrThrows) {
  */
 TEST_F(CudaAllocCopyTest, CopyToHostNullptrHostPtrThrows) {
     constexpr size_t size = sizeof(int);
-    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t dev_ptr = cuda::alloc(size);
     EXPECT_NE(dev_ptr, 0);
     
     ::orteaf::tests::ExpectError(
@@ -342,7 +342,7 @@ TEST_F(CudaAllocCopyTest, CopyToHostNullptrHostPtrThrows) {
 TEST_F(CudaAllocCopyTest, CopyToDeviceInvalidPointerThrows) {
     constexpr size_t size = sizeof(int);
     int host_value = 42;
-    cuda::CUdeviceptr_t invalid_ptr = static_cast<cuda::CUdeviceptr_t>(-1);
+    cuda::CudaDevicePtr_t invalid_ptr = static_cast<cuda::CudaDevicePtr_t>(-1);
     
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidParameter,
@@ -365,7 +365,7 @@ TEST_F(CudaAllocCopyTest, CopyToDeviceZeroPtrThrows) {
  */
 TEST_F(CudaAllocCopyTest, CopyToDeviceNullptrHostPtrThrows) {
     constexpr size_t size = sizeof(int);
-    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t dev_ptr = cuda::alloc(size);
     EXPECT_NE(dev_ptr, 0);
     
     ::orteaf::tests::ExpectError(
@@ -380,7 +380,7 @@ TEST_F(CudaAllocCopyTest, CopyToDeviceNullptrHostPtrThrows) {
  */
 TEST_F(CudaAllocCopyTest, CopyZeroSize) {
     constexpr size_t size = 1024;
-    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t dev_ptr = cuda::alloc(size);
     EXPECT_NE(dev_ptr, 0);
     
     int host_value = 789;
@@ -398,7 +398,7 @@ TEST_F(CudaAllocCopyTest, CompleteCycle) {
     constexpr int test_value = 0xDEADBEEF;
     
     // Allocate device memory
-    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t dev_ptr = cuda::alloc(size);
     EXPECT_NE(dev_ptr, 0);
     
     // Allocate pinned host memory
@@ -435,7 +435,7 @@ TEST_F(CudaAllocCopyTest, StatisticsUpdated) {
     constexpr size_t size = 1024;
     
     // Allocate device memory (should update stats)
-    cuda::CUdeviceptr_t dev_ptr = cuda::alloc(size);
+    cuda::CudaDevicePtr_t dev_ptr = cuda::alloc(size);
     EXPECT_NE(dev_ptr, 0);
     
     // Copy operations should NOT update stats (as per documentation)

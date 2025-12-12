@@ -37,8 +37,8 @@ protected:
         }
     }
     
-    cuda::CUdevice_t device_{0};
-    cuda::CUcontext_t context_ = nullptr;
+    cuda::CudaDevice_t device_{0};
+    cuda::CudaContext_t context_ = nullptr;
 };
 
 /**
@@ -166,7 +166,7 @@ TEST_F(CudaModuleFunctionTest, ModuleLifecycleWithInvalidFile) {
     ::orteaf::tests::ExpectError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::OperationFailed,
         [&] {
-            cuda::CUmodule_t module = cuda::loadModuleFromFile(invalid_file);
+            cuda::CudaModule_t module = cuda::loadModuleFromFile(invalid_file);
             (void)module;
         });
 }

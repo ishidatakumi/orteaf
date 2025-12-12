@@ -40,8 +40,8 @@ protected:
         }
     }
     
-    cuda::CUdevice_t device_{0};
-    cuda::CUcontext_t context_ = nullptr;
+    cuda::CudaDevice_t device_{0};
+    cuda::CudaContext_t context_ = nullptr;
 };
 
 #if ORTEAF_STATS_LEVEL_CUDA_VALUE <= 2
@@ -269,10 +269,10 @@ TEST_F(CudaStatsTest, StreamCreationUpdatesStats) {
     auto& stats = cuda::statsInstance();
     uint64_t initial_streams = stats.activeStreams();
     
-    cuda::CUstream_t stream1 = cuda::getStream();
+    cuda::CudaStream_t stream1 = cuda::getStream();
     EXPECT_EQ(stats.activeStreams(), initial_streams + 1);
     
-    cuda::CUstream_t stream2 = cuda::getStream();
+    cuda::CudaStream_t stream2 = cuda::getStream();
     EXPECT_EQ(stats.activeStreams(), initial_streams + 2);
     
     cuda::releaseStream(stream1);
@@ -289,10 +289,10 @@ TEST_F(CudaStatsTest, EventCreationUpdatesStats) {
     auto& stats = cuda::statsInstance();
     uint64_t initial_events = stats.activeEvents();
     
-    cuda::CUevent_t event1 = cuda::createEvent();
+    cuda::CudaEvent_t event1 = cuda::createEvent();
     EXPECT_EQ(stats.activeEvents(), initial_events + 1);
     
-    cuda::CUevent_t event2 = cuda::createEvent();
+    cuda::CudaEvent_t event2 = cuda::createEvent();
     EXPECT_EQ(stats.activeEvents(), initial_events + 2);
     
     cuda::destroyEvent(event1);
