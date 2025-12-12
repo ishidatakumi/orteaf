@@ -18,17 +18,17 @@ namespace orteaf::internal::runtime::cuda::platform::wrapper {
 /**
  * @copydoc orteaf::internal::backend::cuda::createEvent
  */
-CUevent_t createEvent() {
+CudaEvent_t createEvent() {
     CUevent event;
     CU_CHECK(cuEventCreate(&event, CU_EVENT_DISABLE_TIMING));
     updateCreateEvent();
-    return opaqueFromObjcNoown<CUevent_t, CUevent>(event);
+    return opaqueFromObjcNoown<CudaEvent_t, CUevent>(event);
 }
 
 /**
  * @copydoc orteaf::internal::backend::cuda::destroyEvent
  */
-void destroyEvent(CUevent_t event) {
+void destroyEvent(CudaEvent_t event) {
     if (event == nullptr) return;
     CUevent objc_event = objcFromOpaqueNoown<CUevent>(event);
     CU_CHECK(cuEventDestroy(objc_event));
@@ -38,7 +38,7 @@ void destroyEvent(CUevent_t event) {
 /**
  * @copydoc orteaf::internal::backend::cuda::recordEvent
  */
-void recordEvent(CUevent_t event, CUstream_t stream) {
+void recordEvent(CudaEvent_t event, CudaStream_t stream) {
     if (event == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
         throwError(OrteafErrc::NullPointer, "recordEvent: event cannot be nullptr");
@@ -55,7 +55,7 @@ void recordEvent(CUevent_t event, CUstream_t stream) {
 /**
  * @copydoc orteaf::internal::backend::cuda::queryEvent
  */
-bool queryEvent(CUevent_t event) {
+bool queryEvent(CudaEvent_t event) {
     if (event == nullptr) return true;
     CUevent objc_event = objcFromOpaqueNoown<CUevent>(event);
     CUresult status = cuEventQuery(objc_event);
@@ -68,7 +68,7 @@ bool queryEvent(CUevent_t event) {
 /**
  * @copydoc orteaf::internal::backend::cuda::waitEvent
  */
-void waitEvent(CUstream_t stream, CUevent_t event) {
+void waitEvent(CudaStream_t stream, CudaEvent_t event) {
     if (stream == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
         throwError(OrteafErrc::NullPointer, "waitEvent: stream cannot be nullptr");

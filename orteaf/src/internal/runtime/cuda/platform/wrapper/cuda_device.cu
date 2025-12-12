@@ -32,7 +32,7 @@ int getDeviceCount() {
 /**
  * @copydoc orteaf::internal::backend::cuda::getDevice
  */
-CUdevice_t getDevice(uint32_t device_id) {
+CudaDevice_t getDevice(uint32_t device_id) {
     int device_count = getDeviceCount();
     if (device_id >= static_cast<uint32_t>(device_count)) {
         using namespace orteaf::internal::diagnostics::error;
@@ -46,7 +46,7 @@ CUdevice_t getDevice(uint32_t device_id) {
 /**
  * @copydoc orteaf::internal::backend::cuda::getComputeCapability
  */
-ComputeCapability getComputeCapability(CUdevice_t device) {
+ComputeCapability getComputeCapability(CudaDevice_t device) {
     CUdevice objc_device = cuDeviceFromOpaque(device);
     ComputeCapability capability;
     CU_CHECK(cuDeviceGetAttribute(&capability.major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, objc_device));
@@ -64,7 +64,7 @@ int getSmCount(ComputeCapability capability) {
 /**
  * @copydoc orteaf::internal::backend::cuda::getDeviceName
  */
-std::string getDeviceName(CUdevice_t device) {
+std::string getDeviceName(CudaDevice_t device) {
     CUdevice objc_device = cuDeviceFromOpaque(device);
     char name[256];
     CU_CHECK(cuDeviceGetName(name, sizeof(name), objc_device));
@@ -74,7 +74,7 @@ std::string getDeviceName(CUdevice_t device) {
 /**
  * @copydoc orteaf::internal::backend::cuda::getDeviceVendor
  */
-std::string getDeviceVendor(CUdevice_t device) {
+std::string getDeviceVendor(CudaDevice_t device) {
     (void)device;
     return "nvidia";
 }

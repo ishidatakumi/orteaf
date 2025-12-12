@@ -14,21 +14,9 @@
 #include <cstdint>
 #include <string>
 
+#include "orteaf/internal/runtime/cuda/platform/wrapper/cuda_types.h"
+
 namespace orteaf::internal::runtime::cuda::platform::wrapper {
-
-struct CUdevice_t {
-    int value{};  // opaque device identifier
-
-    constexpr CUdevice_t() = default;
-    constexpr explicit CUdevice_t(int v) : value(v) {}
-    constexpr operator int() const { return value; }
-    friend constexpr bool operator==(CUdevice_t lhs, CUdevice_t rhs) { return lhs.value == rhs.value; }
-    friend constexpr bool operator!=(CUdevice_t lhs, CUdevice_t rhs) { return !(lhs == rhs); }
-    friend constexpr bool operator<(CUdevice_t lhs, CUdevice_t rhs) { return lhs.value < rhs.value; }
-};
-
-// ABI guards (header-level, so every TU checks these)
-static_assert(sizeof(CUdevice_t) == sizeof(int), "CUdevice_t must remain int-sized (Driver API handle).");
 
 /**
  * @brief Bitmask flags indicating optional CUDA capabilities.
@@ -63,16 +51,16 @@ int getDeviceCount();
 /**
  * @brief Get an opaque device handle for the given index.
  * @param device_id Zero-based device index
- * @return Opaque `CUdevice_t`; 0 when CUDA is disabled.
+ * @return Opaque `CudaDevice_t`; 0 when CUDA is disabled.
  */
-CUdevice_t getDevice(uint32_t device_id);
+CudaDevice_t getDevice(uint32_t device_id);
 
 /**
  * @brief Query the compute capability of a device.
  * @param device Opaque device handle
  * @return SM compute capability; {0,0} when CUDA is disabled.
  */
-ComputeCapability getComputeCapability(CUdevice_t device);
+ComputeCapability getComputeCapability(CudaDevice_t device);
 
 /**
  * @brief Compute a simple SM count heuristic from capability.
@@ -86,14 +74,14 @@ int getSmCount(ComputeCapability capability);
  * @param device Opaque device handle
  * @return UTF-8 device name; empty when CUDA is disabled/unavailable.
  */
-std::string getDeviceName(CUdevice_t device);
+std::string getDeviceName(CudaDevice_t device);
 
 /**
  * @brief Vendor hint for architecture detection.
  * @param device Opaque device handle
  * @return Vendor string (typically "nvidia"); empty when unavailable.
  */
-std::string getDeviceVendor(CUdevice_t device);
+std::string getDeviceVendor(CudaDevice_t device);
 
 } // namespace orteaf::internal::runtime::cuda::platform::wrapper
 

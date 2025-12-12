@@ -3,6 +3,7 @@
 #if ORTEAF_ENABLE_CUDA
 
 #include <cstddef>
+
 #include "orteaf/internal/runtime/cuda/platform/wrapper/cuda_stream.h"
 
 namespace orteaf::internal::runtime::cuda::platform::wrapper {
@@ -17,7 +18,7 @@ namespace orteaf::internal::runtime::cuda::platform::wrapper {
  * @return Opaque CUDA device pointer. Returns 0 if CUDA is not available.
  * @throws std::runtime_error If CUDA allocation fails (when ORTEAF_ENABLE_CUDA is defined).
  */
-CUdeviceptr_t alloc(size_t size);
+CudaDevicePtr_t alloc(size_t size);
 
 /**
  * @brief Free device memory on CUDA device.
@@ -28,7 +29,7 @@ CUdeviceptr_t alloc(size_t size);
  * @param ptr Opaque CUDA device pointer to free.
  * @param size Size of memory to free in bytes. Used for statistics update.
  */
-void free(CUdeviceptr_t ptr, size_t size);
+void free(CudaDevicePtr_t ptr, size_t size);
 
 /**
  * @brief Allocate device memory on CUDA device asynchronously.
@@ -42,7 +43,7 @@ void free(CUdeviceptr_t ptr, size_t size);
  * @return Opaque CUDA device pointer. Returns 0 if CUDA is not available.
  * @throws std::runtime_error If stream is nullptr or CUDA allocation fails.
  */
-CUdeviceptr_t allocStream(size_t size, CUstream_t stream);
+CudaDevicePtr_t allocStream(size_t size, CudaStream_t stream);
 
 /**
  * @brief Free device memory on CUDA device asynchronously.
@@ -56,7 +57,7 @@ CUdeviceptr_t allocStream(size_t size, CUstream_t stream);
  * @param stream CUDA stream handle for asynchronous deallocation.
  * @throws std::runtime_error If stream is nullptr or CUDA deallocation fails.
  */
-void freeStream(CUdeviceptr_t ptr, size_t size, CUstream_t stream);
+void freeStream(CudaDevicePtr_t ptr, size_t size, CudaStream_t stream);
 
 /**
  * @brief Allocate pinned host memory.
@@ -69,7 +70,7 @@ void freeStream(CUdeviceptr_t ptr, size_t size, CUstream_t stream);
  * @return Pointer to allocated pinned host memory. Returns nullptr if CUDA is not available.
  * @throws std::runtime_error If CUDA allocation fails (when ORTEAF_ENABLE_CUDA is defined).
  */
-void* allocHost(size_t size);
+void *allocHost(size_t size);
 
 /**
  * @brief Copy data from device to host memory.
@@ -83,7 +84,7 @@ void* allocHost(size_t size);
  * @param size Number of bytes to copy.
  * @throws std::runtime_error If CUDA copy operation fails (when ORTEAF_ENABLE_CUDA is defined).
  */
-void copyToHost(CUdeviceptr_t ptr, void* host_ptr, size_t size);
+void copyToHost(CudaDevicePtr_t ptr, void *host_ptr, size_t size);
 
 /**
  * @brief Copy data from host to device memory.
@@ -97,7 +98,7 @@ void copyToHost(CUdeviceptr_t ptr, void* host_ptr, size_t size);
  * @param size Number of bytes to copy.
  * @throws std::runtime_error If CUDA copy operation fails (when ORTEAF_ENABLE_CUDA is defined).
  */
-void copyToDevice(void* host_ptr, CUdeviceptr_t ptr, size_t size);
+void copyToDevice(void *host_ptr, CudaDevicePtr_t ptr, size_t size);
 
 /**
  * @brief Free pinned host memory.
@@ -109,7 +110,7 @@ void copyToDevice(void* host_ptr, CUdeviceptr_t ptr, size_t size);
  * @param size Size of memory to free in bytes. Used for statistics update.
  * @throws std::runtime_error If CUDA deallocation fails (when ORTEAF_ENABLE_CUDA is defined).
  */
-void freeHost(void* ptr, size_t size);
+void freeHost(void *ptr, size_t size);
 
 } // namespace orteaf::internal::runtime::cuda::platform::wrapper
 

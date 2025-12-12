@@ -16,16 +16,16 @@ namespace orteaf::internal::runtime::cuda::platform::wrapper {
 /**
  * @copydoc orteaf::internal::backend::cuda::createGraph
  */
-CUgraph_t createGraph() {
+CudaGraph_t createGraph() {
     CUgraph graph;
     CU_CHECK(cuGraphCreate(&graph, 0));
-    return opaqueFromObjcNoown<CUgraph_t, CUgraph>(graph);
+    return opaqueFromObjcNoown<CudaGraph_t, CUgraph>(graph);
 }
 
 /**
  * @copydoc orteaf::internal::backend::cuda::createGraphExec
  */
-CUgraphExec_t createGraphExec(CUgraph_t graph) {
+CudaGraphExec_t createGraphExec(CudaGraph_t graph) {
     if (graph == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
         throwError(OrteafErrc::NullPointer, "createGraphExec: graph cannot be nullptr");
@@ -33,13 +33,13 @@ CUgraphExec_t createGraphExec(CUgraph_t graph) {
     CUgraph objc_graph = objcFromOpaqueNoown<CUgraph>(graph);
     CUgraphExec graph_exec;
     CU_CHECK(cuGraphInstantiateWithFlags(&graph_exec, objc_graph, 0));
-    return opaqueFromObjcNoown<CUgraphExec_t, CUgraphExec>(graph_exec);
+    return opaqueFromObjcNoown<CudaGraphExec_t, CUgraphExec>(graph_exec);
 }
 
 /**
  * @copydoc orteaf::internal::backend::cuda::destroyGraph
  */
-void destroyGraph(CUgraph_t graph) {
+void destroyGraph(CudaGraph_t graph) {
     if (graph == nullptr) return;
     CUgraph objc_graph = objcFromOpaqueNoown<CUgraph>(graph);
     CU_CHECK(cuGraphDestroy(objc_graph));
@@ -48,7 +48,7 @@ void destroyGraph(CUgraph_t graph) {
 /**
  * @copydoc orteaf::internal::backend::cuda::destroyGraphExec
  */
-void destroyGraphExec(CUgraphExec_t graph_exec) {
+void destroyGraphExec(CudaGraphExec_t graph_exec) {
     if (graph_exec == nullptr) return;
     CUgraphExec objc_graph_exec = objcFromOpaqueNoown<CUgraphExec>(graph_exec);
     CU_CHECK(cuGraphExecDestroy(objc_graph_exec));
@@ -57,7 +57,7 @@ void destroyGraphExec(CUgraphExec_t graph_exec) {
 /**
  * @copydoc orteaf::internal::backend::cuda::beginGraphCapture
  */
-void beginGraphCapture(CUstream_t stream) {
+void beginGraphCapture(CudaStream_t stream) {
     if (stream == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
         throwError(OrteafErrc::NullPointer, "beginGraphCapture: stream cannot be nullptr");
@@ -69,7 +69,7 @@ void beginGraphCapture(CUstream_t stream) {
 /**
  * @copydoc orteaf::internal::backend::cuda::endGraphCapture
  */
-void endGraphCapture(CUstream_t stream, CUgraph_t* graph) {
+void endGraphCapture(CudaStream_t stream, CudaGraph_t* graph) {
     if (stream == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
         throwError(OrteafErrc::NullPointer, "endGraphCapture: stream cannot be nullptr");
@@ -87,13 +87,13 @@ void endGraphCapture(CUstream_t stream, CUgraph_t* graph) {
     }
     CUgraph objc_graph;
     CU_CHECK(cuStreamEndCapture(objc_stream, &objc_graph));
-    *graph = opaqueFromObjcNoown<CUgraph_t, CUgraph>(objc_graph);
+    *graph = opaqueFromObjcNoown<CudaGraph_t, CUgraph>(objc_graph);
 }
 
 /**
  * @copydoc orteaf::internal::backend::cuda::instantiateGraph
  */
-void instantiateGraph(CUgraph_t graph, CUgraphExec_t* graph_exec) {
+void instantiateGraph(CudaGraph_t graph, CudaGraphExec_t* graph_exec) {
     if (graph == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
         throwError(OrteafErrc::NullPointer, "instantiateGraph: graph cannot be nullptr");
@@ -105,13 +105,13 @@ void instantiateGraph(CUgraph_t graph, CUgraphExec_t* graph_exec) {
     CUgraph objc_graph = objcFromOpaqueNoown<CUgraph>(graph);
     CUgraphExec objc_graph_exec;
     CU_CHECK(cuGraphInstantiateWithFlags(&objc_graph_exec, objc_graph, 0));
-    *graph_exec = opaqueFromObjcNoown<CUgraphExec_t, CUgraphExec>(objc_graph_exec);
+    *graph_exec = opaqueFromObjcNoown<CudaGraphExec_t, CUgraphExec>(objc_graph_exec);
 }
 
 /**
  * @copydoc orteaf::internal::backend::cuda::graphLaunch
  */
-void graphLaunch(CUgraphExec_t graph_exec, CUstream_t stream) {
+void graphLaunch(CudaGraphExec_t graph_exec, CudaStream_t stream) {
     if (graph_exec == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
         throwError(OrteafErrc::NullPointer, "graphLaunch: graph_exec cannot be nullptr");

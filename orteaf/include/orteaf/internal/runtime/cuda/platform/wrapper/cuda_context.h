@@ -10,51 +10,46 @@
 
 #if ORTEAF_ENABLE_CUDA
 
-#include "orteaf/internal/runtime/cuda/platform/wrapper/cuda_device.h"
+#include "orteaf/internal/runtime/cuda/platform/wrapper/cuda_types.h"
 
 namespace orteaf::internal::runtime::cuda::platform::wrapper {
 
-struct CUcontext_st;
-using CUcontext_t = CUcontext_st*;
-
-static_assert(sizeof(CUcontext_t) == sizeof(void*), "CUcontext_t must be pointer-sized.");
-
 /**
  * @brief Retain and return the primary context for a device.
- * @param device Opaque device handle (`CUdevice_t`)
- * @return Opaque primary context (`CUcontext_t`), or nullptr if CUDA disabled
+ * @param device Opaque device handle (`CudaDevice_t`)
+ * @return Opaque primary context (`CudaContext_t`), or nullptr if CUDA disabled
  * @throws std::system_error On CUDA driver error (via `OrteafErrc` mapping)
  */
-CUcontext_t getPrimaryContext(CUdevice_t device);
+CudaContext_t getPrimaryContext(CudaDevice_t device);
 
 /**
  * @brief Create a new context for a device.
- * @param device Opaque device handle (`CUdevice_t`)
- * @return Newly created opaque context (`CUcontext_t`), or nullptr if disabled
+ * @param device Opaque device handle (`CudaDevice_t`)
+ * @return Newly created opaque context (`CudaContext_t`), or nullptr if disabled
  * @throws std::system_error On CUDA driver error (via `OrteafErrc` mapping)
  */
-CUcontext_t createContext(CUdevice_t device);
+CudaContext_t createContext(CudaDevice_t device);
 
 /**
  * @brief Make the given context current on the calling thread.
- * @param context Opaque context handle (`CUcontext_t`)
+ * @param context Opaque context handle (`CudaContext_t`)
  * @throws std::system_error On CUDA driver error (via `OrteafErrc` mapping)
  */
-void setContext(CUcontext_t context);
+void setContext(CudaContext_t context);
 
 /**
  * @brief Release a device's primary context (decrements retain count).
- * @param device Opaque device handle (`CUdevice_t`)
+ * @param device Opaque device handle (`CudaDevice_t`)
  * @throws std::system_error On CUDA driver error (via `OrteafErrc` mapping)
  */
-void releasePrimaryContext(CUdevice_t device);
+void releasePrimaryContext(CudaDevice_t device);
 
 /**
  * @brief Destroy a context.
- * @param context Opaque context handle (`CUcontext_t`)
+ * @param context Opaque context handle (`CudaContext_t`)
  * @throws std::system_error On CUDA driver error (via `OrteafErrc` mapping)
  */
-void releaseContext(CUcontext_t context);
+void releaseContext(CudaContext_t context);
 
 } // namespace orteaf::internal::runtime::cuda::platform::wrapper
 

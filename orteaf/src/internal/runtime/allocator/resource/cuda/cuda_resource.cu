@@ -25,7 +25,7 @@ void CudaResource::deallocate(BufferView view, std::size_t size,
   if (!view) {
     return;
   }
-  const auto base = view.data() - static_cast<::orteaf::internal::runtime::cuda::platform::wrapper::CUdeviceptr_t>(view.offset());
+  const auto base = view.data() - static_cast<::orteaf::internal::runtime::cuda::platform::wrapper::CudaDevicePtr_t>(view.offset());
   ::orteaf::internal::runtime::cuda::platform::wrapper::free(base, size);
 }
 

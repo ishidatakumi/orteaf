@@ -14,11 +14,6 @@
 
 namespace orteaf::internal::runtime::cuda::platform::wrapper {
 
-struct CUevent_st;
-using CUevent_t = CUevent_st*;
-
-static_assert(sizeof(CUevent_t) == sizeof(void*), "CUevent_t must be pointer-sized.");
-
 /**
  * @brief Create a CUDA event with timing disabled.
  * @return Opaque event handle, or nullptr when CUDA is disabled.
@@ -26,7 +21,7 @@ static_assert(sizeof(CUevent_t) == sizeof(void*), "CUevent_t must be pointer-siz
  *
  * Also updates internal CUDA statistics on success.
  */
-CUevent_t createEvent();
+CudaEvent_t createEvent();
 
 /**
  * @brief Destroy a CUDA event.
@@ -35,7 +30,7 @@ CUevent_t createEvent();
  *
  * Also updates internal CUDA statistics on success.
  */
-void destroyEvent(CUevent_t event);
+void destroyEvent(CudaEvent_t event);
 
 /**
  * @brief Record an event into a stream.
@@ -43,7 +38,7 @@ void destroyEvent(CUevent_t event);
  * @param stream Opaque stream handle; nullptr is ignored.
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void recordEvent(CUevent_t event, CUstream_t stream);
+void recordEvent(CudaEvent_t event, CudaStream_t stream);
 
 /**
  * @brief Query whether an event has completed.
@@ -51,7 +46,7 @@ void recordEvent(CUevent_t event, CUstream_t stream);
  * @return true if completed or CUDA disabled; false if not ready.
  * @throws std::system_error On unexpected CUDA driver error (via `OrteafErrc`).
  */
-bool queryEvent(CUevent_t event);
+bool queryEvent(CudaEvent_t event);
 
 /**
  * @brief Make a stream wait for an event to complete.
@@ -59,7 +54,7 @@ bool queryEvent(CUevent_t event);
  * @param event Opaque event handle; nullptr is ignored.
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void waitEvent(CUstream_t stream, CUevent_t event);
+void waitEvent(CudaStream_t stream, CudaEvent_t event);
 
 } // namespace orteaf::internal::runtime::cuda::platform::wrapper
 

@@ -17,17 +17,17 @@ namespace orteaf::internal::runtime::cuda::platform::wrapper {
 /**
  * @copydoc orteaf::internal::backend::cuda::getStream
  */
-CUstream_t getStream() {
+CudaStream_t getStream() {
     CUstream stream;
     CU_CHECK(cuStreamCreate(&stream, CU_STREAM_NON_BLOCKING));
     updateCreateStream();
-    return opaqueFromObjcNoown<CUstream_t, CUstream>(stream);
+    return opaqueFromObjcNoown<CudaStream_t, CUstream>(stream);
 }
 
 /**
  * @copydoc orteaf::internal::backend::cuda::releaseStream
  */
-void releaseStream(CUstream_t stream) {
+void releaseStream(CudaStream_t stream) {
     if (stream == nullptr) return;
     CUstream objc_stream = objcFromOpaqueNoown<CUstream>(stream);
     CU_CHECK(cuStreamDestroy(objc_stream));
@@ -37,7 +37,7 @@ void releaseStream(CUstream_t stream) {
 /**
  * @copydoc orteaf::internal::backend::cuda::synchronizeStream
  */
-void synchronizeStream(CUstream_t stream) {
+void synchronizeStream(CudaStream_t stream) {
     if (stream == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
         throwError(OrteafErrc::NullPointer, "synchronizeStream: stream cannot be nullptr");
@@ -49,7 +49,7 @@ void synchronizeStream(CUstream_t stream) {
 /**
  * @copydoc orteaf::internal::backend::cuda::waitStream
  */
-void waitStream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value) {
+void waitStream(CudaStream_t stream, CudaDevicePtr_t addr, uint32_t value) {
     if (stream == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
         throwError(OrteafErrc::NullPointer, "waitStream: stream cannot be nullptr");
@@ -66,7 +66,7 @@ void waitStream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value) {
 /**
  * @copydoc orteaf::internal::backend::cuda::writeStream
  */
-void writeStream(CUstream_t stream, CUdeviceptr_t addr, uint32_t value) {
+void writeStream(CudaStream_t stream, CudaDevicePtr_t addr, uint32_t value) {
     if (stream == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
         throwError(OrteafErrc::NullPointer, "writeStream: stream cannot be nullptr");

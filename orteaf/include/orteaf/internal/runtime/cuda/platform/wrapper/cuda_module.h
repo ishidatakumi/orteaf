@@ -10,16 +10,9 @@
 
 #if ORTEAF_ENABLE_CUDA
 
+#include "orteaf/internal/runtime/cuda/platform/wrapper/cuda_types.h"
+
 namespace orteaf::internal::runtime::cuda::platform::wrapper {
-
-struct CUmodule_st;
-using CUmodule_t = CUmodule_st*;
-
-struct CUfunction_st;
-using CUfunction_t = CUfunction_st*;
-
-static_assert(sizeof(CUmodule_t) == sizeof(void*), "CUmodule_t must be pointer-sized.");
-static_assert(sizeof(CUfunction_t) == sizeof(void*), "CUfunction_t must be pointer-sized.");
 
 /**
  * @brief Load a CUDA module from a file path (PTX/CUBIN/FATBIN supported).
@@ -27,7 +20,7 @@ static_assert(sizeof(CUfunction_t) == sizeof(void*), "CUfunction_t must be point
  * @return Opaque module handle, or nullptr when CUDA is disabled.
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-CUmodule_t loadModuleFromFile(const char* filepath);
+CudaModule_t loadModuleFromFile(const char *filepath);
 
 /**
  * @brief Load a CUDA module from an in-memory image (PTX/CUBIN/FATBIN supported).
@@ -35,7 +28,7 @@ CUmodule_t loadModuleFromFile(const char* filepath);
  * @return Opaque module handle, or nullptr when CUDA is disabled.
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-CUmodule_t loadModuleFromImage(const void* image);
+CudaModule_t loadModuleFromImage(const void *image);
 
 /**
  * @brief Retrieve a kernel function handle from a module by name.
@@ -44,14 +37,14 @@ CUmodule_t loadModuleFromImage(const void* image);
  * @return Opaque function handle, or nullptr when CUDA is disabled.
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-CUfunction_t getFunction(CUmodule_t module, const char* kernel_name);
+CudaFunction_t getFunction(CudaModule_t module, const char *kernel_name);
 
 /**
  * @brief Unload a CUDA module.
  * @param module Opaque module handle (ignored if nullptr)
  * @throws std::system_error On CUDA driver error (via `OrteafErrc`).
  */
-void unloadModule(CUmodule_t module);
+void unloadModule(CudaModule_t module);
 
 } // namespace orteaf::internal::runtime::cuda::platform::wrapper
 

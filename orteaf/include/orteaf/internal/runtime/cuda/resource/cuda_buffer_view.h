@@ -12,7 +12,7 @@ namespace orteaf::internal::runtime::cuda::resource {
 // Lightweight, non-owning CUDA buffer view (device pointer + offset/size).
 class CudaBufferView {
 public:
-  using pointer = orteaf::internal::runtime::cuda::platform::wrapper::CUdeviceptr_t;
+  using pointer = orteaf::internal::runtime::cuda::platform::wrapper::CudaDevicePtr_t;
 
   CudaBufferView() = default;
   CudaBufferView(pointer base, std::size_t offset_bytes, std::size_t size_bytes)

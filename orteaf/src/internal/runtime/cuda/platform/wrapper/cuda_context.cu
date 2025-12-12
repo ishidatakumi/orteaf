@@ -22,17 +22,17 @@ namespace orteaf::internal::runtime::cuda::platform::wrapper {
 /**
  * @copydoc orteaf::internal::backend::cuda::getPrimaryContext
  */
-CUcontext_t getPrimaryContext(CUdevice_t device) {
+CudaContext_t getPrimaryContext(CudaDevice_t device) {
     CUdevice objc_device = cuDeviceFromOpaque(device);
     CUcontext context = nullptr;
     CU_CHECK(cuDevicePrimaryCtxRetain(&context, objc_device));
-    return opaqueFromObjcNoown<CUcontext_t, CUcontext>(context);
+    return opaqueFromObjcNoown<CudaContext_t, CUcontext>(context);
 }
 
 /**
  * @copydoc orteaf::internal::backend::cuda::createContext
  */
-CUcontext_t createContext(CUdevice_t device) {
+CudaContext_t createContext(CudaDevice_t device) {
     CUdevice objc_device = cuDeviceFromOpaque(device);
     CUcontext context = nullptr;
 #if defined(CUDA_VERSION) && CUDA_VERSION >= 13000
@@ -45,13 +45,13 @@ CUcontext_t createContext(CUdevice_t device) {
 #else
     CU_CHECK(cuCtxCreate(&context, 0, objc_device));
 #endif
-    return opaqueFromObjcNoown<CUcontext_t, CUcontext>(context);
+    return opaqueFromObjcNoown<CudaContext_t, CUcontext>(context);
 }
 
 /**
  * @copydoc orteaf::internal::backend::cuda::setContext
  */
-void setContext(CUcontext_t context) {
+void setContext(CudaContext_t context) {
     if (context == nullptr) {
         using namespace orteaf::internal::diagnostics::error;
         throwError(OrteafErrc::NullPointer, "setContext: context cannot be nullptr");
@@ -63,7 +63,7 @@ void setContext(CUcontext_t context) {
 /**
  * @copydoc orteaf::internal::backend::cuda::releasePrimaryContext
  */
-void releasePrimaryContext(CUdevice_t device) {
+void releasePrimaryContext(CudaDevice_t device) {
     CUdevice objc_device = cuDeviceFromOpaque(device);
     CU_CHECK(cuDevicePrimaryCtxRelease(objc_device));
 }
@@ -71,7 +71,7 @@ void releasePrimaryContext(CUdevice_t device) {
 /**
  * @copydoc orteaf::internal::backend::cuda::releaseContext
  */
-void releaseContext(CUcontext_t context) {
+void releaseContext(CudaContext_t context) {
     if (context == nullptr) return;
     CUcontext objc_context = objcFromOpaqueNoown<CUcontext>(context);
     CU_CHECK(cuCtxDestroy(objc_context));

@@ -81,7 +81,7 @@ Architecture detectCudaArchitectureForDeviceId(
     ::orteaf::internal::base::DeviceHandle device_id) {
 #if ORTEAF_ENABLE_CUDA
   using runtime::cuda::platform::wrapper::ComputeCapability;
-  using runtime::cuda::platform::wrapper::CUdevice_t;
+  using runtime::cuda::platform::wrapper::CudaDevice_t;
   using diagnostics::error::OrteafErrc;
 
   const std::uint32_t device_index = static_cast<std::uint32_t>(device_id);
@@ -94,7 +94,7 @@ Architecture detectCudaArchitectureForDeviceId(
       return Architecture::CudaGeneric;
     }
 
-    CUdevice_t device = runtime::cuda::platform::wrapper::getDevice(device_index);
+    CudaDevice_t device = runtime::cuda::platform::wrapper::getDevice(device_index);
     if (!device) {
       return Architecture::CudaGeneric;
     }

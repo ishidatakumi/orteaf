@@ -55,9 +55,9 @@ template <> struct BackendTraits<::orteaf::internal::backend::Backend::Cuda> {
   using HeapRegion = ::orteaf::internal::runtime::cuda::resource::
       CudaBufferView; // TODO: replace with dedicated region type
   using Stream = ::orteaf::internal::runtime::cuda::platform::wrapper::
-      CUstream_t; // CUDA stream handle
+      CudaStream_t; // CUDA stream handle
   using Device = ::orteaf::internal::runtime::cuda::platform::wrapper::
-      CUdevice_t;      // opaque CUDA device handle
+      CudaDevice_t;      // opaque CUDA device handle
   using Context = int; // placeholder until context abstraction exists
   using FenceToken = ::orteaf::internal::runtime::cuda::resource::
       FenceToken; // placeholder fence token until CUDA token is defined
