@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <cstddef>
+#include <cstdint>
 
 #include "orteaf/internal/runtime/base/base_manager.h"
 
@@ -14,6 +15,7 @@ namespace orteaf::internal::runtime::base {
 template <typename Resource> struct SharedOneTimeState {
   std::atomic<std::size_t> ref_count{0};
   Resource resource{};
+  std::uint32_t generation{0}; // For stale handle detection
   bool alive{false};
 
   SharedOneTimeState() = default;
@@ -21,17 +23,21 @@ template <typename Resource> struct SharedOneTimeState {
   SharedOneTimeState &operator=(const SharedOneTimeState &) = delete;
   SharedOneTimeState(SharedOneTimeState &&other) noexcept
       : ref_count(other.ref_count.load(std::memory_order_relaxed)),
-        resource(other.resource), alive(other.alive) {
+        resource(std::move(other.resource)), generation(other.generation),
+        alive(other.alive) {
     other.resource = {};
+    other.generation = 0;
     other.alive = false;
   }
   SharedOneTimeState &operator=(SharedOneTimeState &&other) noexcept {
     if (this != &other) {
       ref_count.store(other.ref_count.load(std::memory_order_relaxed),
                       std::memory_order_relaxed);
-      resource = other.resource;
+      resource = std::move(other.resource);
+      generation = other.generation;
       alive = other.alive;
       other.resource = {};
+      other.generation = 0;
       other.alive = false;
     }
     return *this;
@@ -101,8 +107,19 @@ protected:
       state.resource = {};
       state.alive = false;
       state.ref_count.store(0, std::memory_order_relaxed);
+      ++state.generation; // Increment for next use
       Base::free_list_.pushBack(index);
     }
+  }
+
+  /// Get generation for the given slot.
+  std::uint32_t getGeneration(std::size_t index) const {
+    return states_[index].generation;
+  }
+
+  /// Check if handle generation matches slot generation.
+  bool isGenerationValid(std::size_t index, std::uint32_t handle_gen) const {
+    return index < states_.size() && states_[index].generation == handle_gen;
   }
 };
 
