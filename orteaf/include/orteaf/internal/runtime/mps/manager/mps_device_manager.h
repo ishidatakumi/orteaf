@@ -174,37 +174,6 @@ public:
 
   bool isAlive(::orteaf::internal::base::DeviceHandle handle) const;
 
-#if ORTEAF_ENABLE_TEST
-  bool isInRangeForTest(::orteaf::internal::base::DeviceHandle handle) const {
-    return static_cast<std::size_t>(handle.index) < states_.size();
-  }
-
-  bool isAliveForTest(::orteaf::internal::base::DeviceHandle handle) const {
-    const std::size_t index = static_cast<std::size_t>(handle.index);
-    if (index >= states_.size()) {
-      return false;
-    }
-    return states_[index].is_alive;
-  }
-
-  bool hasDeviceForTest(::orteaf::internal::base::DeviceHandle handle) const {
-    const std::size_t index = static_cast<std::size_t>(handle.index);
-    if (index >= states_.size()) {
-      return false;
-    }
-    return states_[index].device != nullptr;
-  }
-
-  ::orteaf::internal::architecture::Architecture
-  archForTest(::orteaf::internal::base::DeviceHandle handle) const {
-    const std::size_t index = static_cast<std::size_t>(handle.index);
-    if (index >= states_.size()) {
-      return ::orteaf::internal::architecture::Architecture::MpsGeneric;
-    }
-    return states_[index].arch;
-  }
-#endif
-
 private:
   const State &ensureValid(::orteaf::internal::base::DeviceHandle handle) const;
 

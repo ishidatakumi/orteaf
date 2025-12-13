@@ -100,18 +100,6 @@ public:
   void release(LibraryLease &lease) noexcept;
   void release(PipelineManagerLease &lease) noexcept;
 
-#if ORTEAF_ENABLE_TEST
-  struct DebugState {
-    bool alive{false};
-    bool handle_allocated{false};
-    LibraryKeyKind kind{LibraryKeyKind::kNamed};
-    std::string identifier{};
-    std::size_t growth_chunk_size{0};
-  };
-
-  DebugState debugState(::orteaf::internal::base::LibraryHandle handle) const;
-#endif
-
 private:
   void validateKey(const LibraryKey &key) const;
 

@@ -119,26 +119,6 @@ public:
 
   void release(GraphLease &lease) noexcept;
 
-#if ORTEAF_ENABLE_TEST
-  struct DebugState {
-    bool alive{false};
-    bool graph_allocated{false};
-    bool executable_allocated{false};
-    GraphKeyKind kind{GraphKeyKind::kNamed};
-    std::string identifier{};
-    std::uint32_t generation{0};
-    std::size_t growth_chunk_size{0};
-    std::vector<std::int64_t> shape{};
-    ::orteaf::internal::runtime::mps::platform::wrapper::MpsGraphDataType
-        data_type{::orteaf::internal::runtime::mps::platform::wrapper::
-                      MpsGraphDataType::kInvalid};
-    std::size_t target_tensor_count{0};
-    bool has_gradients{false};
-  };
-
-  DebugState debugState(::orteaf::internal::base::GraphHandle handle) const;
-#endif
-
 private:
   void validateKey(const GraphKey &key) const;
 

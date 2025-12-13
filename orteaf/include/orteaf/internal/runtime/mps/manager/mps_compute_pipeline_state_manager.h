@@ -102,21 +102,6 @@ public:
   PipelineLease acquire(const FunctionKey &key);
   void release(PipelineLease &lease) noexcept;
 
-#if ORTEAF_ENABLE_TEST
-  struct DebugState {
-    bool alive{false};
-    bool pipeline_allocated{false};
-    bool function_allocated{false};
-    std::uint32_t generation{0};
-    std::uint32_t use_count{0};
-    FunctionKeyKind kind{FunctionKeyKind::kNamed};
-    std::string identifier{};
-    std::size_t growth_chunk_size{0};
-  };
-
-  DebugState debugState(::orteaf::internal::base::FunctionHandle handle) const;
-#endif
-
 private:
   void validateKey(const FunctionKey &key) const;
 

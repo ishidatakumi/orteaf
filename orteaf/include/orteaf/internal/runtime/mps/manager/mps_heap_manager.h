@@ -115,33 +115,6 @@ public:
 
   void release(HeapLease &lease) noexcept;
 
-#if ORTEAF_ENABLE_TEST
-  struct DebugState {
-    bool alive{false};
-    bool heap_allocated{false};
-    std::uint32_t generation{0};
-    std::size_t size_bytes{0};
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSResourceOptions_t
-        resource_options{::orteaf::internal::runtime::mps::platform::wrapper::
-                             kMPSDefaultResourceOptions};
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSStorageMode_t
-        storage_mode{::orteaf::internal::runtime::mps::platform::wrapper::
-                         kMPSStorageModeShared};
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSCPUCacheMode_t
-        cpu_cache_mode{::orteaf::internal::runtime::mps::platform::wrapper::
-                           kMPSCPUCacheModeDefaultCache};
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSHazardTrackingMode_t
-        hazard_tracking_mode{::orteaf::internal::runtime::mps::platform::
-                                 wrapper::kMPSHazardTrackingModeDefault};
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeapType_t
-        heap_type{::orteaf::internal::runtime::mps::platform::wrapper::
-                      kMPSHeapTypeAutomatic};
-    std::size_t growth_chunk_size{0};
-  };
-
-  DebugState debugState(::orteaf::internal::base::HeapHandle handle) const;
-#endif
-
 private:
   void validateKey(const HeapDescriptorKey &key) const;
 

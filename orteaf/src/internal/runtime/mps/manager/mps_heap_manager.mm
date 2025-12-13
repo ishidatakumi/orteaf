@@ -5,8 +5,8 @@
 namespace orteaf::internal::runtime::mps::manager {
 
 void MpsHeapManager::initialize(
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device, SlowOps *slow_ops,
-    std::size_t capacity) {
+    ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
+    SlowOps *slow_ops, std::size_t capacity) {
   shutdown();
   if (device == nullptr) {
     ::orteaf::internal::diagnostics::error::throwError(
@@ -28,7 +28,7 @@ void MpsHeapManager::initialize(
   states_.clear();
   free_list_.clear();
   key_to_index_.clear();
-  
+
   if (capacity > 0) {
     growPool(capacity);
   }
@@ -54,7 +54,8 @@ void MpsHeapManager::shutdown() {
   initialized_ = false;
 }
 
-MpsHeapManager::HeapLease MpsHeapManager::acquire(const HeapDescriptorKey &key) {
+MpsHeapManager::HeapLease
+MpsHeapManager::acquire(const HeapDescriptorKey &key) {
   ensureInitialized();
   validateKey(key);
   if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
@@ -65,8 +66,10 @@ MpsHeapManager::HeapLease MpsHeapManager::acquire(const HeapDescriptorKey &key) 
           "MPS heap is already in use");
     }
     state.in_use = true;
-    const auto handle = ::orteaf::internal::base::HeapHandle{static_cast<std::uint32_t>(it->second),
-                                     static_cast<::orteaf::internal::base::HeapHandle::generation_type>(state.generation)};
+    const auto handle = ::orteaf::internal::base::HeapHandle{
+        static_cast<std::uint32_t>(it->second),
+        static_cast<::orteaf::internal::base::HeapHandle::generation_type>(
+            state.generation)};
     return HeapLease{this, handle, state.heap};
   }
   const std::size_t index = allocateSlot();
@@ -75,8 +78,10 @@ MpsHeapManager::HeapLease MpsHeapManager::acquire(const HeapDescriptorKey &key) 
   state.heap = createHeap(key);
   state.alive = true;
   state.in_use = true;
-  const auto handle = ::orteaf::internal::base::HeapHandle{static_cast<std::uint32_t>(index),
-                                   static_cast<::orteaf::internal::base::HeapHandle::generation_type>(state.generation)};
+  const auto handle = ::orteaf::internal::base::HeapHandle{
+      static_cast<std::uint32_t>(index),
+      static_cast<::orteaf::internal::base::HeapHandle::generation_type>(
+          state.generation)};
   key_to_index_.emplace(state.key, index);
   return HeapLease{this, handle, state.heap};
 }
@@ -94,36 +99,14 @@ void MpsHeapManager::release(HeapLease &lease) noexcept {
   if (!state.alive || !state.in_use) {
     return;
   }
-  if (static_cast<::orteaf::internal::base::HeapHandle::generation_type>(state.generation) != handle.generation) {
+  if (static_cast<::orteaf::internal::base::HeapHandle::generation_type>(
+          state.generation) != handle.generation) {
     return;
   }
   state.in_use = false;
   ++state.generation;
   lease.invalidate();
 }
-
-#if ORTEAF_ENABLE_TEST
-MpsHeapManager::DebugState MpsHeapManager::debugState(::orteaf::internal::base::HeapHandle handle) const {
-  DebugState snapshot{};
-  snapshot.growth_chunk_size = growth_chunk_size_;
-  const std::size_t index = static_cast<std::size_t>(handle.index);
-  if (index < states_.size()) {
-    const State &state = states_[index];
-    snapshot.alive = state.alive;
-    snapshot.heap_allocated = state.heap != nullptr;
-    snapshot.generation = state.generation;
-    snapshot.size_bytes = state.key.size_bytes;
-    snapshot.resource_options = state.key.resource_options;
-    snapshot.storage_mode = state.key.storage_mode;
-    snapshot.cpu_cache_mode = state.key.cpu_cache_mode;
-    snapshot.hazard_tracking_mode = state.key.hazard_tracking_mode;
-    snapshot.heap_type = state.key.heap_type;
-  } else {
-    snapshot.generation = std::numeric_limits<std::uint32_t>::max();
-  }
-  return snapshot;
-}
-#endif
 
 void MpsHeapManager::validateKey(const HeapDescriptorKey &key) const {
   if (key.size_bytes == 0) {
@@ -133,7 +116,8 @@ void MpsHeapManager::validateKey(const HeapDescriptorKey &key) const {
   }
 }
 
-MpsHeapManager::State &MpsHeapManager::ensureAliveState(::orteaf::internal::base::HeapHandle handle) {
+MpsHeapManager::State &
+MpsHeapManager::ensureAliveState(::orteaf::internal::base::HeapHandle handle) {
   ensureInitialized();
   const std::size_t index = static_cast<std::size_t>(handle.index);
   if (index >= states_.size()) {
@@ -147,7 +131,8 @@ MpsHeapManager::State &MpsHeapManager::ensureAliveState(::orteaf::internal::base
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "MPS heap handle is inactive");
   }
-  if (static_cast<::orteaf::internal::base::HeapHandle::generation_type>(state.generation) != handle.generation) {
+  if (static_cast<::orteaf::internal::base::HeapHandle::generation_type>(
+          state.generation) != handle.generation) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "MPS heap handle is stale");
@@ -164,7 +149,8 @@ MpsHeapManager::createHeap(const HeapDescriptorKey &key) {
         "Failed to allocate MPS heap descriptor");
   }
   struct DescriptorGuard {
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeapDescriptor_t handle{nullptr};
+    ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeapDescriptor_t
+        handle{nullptr};
     SlowOps *slow_ops{nullptr};
     ~DescriptorGuard() {
       if (handle != nullptr && slow_ops != nullptr) {
