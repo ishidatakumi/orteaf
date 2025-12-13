@@ -34,18 +34,6 @@ struct MpsCommandQueueManagerState {
       command_queue{nullptr};
   bool in_use{false};
   std::uint32_t generation{0};
-#if ORTEAF_MPS_DEBUG_ENABLED
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSEvent_t event{
-      nullptr};
-  struct SerialState {
-    std::uint64_t submit_serial{0};
-    std::uint64_t completed_serial{0};
-  } serial{};
-  std::size_t event_refcount{0};
-  std::size_t serial_refcount{0};
-#endif
-
-  void resetHazards() noexcept;
 
   void destroy(SlowOps *slow_ops) noexcept;
 };
@@ -67,16 +55,6 @@ public:
       ::orteaf::internal::base::CommandQueueHandle,
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandQueue_t,
       MpsCommandQueueManager>;
-#if ORTEAF_MPS_DEBUG_ENABLED
-  using EventLease = ::orteaf::internal::base::Lease<
-      ::orteaf::internal::base::CommandQueueHandle,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSEvent_t,
-      MpsCommandQueueManager>;
-  using SerialState = MpsCommandQueueManagerState::SerialState;
-  using SerialLease = ::orteaf::internal::base::Lease<
-      ::orteaf::internal::base::CommandQueueHandle, SerialState *,
-      MpsCommandQueueManager>;
-#endif
 
   MpsCommandQueueManager() = default;
   MpsCommandQueueManager(const MpsCommandQueueManager &) = delete;
@@ -101,82 +79,7 @@ public:
   /// use
   bool isInUse(::orteaf::internal::base::CommandQueueHandle handle) const;
 
-#if ORTEAF_MPS_DEBUG_ENABLED
-  EventLease acquireEvent(::orteaf::internal::base::CommandQueueHandle handle);
-  void release(EventLease &lease) noexcept;
-  SerialLease
-  acquireSerial(::orteaf::internal::base::CommandQueueHandle handle);
-  void release(SerialLease &lease) noexcept;
-#endif
-
   void releaseUnusedQueues();
-
-#if ORTEAF_ENABLE_TEST
-  std::uint32_t
-  generationForTest(::orteaf::internal::base::CommandQueueHandle handle) const {
-    const std::size_t index = static_cast<std::size_t>(handle.index);
-    if (index >= states_.size()) {
-      return 0;
-    }
-    return states_[index].generation;
-  }
-
-  bool
-  isInUseForTest(::orteaf::internal::base::CommandQueueHandle handle) const {
-    const std::size_t index = static_cast<std::size_t>(handle.index);
-    if (index >= states_.size()) {
-      return false;
-    }
-    return states_[index].in_use;
-  }
-
-  bool isQueueAllocatedForTest(
-      ::orteaf::internal::base::CommandQueueHandle handle) const {
-    const std::size_t index = static_cast<std::size_t>(handle.index);
-    if (index >= states_.size()) {
-      return false;
-    }
-    return states_[index].command_queue != nullptr;
-  }
-
-#if ORTEAF_MPS_DEBUG_ENABLED
-  std::uint64_t submitSerialForTest(
-      ::orteaf::internal::base::CommandQueueHandle handle) const {
-    const std::size_t index = static_cast<std::size_t>(handle.index);
-    if (index >= states_.size()) {
-      return 0;
-    }
-    return states_[index].serial.submit_serial;
-  }
-
-  std::uint64_t completedSerialForTest(
-      ::orteaf::internal::base::CommandQueueHandle handle) const {
-    const std::size_t index = static_cast<std::size_t>(handle.index);
-    if (index >= states_.size()) {
-      return 0;
-    }
-    return states_[index].serial.completed_serial;
-  }
-
-  std::size_t eventRefcountForTest(
-      ::orteaf::internal::base::CommandQueueHandle handle) const {
-    const std::size_t index = static_cast<std::size_t>(handle.index);
-    if (index >= states_.size()) {
-      return 0;
-    }
-    return states_[index].event_refcount;
-  }
-
-  std::size_t serialRefcountForTest(
-      ::orteaf::internal::base::CommandQueueHandle handle) const {
-    const std::size_t index = static_cast<std::size_t>(handle.index);
-    if (index >= states_.size()) {
-      return 0;
-    }
-    return states_[index].serial_refcount;
-  }
-#endif
-#endif
 
 private:
   std::size_t allocateSlot();
