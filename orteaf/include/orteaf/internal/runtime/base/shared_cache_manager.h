@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstddef>
+#include <string>
 
+#include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/runtime/base/base_manager.h"
 
 namespace orteaf::internal::runtime::base {
@@ -83,6 +85,35 @@ protected:
   bool isSlotAlive(std::size_t index) const {
     return index < states_.size() && states_[index].alive;
   }
+
+  // ===== Combined Helpers =====
+
+  /// Create a handle from index.
+  template <typename HandleType>
+  HandleType createHandle(std::size_t index) const {
+    return HandleType{static_cast<typename HandleType::index_type>(index)};
+  }
+
+  /// Validate handle and get state (throws on invalid).
+  template <typename HandleType> State &validateAndGetState(HandleType handle) {
+    ensureInitialized();
+    const std::size_t index = static_cast<std::size_t>(handle.index);
+    if (index >= states_.size()) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+          std::string(Traits::Name) + " handle out of range");
+    }
+    State &state = states_[index];
+    if (!state.alive) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          std::string(Traits::Name) + " is inactive");
+    }
+    return state;
+  }
+
+  /// Clear all cache states during shutdown.
+  void clearCacheStates() { states_.clear(); }
 };
 
 } // namespace orteaf::internal::runtime::base
