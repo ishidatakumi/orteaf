@@ -32,17 +32,18 @@ void MpsDeviceManager::initialize(SlowOps *slow_ops) {
     state.device = device;
     state.is_alive = device != nullptr;
 
-    const ::orteaf::internal::base::DeviceHandle device_id{
+    const ::orteaf::internal::base::DeviceHandle device_handle{
         static_cast<std::uint32_t>(i)};
     state.arch =
         state.is_alive
-            ? ops_->detectArchitecture(device_id)
+            ? ops_->detectArchitecture(device_handle)
             : ::orteaf::internal::architecture::Architecture::MpsGeneric;
     if (state.is_alive) {
       state.command_queue_manager.initialize(device, ops_,
                                              command_queue_initial_capacity_);
-      state.heap_manager.initialize(device, ops_, heap_initial_capacity_);
       state.library_manager.initialize(device, ops_, library_initial_capacity_);
+      state.heap_manager.initialize(device, device_handle, &state.library_manager,
+                                    ops_, heap_initial_capacity_);
       state.graph_manager.initialize(device, ops_, graph_initial_capacity_);
       state.event_pool.initialize(device, ops_, 0);
       state.fence_pool.initialize(device, ops_, 0);
