@@ -122,8 +122,7 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GrowthChunkSizeControlsPoolExpansion) {
   this->adapter().expectCreateLibraries({{"ChunkedLibrary", handle}});
   auto lease = manager.acquire(key);
   EXPECT_EQ(manager.capacity(), 3u);
-  const auto snapshot = manager.debugState(lease.handle());
-  EXPECT_EQ(snapshot.growth_chunk_size, 3u);
+  EXPECT_EQ(manager.growthChunkSizeForTest(), 3u);
   this->adapter().expectDestroyLibraries({handle});
   lease.release();
   manager.shutdown();
@@ -190,10 +189,10 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GetOrCreateAllocatesAndCachesLibrary) {
     EXPECT_TRUE(lease0);
   }
 
-  const auto snapshot = manager.debugState(lease0.handle());
+  const auto &snapshot = manager.stateForTest(lease0.handle().index);
   EXPECT_TRUE(snapshot.alive);
-  EXPECT_TRUE(snapshot.handle_allocated);
-  EXPECT_EQ(snapshot.identifier, *maybe_name);
+  EXPECT_TRUE(snapshot.handle != nullptr);
+  EXPECT_EQ(snapshot.key.identifier, *maybe_name);
   lease1.release();
   lease0.release();
 }
@@ -220,9 +219,9 @@ TYPED_TEST(MpsLibraryManagerTypedTest, ReleasedLeaseDoesNotAffectLibrary) {
   const auto handle_id = lease.handle();
   lease.release();
   // Library is not released until shutdown
-  const auto snapshot = manager.debugState(handle_id);
+  const auto &snapshot = manager.stateForTest(handle_id.index);
   EXPECT_TRUE(snapshot.alive);
-  EXPECT_TRUE(snapshot.handle_allocated);
+  EXPECT_TRUE(snapshot.handle != nullptr);
 
   // Reacquire returns the same library
   auto reacquired = manager.acquire(key);
@@ -264,7 +263,7 @@ TYPED_TEST(MpsLibraryManagerTypedTest, ReleaseIsIdempotent) {
   const auto handle_id = lease.handle();
   lease.release();
   lease.release(); // idempotent - no crash or error
-  const auto snapshot = manager.debugState(handle_id);
+  const auto &snapshot = manager.stateForTest(handle_id.index);
   EXPECT_TRUE(snapshot.alive); // Library is still alive
 }
 
@@ -313,11 +312,11 @@ TYPED_TEST(MpsLibraryManagerTypedTest,
   } else {
     EXPECT_TRUE(pipeline_lease);
   }
-  const auto snapshot =
-      pipeline_manager_lease->debugState(pipeline_lease.handle());
+  const auto &snapshot =
+      pipeline_manager_lease->stateForTest(pipeline_lease.handle().index);
   EXPECT_TRUE(snapshot.alive);
   EXPECT_EQ(snapshot.use_count, 1u);
-  EXPECT_EQ(snapshot.identifier, *maybe_function);
+  EXPECT_EQ(snapshot.key.identifier, *maybe_function);
   pipeline_lease.release();
   pipeline_manager_lease.release();
   library_lease.release();
@@ -337,11 +336,12 @@ TYPED_TEST(MpsLibraryManagerTypedTest, PipelineManagerCanBeAcquiredByKey) {
 
   auto pipeline_lease = manager.acquirePipelineManager(key);
   EXPECT_TRUE(pipeline_lease);
-  const auto snapshot = manager.debugState(pipeline_lease.handle());
+  const auto &snapshot = manager.stateForTest(pipeline_lease.handle().index);
   EXPECT_TRUE(snapshot.alive);
   pipeline_lease.release();
   // Library is still alive after release
-  const auto released_snapshot = manager.debugState(pipeline_lease.handle());
+  const auto &released_snapshot =
+      manager.stateForTest(pipeline_lease.handle().index);
   EXPECT_TRUE(released_snapshot.alive);
 }
 
@@ -371,7 +371,8 @@ TYPED_TEST(MpsLibraryManagerTypedTest,
   extra_library_lease.release();
 
   // Library is still alive after all releases
-  const auto snapshot = manager.debugState(extra_library_lease.handle());
+  const auto &snapshot =
+      manager.stateForTest(extra_library_lease.handle().index);
   EXPECT_TRUE(snapshot.alive);
 }
 
@@ -391,12 +392,14 @@ TYPED_TEST(MpsLibraryManagerTypedTest, LibraryPersistsAfterLeaseRelease) {
   auto pipeline_lease = manager.acquirePipelineManager(library_lease);
 
   library_lease.release();
-  const auto snapshot_mid = manager.debugState(pipeline_lease.handle());
+  const auto &snapshot_mid =
+      manager.stateForTest(pipeline_lease.handle().index);
   EXPECT_TRUE(snapshot_mid.alive);
 
   pipeline_lease.release();
   // Library is still alive - only destroyed on shutdown
-  const auto snapshot_released = manager.debugState(pipeline_lease.handle());
+  const auto &snapshot_released =
+      manager.stateForTest(pipeline_lease.handle().index);
   EXPECT_TRUE(snapshot_released.alive);
 }
 
@@ -426,6 +429,6 @@ TYPED_TEST(MpsLibraryManagerTypedTest,
   library_lease.release();
 
   // Library is still alive after all releases
-  const auto snapshot = manager.debugState(library_lease.handle());
+  const auto &snapshot = manager.stateForTest(library_lease.handle().index);
   EXPECT_TRUE(snapshot.alive);
 }

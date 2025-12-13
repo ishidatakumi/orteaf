@@ -115,9 +115,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, AccessBeforeInitializationThrows) {
   ExpectError(diag_error::OrteafErrc::InvalidState, [&] {
     static_cast<void>(manager.acquireFencePool(base::DeviceHandle{0}));
   });
-  const auto snapshot = manager.debugState(base::DeviceHandle{0});
-  EXPECT_FALSE(snapshot.in_range);
-  EXPECT_FALSE(snapshot.is_alive);
+  // Device 0 is out of range before initialization
+  EXPECT_FALSE(manager.isAlive(base::DeviceHandle{0}));
 }
 
 TYPED_TEST(MpsDeviceManagerTypedTest, InitializeMarksManagerInitialized) {
@@ -144,18 +143,16 @@ TYPED_TEST(MpsDeviceManagerTypedTest, InitializeMarksManagerInitialized) {
 
   manager.initialize(this->getOps());
 
-  const auto state = manager.debugState();
-  EXPECT_TRUE(state.initialized);
-  EXPECT_EQ(state.device_count, manager.getDeviceCount());
+  EXPECT_TRUE(manager.isInitializedForTest());
+  EXPECT_EQ(manager.capacity(), manager.getDeviceCount());
   if (expected_count >= 0) {
     EXPECT_EQ(manager.getDeviceCount(),
               static_cast<std::size_t>(expected_count));
   }
 
   manager.shutdown();
-  const auto after_shutdown = manager.debugState();
-  EXPECT_FALSE(after_shutdown.initialized);
-  EXPECT_EQ(after_shutdown.device_count, 0u);
+  EXPECT_FALSE(manager.isInitializedForTest());
+  EXPECT_EQ(manager.capacity(), 0u);
 }
 
 TYPED_TEST(MpsDeviceManagerTypedTest, GetDeviceReturnsRegisteredHandle) {
@@ -193,9 +190,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetDeviceReturnsRegisteredHandle) {
   for (std::uint32_t idx = 0; idx < count; ++idx) {
     auto device_lease = manager.acquire(base::DeviceHandle{idx});
     const auto device = device_lease.with_resource([](auto &r) { return r; });
-    const auto snapshot = manager.debugState(base::DeviceHandle{idx});
-    EXPECT_TRUE(snapshot.in_range);
-    EXPECT_EQ(snapshot.has_device, device != nullptr);
+    const auto &snapshot = manager.stateForTest(idx);
+    EXPECT_EQ(snapshot.device != nullptr, device != nullptr);
     EXPECT_EQ(snapshot.is_alive, device != nullptr);
     if constexpr (TypeParam::is_mock) {
       EXPECT_EQ(device, expected_handles[idx]);
@@ -239,14 +235,13 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetArchMatchesReportedArchitecture) {
 
   for (std::uint32_t idx = 0; idx < count; ++idx) {
     const auto arch = manager.getArch(base::DeviceHandle{idx});
-    const auto snapshot = manager.debugState(base::DeviceHandle{idx});
-    EXPECT_TRUE(snapshot.in_range);
+    const auto &snapshot = manager.stateForTest(idx);
     if constexpr (TypeParam::is_mock) {
       const auto expected_arch = (idx == 0) ? architecture::Architecture::MpsM4
                                             : architecture::Architecture::MpsM3;
       EXPECT_EQ(arch, expected_arch);
       EXPECT_EQ(snapshot.arch, expected_arch);
-      EXPECT_TRUE(snapshot.has_device);
+      EXPECT_TRUE(snapshot.device != nullptr);
       EXPECT_TRUE(snapshot.is_alive);
     } else if (expected_arch_env && *expected_arch_env != '\0' && idx == 0) {
       EXPECT_STREQ(expected_arch_env, architecture::idOf(arch).data());
@@ -283,9 +278,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, InvalidDeviceIdRejectsAccess) {
     static_cast<void>(manager.acquireCommandQueueManager(invalid));
   });
   EXPECT_FALSE(manager.isAlive(invalid));
-  const auto invalid_snapshot = manager.debugState(invalid);
-  EXPECT_FALSE(invalid_snapshot.in_range);
-  EXPECT_FALSE(invalid_snapshot.is_alive);
+  EXPECT_FALSE(manager.isAlive(invalid));
 
   manager.shutdown();
 }
@@ -316,18 +309,14 @@ TYPED_TEST(MpsDeviceManagerTypedTest, IsAliveReflectsReportedDeviceCount) {
   for (std::uint32_t index = 0; index < static_cast<std::uint32_t>(count);
        ++index) {
     const auto id = base::DeviceHandle{index};
-    const auto snapshot = manager.debugState(id);
+    const auto &snapshot = manager.stateForTest(index);
     EXPECT_TRUE(manager.isAlive(id))
         << "Device " << index << " should be alive";
-    EXPECT_TRUE(snapshot.in_range);
     EXPECT_TRUE(snapshot.is_alive);
   }
 
   const auto invalid = base::DeviceHandle{static_cast<std::uint32_t>(count)};
   EXPECT_FALSE(manager.isAlive(invalid));
-  const auto invalid_snapshot = manager.debugState(invalid);
-  EXPECT_FALSE(invalid_snapshot.in_range);
-  EXPECT_FALSE(invalid_snapshot.is_alive);
 
   manager.shutdown();
   for (std::uint32_t index = 0; index < static_cast<std::uint32_t>(count);
@@ -335,9 +324,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, IsAliveReflectsReportedDeviceCount) {
     const auto id = base::DeviceHandle{index};
     EXPECT_FALSE(manager.isAlive(id))
         << "Device " << index << " should be inactive after shutdown";
-    const auto snapshot = manager.debugState(id);
-    EXPECT_FALSE(snapshot.in_range);
-    EXPECT_FALSE(snapshot.is_alive);
+    EXPECT_FALSE(manager.isAlive(id));
   }
 }
 
@@ -412,15 +399,11 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ShutdownClearsDeviceState) {
 
   manager.shutdown();
   EXPECT_EQ(manager.getDeviceCount(), 0u);
-  const auto state = manager.debugState();
-  EXPECT_FALSE(state.initialized);
-  EXPECT_EQ(state.device_count, 0u);
+  EXPECT_FALSE(manager.isInitializedForTest());
+  EXPECT_EQ(manager.capacity(), 0u);
   for (std::uint32_t i = 0; i < static_cast<std::uint32_t>(count); ++i) {
     const auto id = base::DeviceHandle{i};
     EXPECT_FALSE(manager.isAlive(id));
-    const auto snapshot = manager.debugState(id);
-    EXPECT_FALSE(snapshot.in_range);
-    EXPECT_FALSE(snapshot.is_alive);
     ExpectError(diag_error::OrteafErrc::InvalidState, [&] {
       static_cast<void>(manager.acquireCommandQueueManager(id));
     });
@@ -582,9 +565,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, InitializeWithZeroDevicesSucceeds) {
 
   manager.initialize(this->getOps());
 
-  const auto state = manager.debugState();
-  EXPECT_TRUE(state.initialized);
-  EXPECT_EQ(state.device_count, 0u);
+  EXPECT_TRUE(manager.isInitializedForTest());
+  EXPECT_EQ(manager.capacity(), 0u);
   EXPECT_EQ(manager.getDeviceCount(), 0u);
 
   ExpectError(diag_error::OrteafErrc::InvalidArgument,
@@ -720,10 +702,9 @@ TYPED_TEST(MpsDeviceManagerTypedTest, DeviceNotAliveThrowsOnAcquire) {
     static_cast<void>(manager.acquireFencePool(base::DeviceHandle{0}));
   });
 
-  const auto snapshot = manager.debugState(base::DeviceHandle{0});
-  EXPECT_TRUE(snapshot.in_range);
+  const auto &snapshot = manager.stateForTest(0);
   EXPECT_FALSE(snapshot.is_alive);
-  EXPECT_FALSE(snapshot.has_device);
+  EXPECT_FALSE(snapshot.device != nullptr);
 
   manager.shutdown();
 }
@@ -733,9 +714,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ShutdownWithoutInitializeIsNoOp) {
 
   manager.shutdown();
 
-  const auto state = manager.debugState();
-  EXPECT_FALSE(state.initialized);
-  EXPECT_EQ(state.device_count, 0u);
+  EXPECT_FALSE(manager.isInitializedForTest());
+  EXPECT_EQ(manager.capacity(), 0u);
 }
 
 TYPED_TEST(MpsDeviceManagerTypedTest, MultipleShutdownsAreIdempotent) {
@@ -750,13 +730,13 @@ TYPED_TEST(MpsDeviceManagerTypedTest, MultipleShutdownsAreIdempotent) {
   this->adapter().expectReleaseDevices({device0});
 
   manager.initialize(this->getOps());
-  EXPECT_TRUE(manager.debugState().initialized);
+  EXPECT_TRUE(manager.isInitializedForTest());
 
   manager.shutdown();
-  EXPECT_FALSE(manager.debugState().initialized);
+  EXPECT_FALSE(manager.isInitializedForTest());
 
   manager.shutdown();
-  EXPECT_FALSE(manager.debugState().initialized);
+  EXPECT_FALSE(manager.isInitializedForTest());
 }
 
 TYPED_TEST(MpsDeviceManagerTypedTest, ReleaseMethodsDoNotThrow) {

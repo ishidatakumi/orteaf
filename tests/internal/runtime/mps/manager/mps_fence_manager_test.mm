@@ -423,7 +423,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, DebugStateReflectsFenceState) {
   auto lease = manager.acquire();
   const auto handle = lease.handle();
 
-  const auto snapshot = manager.debugState(handle);
+  const auto &snapshot = manager.stateForTest(handle.index);
   EXPECT_TRUE(snapshot.alive);
   EXPECT_EQ(snapshot.generation, handle.generation);
 
@@ -441,7 +441,7 @@ TYPED_TEST(MpsFenceManagerTypedTest,
   manager.initialize(device, this->getOps(), 1);
 
   const auto invalid_handle = base::FenceHandle{999};
-  const auto snapshot = manager.debugState(invalid_handle);
+  const auto &snapshot = manager.stateForTest(invalid_handle.index);
   EXPECT_EQ(snapshot.generation, std::numeric_limits<std::uint32_t>::max());
 
   // No fences created

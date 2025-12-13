@@ -170,8 +170,7 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
 
   auto lease = manager.acquire(key);
   EXPECT_EQ(manager.capacity(), 2u);
-  const auto snapshot = manager.debugState(lease.handle());
-  EXPECT_EQ(snapshot.growth_chunk_size, 2u);
+  EXPECT_EQ(manager.growthChunkSizeForTest(), 2u);
 
   this->adapter().expectDestroyComputePipelineStates({pipeline_handle});
   this->adapter().expectDestroyFunctions({function_handle});
@@ -271,12 +270,12 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
     EXPECT_TRUE(lease0);
   }
 
-  const auto snapshot = manager.debugState(lease0.handle());
+  const auto &snapshot = manager.stateForTest(lease0.handle().index);
   EXPECT_TRUE(snapshot.alive);
-  EXPECT_TRUE(snapshot.pipeline_allocated);
-  EXPECT_TRUE(snapshot.function_allocated);
+  EXPECT_TRUE(snapshot.pipeline_state != nullptr);
+  EXPECT_TRUE(snapshot.function != nullptr);
   EXPECT_EQ(snapshot.use_count, 2u);
-  EXPECT_EQ(snapshot.identifier, *maybe_name);
+  EXPECT_EQ(snapshot.key.identifier, *maybe_name);
 
   this->adapter().expectDestroyComputePipelineStates({pipeline_handle});
   this->adapter().expectDestroyFunctions({function_handle});
@@ -367,7 +366,7 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
   auto lease = manager.acquire(key);
   const auto handle = lease.handle();
   lease.release();
-  const auto released_snapshot = manager.debugState(handle);
+  const auto &released_snapshot = manager.stateForTest(handle.index);
   EXPECT_FALSE(released_snapshot.alive);
 
   auto reacquired = manager.acquire(key);
@@ -411,7 +410,7 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
   manager.release(lease);
   EXPECT_FALSE(static_cast<bool>(lease));
 
-  const auto snapshot = manager.debugState(original_handle);
+  const auto &snapshot = manager.stateForTest(original_handle.index);
   EXPECT_FALSE(snapshot.alive);
   EXPECT_GT(snapshot.generation, 0u);
 }

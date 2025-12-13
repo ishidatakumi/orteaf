@@ -109,8 +109,8 @@ TYPED_TEST(MpsHeapManagerTypedTest, GrowthChunkSizeReflectedInDebugState) {
     this->adapter().expectCreateHeapsInOrder({{descriptor, makeHeap(0x501)}});
   }
   auto lease = manager.acquire(key);
-  const auto snapshot = manager.debugState(lease.handle());
-  EXPECT_EQ(snapshot.growth_chunk_size, 2u);
+  const auto &snapshot = manager.stateForTest(lease.handle().index);
+  EXPECT_EQ(manager.growthChunkSizeForTest(), 2u);
   lease.release();
   if constexpr (TypeParam::is_mock) {
     this->adapter().expectDestroyHeaps({makeHeap(0x501)});
@@ -183,9 +183,9 @@ TYPED_TEST(MpsHeapManagerTypedTest, GetOrCreateCachesByDescriptor) {
   auto first = manager.acquire(key);
   ExpectError(diag_error::OrteafErrc::InvalidState,
               [&] { (void)manager.acquire(key); });
-  const auto snapshot = manager.debugState(first.handle());
+  const auto &snapshot = manager.stateForTest(first.handle().index);
   EXPECT_TRUE(snapshot.alive);
-  EXPECT_EQ(snapshot.size_bytes, key.size_bytes);
+  EXPECT_EQ(snapshot.key.size_bytes, key.size_bytes);
   first.release();
   auto second = manager.acquire(key);
   EXPECT_NE(first.handle(), second.handle());
@@ -216,9 +216,9 @@ TYPED_TEST(MpsHeapManagerTypedTest, DistinctDescriptorsAllocateSeparateHeaps) {
   auto lease_a = manager.acquire(key_a);
   auto lease_b = manager.acquire(key_b);
   EXPECT_NE(lease_a.handle(), lease_b.handle());
-  const auto snapshot_b = manager.debugState(lease_b.handle());
-  EXPECT_EQ(snapshot_b.storage_mode, key_b.storage_mode);
-  EXPECT_EQ(snapshot_b.heap_type, key_b.heap_type);
+  const auto &snapshot_b = manager.stateForTest(lease_b.handle().index);
+  EXPECT_EQ(snapshot_b.key.storage_mode, key_b.storage_mode);
+  EXPECT_EQ(snapshot_b.key.heap_type, key_b.heap_type);
   lease_a.release();
   lease_b.release();
   if constexpr (TypeParam::is_mock) {
@@ -266,7 +266,7 @@ TYPED_TEST(MpsHeapManagerTypedTest, ManualReleaseInvalidatesLease) {
 
   manager.release(lease);
   EXPECT_FALSE(static_cast<bool>(lease));
-  EXPECT_GT(manager.debugState(handle).generation, 0u);
+  EXPECT_GT(manager.stateForTest(handle.index).generation, 0u);
 
   manager.shutdown();
 }
