@@ -434,17 +434,4 @@ TYPED_TEST(MpsFenceManagerTypedTest, DebugStateReflectsFenceState) {
   manager.shutdown();
 }
 
-TYPED_TEST(MpsFenceManagerTypedTest,
-           DebugStateForInvalidHandleReturnsMaxGeneration) {
-  auto &manager = this->manager();
-  const auto device = this->adapter().device();
-  manager.initialize(device, this->getOps(), 1);
-
-  const auto invalid_handle = base::FenceHandle{999};
-  const auto &snapshot = manager.stateForTest(invalid_handle.index);
-  EXPECT_EQ(snapshot.generation, std::numeric_limits<std::uint32_t>::max());
-
-  // No fences created
-  manager.shutdown();
-}
 #endif

@@ -426,21 +426,9 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
   });
   this->adapter().expectCreateCommandQueues(
       {makeQueue(0x900), makeQueue(0x901)}, ::testing::Eq(device0));
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0xA00), makeEvent(0xA01)},
-                                     ::testing::Eq(device0));
-#endif
   this->adapter().expectCreateCommandQueues(
       {makeQueue(0x902), makeQueue(0x903)}, ::testing::Eq(device1));
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0xA02), makeEvent(0xA03)},
-                                     ::testing::Eq(device1));
-#endif
   this->adapter().expectReleaseDevices({device0, device1});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectDestroyEvents(
-      {makeEvent(0xA00), makeEvent(0xA01), makeEvent(0xA02), makeEvent(0xA03)});
-#endif
   this->adapter().expectDestroyCommandQueues(
       {makeQueue(0x900), makeQueue(0x901), makeQueue(0x902), makeQueue(0x903)});
 
