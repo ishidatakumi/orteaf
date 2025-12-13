@@ -82,43 +82,10 @@ MpsLibraryManager::acquire(const LibraryKey &key) {
 }
 
 MpsLibraryManager::LibraryLease
-MpsLibraryManager::acquire(const PipelineManagerLease &pipeline_lease) {
-  State &state = validateAndGetState(pipeline_lease.handle());
-  incrementUseCount(static_cast<std::size_t>(pipeline_lease.handle().index));
-  return LibraryLease{this, pipeline_lease.handle(), state.resource.library};
-}
-
-MpsLibraryManager::PipelineManagerLease
-MpsLibraryManager::acquirePipelineManager(const LibraryLease &lease) {
-  State &state = validateAndGetState(lease.handle());
-  return PipelineManagerLease{this, lease.handle(),
-                              &state.resource.pipeline_manager};
-}
-
-MpsLibraryManager::PipelineManagerLease
-MpsLibraryManager::acquirePipelineManager(const LibraryKey &key) {
-  ensureInitialized();
-  validateKey(key);
-
-  std::size_t index = 0;
-  State *state = nullptr;
-
-  if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
-    index = it->second;
-    state = &states_[index];
-    incrementUseCount(index);
-  } else {
-    index = allocateSlot();
-    state = &states_[index];
-    state->resource.library = createLibrary(key);
-    state->resource.pipeline_manager.initialize(
-        device_, state->resource.library, ops_, 0);
-    markSlotAlive(index);
-    key_to_index_.emplace(key, index);
-  }
-
-  return PipelineManagerLease{this, createHandle<LibraryHandle>(index),
-                              &state->resource.pipeline_manager};
+MpsLibraryManager::acquire(LibraryHandle handle) {
+  State &state = validateAndGetState(handle);
+  incrementUseCount(static_cast<std::size_t>(handle.index));
+  return LibraryLease{this, handle, state.resource.library};
 }
 
 void MpsLibraryManager::release(LibraryLease &lease) noexcept {
@@ -129,12 +96,34 @@ void MpsLibraryManager::release(LibraryLease &lease) noexcept {
   lease.invalidate();
 }
 
-void MpsLibraryManager::release(PipelineManagerLease &lease) noexcept {
-  if (!lease) {
-    return;
+MpsLibraryManager::PipelineManager *
+MpsLibraryManager::pipelineManager(const LibraryLease &lease) {
+  State &state = validateAndGetState(lease.handle());
+  return &state.resource.pipeline_manager;
+}
+
+MpsLibraryManager::PipelineManager *
+MpsLibraryManager::pipelineManager(const LibraryKey &key) {
+  ensureInitialized();
+  validateKey(key);
+
+  std::size_t index = 0;
+  State *state = nullptr;
+
+  if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
+    index = it->second;
+    state = &states_[index];
+  } else {
+    index = allocateSlot();
+    state = &states_[index];
+    state->resource.library = createLibrary(key);
+    state->resource.pipeline_manager.initialize(
+        device_, state->resource.library, ops_, 0);
+    markSlotAlive(index);
+    key_to_index_.emplace(key, index);
   }
-  decrementUseCount(static_cast<std::size_t>(lease.handle().index));
-  lease.invalidate();
+
+  return &state->resource.pipeline_manager;
 }
 
 void MpsLibraryManager::validateKey(const LibraryKey &key) const {

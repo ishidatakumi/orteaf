@@ -78,9 +78,6 @@ public:
       LibraryHandle,
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSLibrary_t,
       MpsLibraryManager>;
-  using PipelineManagerLease =
-      ::orteaf::internal::base::Lease<LibraryHandle, PipelineManager *,
-                                      MpsLibraryManager>;
 
   MpsLibraryManager() = default;
   MpsLibraryManager(const MpsLibraryManager &) = delete;
@@ -93,12 +90,13 @@ public:
   void shutdown();
 
   LibraryLease acquire(const LibraryKey &key);
-  LibraryLease acquire(const PipelineManagerLease &pipeline_lease);
-  PipelineManagerLease acquirePipelineManager(const LibraryLease &lease);
-  PipelineManagerLease acquirePipelineManager(const LibraryKey &key);
+  LibraryLease acquire(LibraryHandle handle);
 
   void release(LibraryLease &lease) noexcept;
-  void release(PipelineManagerLease &lease) noexcept;
+
+  // Direct access to PipelineManager (no Lease pattern)
+  PipelineManager *pipelineManager(const LibraryLease &lease);
+  PipelineManager *pipelineManager(const LibraryKey &key);
 
 private:
   void validateKey(const LibraryKey &key) const;

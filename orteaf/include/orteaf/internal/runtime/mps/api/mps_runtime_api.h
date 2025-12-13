@@ -40,8 +40,7 @@ public:
                                        const FunctionKey &function_key) {
     Runtime &rt = runtime();
     auto *lib_mgr = rt.deviceManager().libraryManager(device);
-    auto library = lib_mgr->acquire(library_key);
-    auto pipeline_mgr = lib_mgr->acquirePipelineManager(library);
+    auto *pipeline_mgr = lib_mgr->pipelineManager(library_key);
     return pipeline_mgr->acquire(function_key);
   }
 
