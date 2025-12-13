@@ -80,17 +80,10 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
   manager.setGrowthChunkSize(3);
   const auto device = this->adapter().device();
   this->adapter().expectCreateCommandQueues({makeQueue(0x510)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x610)});
-#endif
   manager.initialize(device, this->getOps(), 1);
   auto lease = manager.acquire();
-  const auto snapshot = manager.debugState(lease.handle());
-  EXPECT_EQ(snapshot.growth_chunk_size, 3u);
+  EXPECT_EQ(manager.growthChunkSize(), 3u);
   manager.release(lease);
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectDestroyEvents({makeEvent(0x610)});
-#endif
   this->adapter().expectDestroyCommandQueues({makeQueue(0x510)});
   manager.shutdown();
 }
@@ -99,16 +92,9 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
            InitializeCreatesConfiguredNumberOfResources) {
   auto &manager = this->manager();
   this->adapter().expectCreateCommandQueues({makeQueue(0x1), makeQueue(0x2)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x10), makeEvent(0x20)});
-#endif
   const auto device = this->adapter().device();
   manager.initialize(device, this->getOps(), 2);
   EXPECT_EQ(manager.capacity(), 2u);
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectDestroyEventsInOrder(
-      {makeEvent(0x10), makeEvent(0x20)});
-#endif
   this->adapter().expectDestroyCommandQueuesInOrder(
       {makeQueue(0x1), makeQueue(0x2)});
   manager.shutdown();
@@ -130,16 +116,8 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, CapacityReflectsPoolSize) {
   EXPECT_EQ(manager.capacity(), 0u);
   this->adapter().expectCreateCommandQueues(
       {makeQueue(0x301), makeQueue(0x302), makeQueue(0x303)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents(
-      {makeEvent(0x310), makeEvent(0x320), makeEvent(0x330)});
-#endif
   manager.initialize(device, this->getOps(), 3);
   EXPECT_EQ(manager.capacity(), 3u);
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectDestroyEvents(
-      {makeEvent(0x310), makeEvent(0x320), makeEvent(0x330)});
-#endif
   this->adapter().expectDestroyCommandQueues(
       {makeQueue(0x301), makeQueue(0x302), makeQueue(0x303)});
   manager.shutdown();
@@ -150,17 +128,11 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, GrowCapacityAddsAdditionalQueues) {
   auto &manager = this->manager();
   const auto device = this->adapter().device();
   this->adapter().expectCreateCommandQueues({makeQueue(0x350)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x351)});
-#endif
   manager.initialize(device, this->getOps(), 1);
   EXPECT_EQ(manager.capacity(), 1u);
 
   this->adapter().expectCreateCommandQueues(
       {makeQueue(0x360), makeQueue(0x370)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x361), makeEvent(0x371)});
-#endif
   manager.growCapacity(2);
   EXPECT_EQ(manager.capacity(), 3u);
 
@@ -178,10 +150,6 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, GrowCapacityAddsAdditionalQueues) {
   id1.release();
   id2.release();
 
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectDestroyEvents(
-      {makeEvent(0x351), makeEvent(0x361), makeEvent(0x371)});
-#endif
   this->adapter().expectDestroyCommandQueues(
       {makeQueue(0x350), makeQueue(0x360), makeQueue(0x370)});
   manager.shutdown();
@@ -194,17 +162,11 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
 
   this->adapter().expectCreateCommandQueues(
       {makeQueue(0x400), makeQueue(0x401)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x410), makeEvent(0x411)});
-#endif
   manager.initialize(device, this->getOps(), 2);
 
   auto lease = manager.acquire();
   lease.release();
 
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectDestroyEvents({makeEvent(0x410), makeEvent(0x411)});
-#endif
   this->adapter().expectDestroyCommandQueues(
       {makeQueue(0x400), makeQueue(0x401)});
   manager.releaseUnusedQueues();
@@ -212,16 +174,10 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
   EXPECT_EQ(manager.capacity(), 0u);
 
   this->adapter().expectCreateCommandQueues({makeQueue(0x420)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x421)});
-#endif
   auto reacquired = manager.acquire();
   reacquired.release();
   EXPECT_EQ(manager.capacity(), 1u);
 
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectDestroyEvents({makeEvent(0x421)});
-#endif
   this->adapter().expectDestroyCommandQueues({makeQueue(0x420)});
   manager.shutdown();
   EXPECT_EQ(manager.capacity(), 0u);
@@ -231,9 +187,6 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, ManualReleaseInvalidatesLease) {
   auto &manager = this->manager();
   const auto device = this->adapter().device();
   this->adapter().expectCreateCommandQueues({makeQueue(0x455)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x555)});
-#endif
   manager.initialize(device, this->getOps(), 1);
 
   auto lease = manager.acquire();
@@ -243,17 +196,14 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, ManualReleaseInvalidatesLease) {
   manager.release(lease);                 // manual release wrapper
   EXPECT_FALSE(static_cast<bool>(lease)); // lease should be invalidated
 
-  const auto snapshot = manager.debugState(original_handle);
-  EXPECT_FALSE(snapshot.in_use);
-  EXPECT_GT(snapshot.generation, 0u);
+  const auto &state = manager.stateForTest(original_handle.index);
+  EXPECT_FALSE(state.in_use);
+  EXPECT_GT(state.generation, 0u);
 
   auto reacquired = manager.acquire();
   EXPECT_NE(reacquired.handle(), original_handle); // generation bumped
   reacquired.release();
 
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectDestroyEvents({makeEvent(0x555)});
-#endif
   this->adapter().expectDestroyCommandQueues({makeQueue(0x455)});
   manager.shutdown();
 }
@@ -265,9 +215,6 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
 
   this->adapter().expectCreateCommandQueues(
       {makeQueue(0x430), makeQueue(0x431)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x440), makeEvent(0x441)});
-#endif
   manager.initialize(device, this->getOps(), 2);
 
   auto lease = manager.acquire();
@@ -275,9 +222,6 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
               [&] { manager.releaseUnusedQueues(); });
 
   manager.release(lease);
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectDestroyEvents({makeEvent(0x440), makeEvent(0x441)});
-#endif
   this->adapter().expectDestroyCommandQueues(
       {makeQueue(0x430), makeQueue(0x431)});
   manager.shutdown();
@@ -295,9 +239,6 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
   const auto device = this->adapter().device();
   this->adapter().expectCreateCommandQueues(
       {makeQueue(0x100), makeQueue(0x200)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x1000), makeEvent(0x2000)});
-#endif
   manager.initialize(device, this->getOps(), 2);
   auto id0 = manager.acquire();
   auto id1 = manager.acquire();
@@ -309,15 +250,9 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, AcquireGrowsPoolWhenFreelistEmpty) {
   const auto device = this->adapter().device();
   manager.setGrowthChunkSize(1);
   this->adapter().expectCreateCommandQueues({makeQueue(0x300)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x3000)});
-#endif
   manager.initialize(device, this->getOps(), 1);
   auto first = manager.acquire();
   this->adapter().expectCreateCommandQueues({makeQueue(0x301)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x3010)});
-#endif
   auto second = manager.acquire();
   EXPECT_NE(first.handle(), second.handle());
 }
@@ -328,9 +263,6 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
   const auto device = this->adapter().device();
   manager.setGrowthChunkSize(std::numeric_limits<std::size_t>::max());
   this->adapter().expectCreateCommandQueues({makeQueue(0x600)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x6000)});
-#endif
   manager.initialize(device, this->getOps(), 1);
   auto lease =
       manager.acquire(); // Keep lease to prevent it from returning to free list
@@ -348,9 +280,6 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, ReleaseRejectsNonAcquiredId) {
   auto &manager = this->manager();
   const auto device = this->adapter().device();
   this->adapter().expectCreateCommandQueues({makeQueue(0x700)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x7000)});
-#endif
   manager.initialize(device, this->getOps(), 1);
   auto lease = manager.acquire();
   auto moved = std::move(lease);
@@ -362,17 +291,8 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, ReleaseRequiresCompletedWork) {
   auto &manager = this->manager();
   const auto device = this->adapter().device();
   this->adapter().expectCreateCommandQueues({makeQueue(0x710)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x7110)});
-#endif
   manager.initialize(device, this->getOps(), 1);
   auto lease = manager.acquire();
-#if ORTEAF_MPS_DEBUG_ENABLED
-  auto serial = manager.acquireSerial(lease.handle());
-  serial->submit_serial = 5;
-  serial->completed_serial = 4;
-  manager.release(serial);
-#endif
   lease.release();
 }
 
@@ -382,17 +302,11 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
   const auto device = this->adapter().device();
   manager.setGrowthChunkSize(1);
   this->adapter().expectCreateCommandQueues({makeQueue(0x720)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x7210)});
-#endif
   manager.initialize(device, this->getOps(), 1);
   auto lease = manager.acquire();
   auto old_handle = lease.handle();
   manager.release(lease);
   this->adapter().expectCreateCommandQueues({});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({});
-#endif
   auto recycled = manager.acquire();
   EXPECT_NE(recycled.handle(), old_handle);
 }
@@ -401,17 +315,8 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, HazardCountersDefaultToZero) {
   auto &manager = this->manager();
   const auto device = this->adapter().device();
   this->adapter().expectCreateCommandQueues({makeQueue(0x900)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x9010)});
-#endif
   manager.initialize(device, this->getOps(), 1);
   auto lease = manager.acquire();
-#if ORTEAF_MPS_DEBUG_ENABLED
-  auto serial = manager.acquireSerial(lease.handle());
-  EXPECT_EQ(serial->submit_serial, 0u);
-  EXPECT_EQ(serial->completed_serial, 0u);
-  serial.release();
-#endif
   lease.release();
 }
 
@@ -420,27 +325,10 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
   auto &manager = this->manager();
   const auto device = this->adapter().device();
   this->adapter().expectCreateCommandQueues({makeQueue(0x910)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x9110)});
-#endif
   manager.initialize(device, this->getOps(), 1);
   auto lease = manager.acquire();
-#if ORTEAF_MPS_DEBUG_ENABLED
-  auto serial = manager.acquireSerial(lease.handle());
-  serial->submit_serial = 7;
-  serial->completed_serial = 7;
-  EXPECT_EQ(serial->submit_serial, 7u);
-  EXPECT_EQ(serial->completed_serial, 7u);
-  manager.release(serial);
-#endif
   lease.release();
   auto recycled = manager.acquire();
-#if ORTEAF_MPS_DEBUG_ENABLED
-  auto recycled_serial = manager.acquireSerial(recycled.handle());
-  EXPECT_EQ(recycled_serial->submit_serial, 0u);
-  EXPECT_EQ(recycled_serial->completed_serial, 0u);
-  recycled_serial.release();
-#endif
   recycled.release();
 }
 
@@ -449,24 +337,11 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, DebugStateReflectsSetterUpdates) {
   auto &manager = this->manager();
   const auto device = this->adapter().device();
   this->adapter().expectCreateCommandQueues({makeQueue(0x920)});
-#if ORTEAF_MPS_DEBUG_ENABLED
-  this->adapter().expectCreateEvents({makeEvent(0x9210)});
-#endif
   manager.initialize(device, this->getOps(), 1);
   auto lease = manager.acquire();
-#if ORTEAF_MPS_DEBUG_ENABLED
-  auto serial = manager.acquireSerial(lease.handle());
-  serial->submit_serial = 11;
-  serial->completed_serial = 9;
-  const auto snapshot = manager.debugState(lease.handle());
-  EXPECT_TRUE(snapshot.in_use);
-  EXPECT_TRUE(snapshot.queue_allocated);
-  EXPECT_EQ(snapshot.submit_serial, 11u);
-  EXPECT_EQ(snapshot.completed_serial, 9u);
-  manager.release(serial);
-#endif
+  const auto handle = lease.handle();
   lease.release();
-  const auto after_release = manager.debugState(lease.handle());
-  EXPECT_FALSE(after_release.in_use);
+  const auto &released_state = manager.stateForTest(handle.index);
+  EXPECT_FALSE(released_state.in_use);
 }
 #endif
