@@ -10,7 +10,7 @@
 #include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/base/heap_vector.h"
 #include "orteaf/internal/diagnostics/error/error.h"
-#include "orteaf/internal/runtime/base/base_manager.h"
+#include "orteaf/internal/runtime/base/shared_cache_manager.h"
 #include "orteaf/internal/runtime/mps/manager/mps_buffer_manager.h"
 #include "orteaf/internal/runtime/mps/manager/mps_command_queue_manager.h"
 #include "orteaf/internal/runtime/mps/manager/mps_event_manager.h"
@@ -23,31 +23,30 @@
 
 namespace orteaf::internal::runtime::mps::manager {
 
-struct MpsDeviceManagerState {
+// Resource struct: holds device and all child managers
+struct MpsDeviceResource {
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
+
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device{
       nullptr};
   ::orteaf::internal::architecture::Architecture arch{
       ::orteaf::internal::architecture::Architecture::MpsGeneric};
-  bool is_alive{false};
-  ::orteaf::internal::runtime::mps::manager::MpsCommandQueueManager
-      command_queue_manager{};
-  ::orteaf::internal::runtime::mps::manager::MpsHeapManager heap_manager{};
-  ::orteaf::internal::runtime::mps::manager::MpsLibraryManager
-      library_manager{};
-  ::orteaf::internal::runtime::mps::manager::MpsGraphManager graph_manager{};
-  ::orteaf::internal::runtime::mps::manager::MpsEventManager event_pool{};
-  ::orteaf::internal::runtime::mps::manager::MpsFenceManager fence_pool{};
+  MpsCommandQueueManager command_queue_manager{};
+  MpsHeapManager heap_manager{};
+  MpsLibraryManager library_manager{};
+  MpsGraphManager graph_manager{};
+  MpsEventManager event_pool{};
+  MpsFenceManager fence_pool{};
 
-  MpsDeviceManagerState() = default;
-  MpsDeviceManagerState(const MpsDeviceManagerState &) = delete;
-  MpsDeviceManagerState &operator=(const MpsDeviceManagerState &) = delete;
+  MpsDeviceResource() = default;
+  MpsDeviceResource(const MpsDeviceResource &) = delete;
+  MpsDeviceResource &operator=(const MpsDeviceResource &) = delete;
 
-  MpsDeviceManagerState(MpsDeviceManagerState &&other) noexcept {
+  MpsDeviceResource(MpsDeviceResource &&other) noexcept {
     moveFrom(std::move(other));
   }
 
-  MpsDeviceManagerState &operator=(MpsDeviceManagerState &&other) noexcept {
+  MpsDeviceResource &operator=(MpsDeviceResource &&other) noexcept {
     if (this != &other) {
       reset(nullptr);
       moveFrom(std::move(other));
@@ -55,24 +54,53 @@ struct MpsDeviceManagerState {
     return *this;
   }
 
-  ~MpsDeviceManagerState() { reset(nullptr); }
+  ~MpsDeviceResource() { reset(nullptr); }
 
-  void reset(SlowOps *slow_ops) noexcept;
+  void reset(SlowOps *slow_ops) noexcept {
+    command_queue_manager.shutdown();
+    heap_manager.shutdown();
+    library_manager.shutdown();
+    graph_manager.shutdown();
+    event_pool.shutdown();
+    fence_pool.shutdown();
+    if (device != nullptr && slow_ops != nullptr) {
+      slow_ops->releaseDevice(device);
+    }
+    device = nullptr;
+    arch = ::orteaf::internal::architecture::Architecture::MpsGeneric;
+  }
 
 private:
-  void moveFrom(MpsDeviceManagerState &&other) noexcept;
+  void moveFrom(MpsDeviceResource &&other) noexcept {
+    command_queue_manager = std::move(other.command_queue_manager);
+    heap_manager = std::move(other.heap_manager);
+    library_manager = std::move(other.library_manager);
+    graph_manager = std::move(other.graph_manager);
+    event_pool = std::move(other.event_pool);
+    fence_pool = std::move(other.fence_pool);
+    device = other.device;
+    arch = other.arch;
+    other.device = nullptr;
+  }
 };
 
+// Use SharedCacheState template
+using MpsDeviceManagerState =
+    ::orteaf::internal::runtime::base::SharedCacheState<MpsDeviceResource>;
+
 struct MpsDeviceManagerTraits {
-  using DeviceType = void *; // Not used directly in initialize
+  using DeviceType = void *;
   using OpsType = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using StateType = MpsDeviceManagerState;
   static constexpr const char *Name = "MPS device manager";
 };
 
 class MpsDeviceManager
-    : public base::BaseManager<MpsDeviceManager, MpsDeviceManagerTraits> {
+    : public ::orteaf::internal::runtime::base::SharedCacheManager<
+          MpsDeviceManager, MpsDeviceManagerTraits> {
 public:
+  using Base = ::orteaf::internal::runtime::base::SharedCacheManager<
+      MpsDeviceManager, MpsDeviceManagerTraits>;
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
 
   MpsDeviceManager() = default;
@@ -133,7 +161,7 @@ public:
   bool isAlive(::orteaf::internal::base::DeviceHandle handle) const;
 
   // =========================================================================
-  // Direct access to child managers (no Lease pattern)
+  // Direct access to child managers
   // =========================================================================
   MpsCommandQueueManager *
   commandQueueManager(::orteaf::internal::base::DeviceHandle handle);
@@ -150,11 +178,9 @@ public:
   MpsFenceManager *fencePool(::orteaf::internal::base::DeviceHandle handle);
 
 private:
-  const State &ensureValid(::orteaf::internal::base::DeviceHandle handle) const;
-
-  State &ensureValidState(::orteaf::internal::base::DeviceHandle handle) {
-    return const_cast<State &>(ensureValid(handle));
-  }
+  State &ensureValidState(::orteaf::internal::base::DeviceHandle handle);
+  const State &
+  ensureValidStateConst(::orteaf::internal::base::DeviceHandle handle) const;
 
   std::size_t command_queue_initial_capacity_{0};
   std::size_t heap_initial_capacity_{0};

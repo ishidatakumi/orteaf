@@ -152,17 +152,17 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetDeviceReturnsRegisteredHandle) {
   for (std::uint32_t idx = 0; idx < count; ++idx) {
     const auto device = manager.device(base::DeviceHandle{idx});
     const auto &snapshot = manager.stateForTest(idx);
-    EXPECT_EQ(snapshot.device != nullptr, device != nullptr);
-    EXPECT_EQ(snapshot.is_alive, device != nullptr);
+    EXPECT_EQ(snapshot.resource.device != nullptr, device != nullptr);
+    EXPECT_EQ(snapshot.alive, device != nullptr);
     if constexpr (TypeParam::is_mock) {
       EXPECT_EQ(device, expected_handles[idx]);
       const auto expected_arch = (idx == 0) ? architecture::Architecture::MpsM3
                                             : architecture::Architecture::MpsM4;
-      EXPECT_EQ(snapshot.arch, expected_arch);
+      EXPECT_EQ(snapshot.resource.arch, expected_arch);
     } else {
       EXPECT_NE(device, nullptr);
       if (expected_count >= 0 && idx == 0) {
-        EXPECT_NE(snapshot.arch, architecture::Architecture::MpsGeneric);
+        EXPECT_NE(snapshot.resource.arch, architecture::Architecture::MpsGeneric);
       }
     }
   }
@@ -201,15 +201,15 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetArchMatchesReportedArchitecture) {
       const auto expected_arch = (idx == 0) ? architecture::Architecture::MpsM4
                                             : architecture::Architecture::MpsM3;
       EXPECT_EQ(arch, expected_arch);
-      EXPECT_EQ(snapshot.arch, expected_arch);
-      EXPECT_TRUE(snapshot.device != nullptr);
-      EXPECT_TRUE(snapshot.is_alive);
+      EXPECT_EQ(snapshot.resource.arch, expected_arch);
+      EXPECT_TRUE(snapshot.resource.device != nullptr);
+      EXPECT_TRUE(snapshot.alive);
     } else if (expected_arch_env && *expected_arch_env != '\0' && idx == 0) {
       EXPECT_STREQ(expected_arch_env, architecture::idOf(arch).data());
-      EXPECT_STREQ(expected_arch_env, architecture::idOf(snapshot.arch).data());
+      EXPECT_STREQ(expected_arch_env, architecture::idOf(snapshot.resource.arch).data());
     } else {
       EXPECT_FALSE(architecture::idOf(arch).empty());
-      EXPECT_FALSE(architecture::idOf(snapshot.arch).empty());
+      EXPECT_FALSE(architecture::idOf(snapshot.resource.arch).empty());
     }
   }
 
@@ -271,7 +271,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, IsAliveReflectsReportedDeviceCount) {
     const auto &snapshot = manager.stateForTest(index);
     EXPECT_TRUE(manager.isAlive(id))
         << "Device " << index << " should be alive";
-    EXPECT_TRUE(snapshot.is_alive);
+    EXPECT_TRUE(snapshot.alive);
   }
 
   const auto invalid = base::DeviceHandle{static_cast<std::uint32_t>(count)};
@@ -617,8 +617,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, DeviceNotAliveThrowsOnAccess) {
               [&] { (void)manager.fencePool(base::DeviceHandle{0}); });
 
   const auto &snapshot = manager.stateForTest(0);
-  EXPECT_FALSE(snapshot.is_alive);
-  EXPECT_FALSE(snapshot.device != nullptr);
+  EXPECT_FALSE(snapshot.alive);
+  EXPECT_FALSE(snapshot.resource.device != nullptr);
 
   manager.shutdown();
 }
