@@ -311,13 +311,6 @@ public:
   Pool *pool() { return &pool_; }
   const Pool *pool() const { return &pool_; }
 
-#if ORTEAF_ENABLE_TEST
-  DeviceType deviceForTest() const noexcept { return device_; }
-  const State &stateForTest(std::size_t index) const {
-    return Base::states_[index];
-  }
-#endif
-
 private:
   Buffer allocateBuffer(std::size_t size, std::size_t alignment) {
     if (size == 0) {
