@@ -71,13 +71,57 @@ public:
   using Base::states_;
 
 protected:
+  // ===== Ref Count Helpers =====
+
+  /// Increment ref_count for the given slot. Returns new count.
+  std::size_t incrementRefCount(std::size_t index) {
+    return states_[index].ref_count.fetch_add(1, std::memory_order_relaxed) + 1;
+  }
+
+  /// Decrement ref_count for the given slot. Returns new count.
+  std::size_t decrementRefCount(std::size_t index) {
+    return states_[index].ref_count.fetch_sub(1, std::memory_order_acq_rel) - 1;
+  }
+
+  /// Get current ref_count for the given slot.
+  std::size_t refCount(std::size_t index) const {
+    return states_[index].ref_count.load(std::memory_order_relaxed);
+  }
+
+  /// Check if ref_count is zero (ready to return to pool).
+  bool isRefCountZero(std::size_t index) const { return refCount(index) == 0; }
+
+  // ===== Slot Management =====
+
+  /// Mark slot as in use with initial ref_count of 1.
+  void markSlotInUse(std::size_t index) {
+    State &state = states_[index];
+    state.in_use = true;
+    state.ref_count.store(1, std::memory_order_relaxed);
+  }
+
+  /// Release slot back to pool. Increments generation.
   void releaseSlot(std::size_t index) {
     if (index < states_.size()) {
       State &state = states_[index];
       state.in_use = false;
+      state.ref_count.store(0, std::memory_order_relaxed);
       ++state.generation;
       Base::free_list_.pushBack(index);
     }
+  }
+
+  /// Check if slot is currently in use.
+  bool isSlotInUse(std::size_t index) const {
+    return index < states_.size() && states_[index].in_use;
+  }
+
+  /// Check if handle generation matches.
+  template <typename HandleType>
+  bool isGenerationValid(std::size_t index, HandleType handle) const {
+    return index < states_.size() &&
+           static_cast<std::size_t>(states_[index].generation) ==
+               static_cast<std::size_t>(handle.generation);
   }
 };
 

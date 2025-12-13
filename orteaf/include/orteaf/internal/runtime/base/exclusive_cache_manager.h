@@ -38,11 +38,22 @@ public:
   using Base::states_;
 
 protected:
-  // Cache managers don't use free_list - resources persist until shutdown
+  // ===== Slot Management =====
+
+  /// Cache managers don't use free_list - resources persist until shutdown.
+  /// Allocates new slot at end of states.
   std::size_t allocateSlot() {
     std::size_t current_size = states_.size();
     states_.resize(current_size + 1);
     return current_size;
+  }
+
+  /// Mark slot as alive (resource created).
+  void markSlotAlive(std::size_t index) { states_[index].alive = true; }
+
+  /// Check if slot is alive (resource exists).
+  bool isSlotAlive(std::size_t index) const {
+    return index < states_.size() && states_[index].alive;
   }
 };
 

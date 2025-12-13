@@ -37,11 +37,20 @@ public:
   using Base::states_;
 
 protected:
-  // OneTime managers: resource destroyed on release, slot recycled
+  // ===== Slot Management =====
+
+  /// Mark slot as alive (resource created).
+  void markSlotAlive(std::size_t index) { states_[index].alive = true; }
+
+  /// Check if slot is alive (resource exists).
+  bool isSlotAlive(std::size_t index) const {
+    return index < states_.size() && states_[index].alive;
+  }
+
+  /// Release slot and return to free list. Resource should be destroyed first.
   void releaseSlotAndDestroy(std::size_t index) {
     if (index < states_.size()) {
       State &state = states_[index];
-      // Derived class should destroy the resource before calling this
       state.resource = {};
       state.alive = false;
       Base::free_list_.pushBack(index);

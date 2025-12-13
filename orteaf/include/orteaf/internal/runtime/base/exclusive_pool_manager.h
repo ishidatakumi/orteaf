@@ -7,7 +7,7 @@
 namespace orteaf::internal::runtime::base {
 
 /**
- * @brief State for ExclusivePoolManager.
+ * @brief State for ExclusivePoolState.
  * @tparam Resource The resource type being managed.
  */
 template <typename Resource> struct ExclusivePoolState {
@@ -39,6 +39,28 @@ public:
   using Base::states_;
 
 protected:
+  // ===== Slot Management =====
+
+  /// Mark slot as in use.
+  void markSlotInUse(std::size_t index) { states_[index].in_use = true; }
+
+  /// Mark slot as not in use.
+  void markSlotFree(std::size_t index) { states_[index].in_use = false; }
+
+  /// Check if slot is currently in use.
+  bool isSlotInUse(std::size_t index) const {
+    return index < states_.size() && states_[index].in_use;
+  }
+
+  /// Mark slot as alive (resource created).
+  void markSlotAlive(std::size_t index) { states_[index].alive = true; }
+
+  /// Check if slot is alive (resource exists).
+  bool isSlotAlive(std::size_t index) const {
+    return index < states_.size() && states_[index].alive;
+  }
+
+  /// Release slot back to pool.
   void releaseSlot(std::size_t index) {
     if (index < states_.size()) {
       states_[index].in_use = false;
