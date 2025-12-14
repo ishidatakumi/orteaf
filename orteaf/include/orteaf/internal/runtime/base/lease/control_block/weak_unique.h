@@ -16,6 +16,12 @@ namespace orteaf::internal::runtime::base {
 template <typename SlotT>
   requires SlotConcept<SlotT>
 struct WeakUniqueControlBlock {
+  // WeakUnique does not support generation tracking.
+  // Weak references use isAlive()/tryPromote() for validity checking.
+  static_assert(!SlotT::has_generation,
+                "WeakUniqueControlBlock does not support generation tracking. "
+                "Use a Slot without generation (e.g., Slot<T> or RawSlot<T>).");
+
   using Category = lease_category::WeakUnique;
   using Slot = SlotT;
 
@@ -78,6 +84,28 @@ struct WeakUniqueControlBlock {
   /// @brief Try to promote weak reference to strong
   /// @return true if successfully promoted (same as tryAcquire)
   bool tryPromote() noexcept { return tryAcquire(); }
+
+  /// @brief Check if fully released (not in use)
+  bool isReleased() const noexcept { return !isAlive(); }
+
+  /// @brief Check if completely released (not in use and no weak references)
+  bool isFullyReleased() const noexcept {
+    return !in_use.load(std::memory_order_acquire) &&
+           weak_count.load(std::memory_order_acquire) == 0;
+  }
+
+  /// @brief Prepare for reuse - validates state and increments generation
+  /// @return true if successfully prepared (was released), false if still in
+  /// use
+  bool prepareForReuse() noexcept {
+    if (!isReleased()) {
+      return false; // Still in use, cannot reuse
+    }
+    if constexpr (SlotT::has_generation) {
+      slot.incrementGeneration();
+    }
+    return true;
+  }
 };
 
 // Verify concept satisfaction

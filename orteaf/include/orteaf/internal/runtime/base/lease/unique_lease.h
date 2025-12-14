@@ -18,7 +18,7 @@ public:
   using HandleType = HandleT;
   using ResourceType = ResourceT;
   using ManagerType = ManagerT;
-  using CompatibleCategory = ::orteaf::internal::base::lease_category::Unique;
+  using CompatibleCategory = lease_category::Unique;
 
   UniqueLease() noexcept = default;
   UniqueLease(const UniqueLease &) = delete;

@@ -65,6 +65,22 @@ struct SharedControlBlock {
 
   /// @brief Check if any references exist
   bool isAlive() const noexcept { return count() > 0; }
+
+  /// @brief Check if fully released (count == 0)
+  bool isReleased() const noexcept { return count() == 0; }
+
+  /// @brief Prepare for reuse - validates state and increments generation
+  /// @return true if successfully prepared (was released), false if still in
+  /// use
+  bool prepareForReuse() noexcept {
+    if (!isReleased()) {
+      return false; // Still has references, cannot reuse
+    }
+    if constexpr (SlotT::has_generation) {
+      slot.incrementGeneration();
+    }
+    return true;
+  }
 };
 
 // Verify concept satisfaction

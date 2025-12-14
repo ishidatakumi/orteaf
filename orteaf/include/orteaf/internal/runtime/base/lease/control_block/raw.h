@@ -25,6 +25,18 @@ struct RawControlBlock {
 
   /// @brief Always alive (no tracking)
   constexpr bool isAlive() const noexcept { return true; }
+
+  /// @brief Always released (no tracking)
+  constexpr bool isReleased() const noexcept { return true; }
+
+  /// @brief Prepare for reuse - increments generation if available
+  /// @return always true (no state to validate)
+  bool prepareForReuse() noexcept {
+    if constexpr (SlotT::has_generation) {
+      slot.incrementGeneration();
+    }
+    return true;
+  }
 };
 
 // Verify concept satisfaction

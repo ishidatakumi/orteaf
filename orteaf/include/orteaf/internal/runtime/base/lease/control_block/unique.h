@@ -53,6 +53,22 @@ struct UniqueControlBlock {
   bool isAlive() const noexcept {
     return in_use.load(std::memory_order_acquire);
   }
+
+  /// @brief Check if fully released (not in use)
+  bool isReleased() const noexcept { return !isAlive(); }
+
+  /// @brief Prepare for reuse - validates state and increments generation
+  /// @return true if successfully prepared (was released), false if still in
+  /// use
+  bool prepareForReuse() noexcept {
+    if (!isReleased()) {
+      return false; // Still in use, cannot reuse
+    }
+    if constexpr (SlotT::has_generation) {
+      slot.incrementGeneration();
+    }
+    return true;
+  }
 };
 
 // Verify concept satisfaction

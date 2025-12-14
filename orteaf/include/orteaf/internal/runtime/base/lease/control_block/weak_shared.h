@@ -103,6 +103,28 @@ struct WeakSharedControlBlock {
 
   /// @brief Check if any strong references exist
   bool isAlive() const noexcept { return count() > 0; }
+
+  /// @brief Check if fully released (strong count == 0)
+  bool isReleased() const noexcept { return count() == 0; }
+
+  /// @brief Check if completely released (both strong and weak counts == 0)
+  bool isFullyReleased() const noexcept {
+    return strong_count.load(std::memory_order_acquire) == 0 &&
+           weak_count.load(std::memory_order_acquire) == 0;
+  }
+
+  /// @brief Prepare for reuse - validates state and increments generation
+  /// @return true if successfully prepared (was released), false if still in
+  /// use
+  bool prepareForReuse() noexcept {
+    if (!isReleased()) {
+      return false; // Still has strong references, cannot reuse
+    }
+    if constexpr (SlotT::has_generation) {
+      slot.incrementGeneration();
+    }
+    return true;
+  }
 };
 
 // Verify concept satisfaction
