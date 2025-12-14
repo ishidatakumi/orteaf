@@ -85,6 +85,17 @@ protected:
     initialized_ = true;
   }
 
+  /// @brief Setup pool with capacity, initializing control blocks to default
+  /// @param capacity Number of control blocks to create
+  void setupPool(std::size_t capacity) {
+    ensureNotInitialized();
+    control_blocks_.resize(capacity);
+    for (std::size_t i = 0; i < capacity; ++i) {
+      freelist_.push_back(static_cast<Handle>(i));
+    }
+    initialized_ = true;
+  }
+
   /// @brief Setup empty pool (for lazy/cache pattern - grows on demand)
   /// @param reserveCapacity Optional initial capacity to reserve (default: 0)
   void setupPoolEmpty(std::size_t reserveCapacity = 0) {
@@ -128,11 +139,6 @@ protected:
     control_blocks_.clear();
     freelist_.clear();
     initialized_ = false;
-  }
-
-  /// @brief Add a handle to freelist
-  void addToFreelist(Handle h) {
-    freelist_.push_back(h); // LIFO: push to back
   }
 
   // =========================================================================
@@ -188,37 +194,45 @@ protected:
   // Acquire Helpers
   // =========================================================================
 
-  /// @brief Acquire from fixed set (immutable manager)
-  /// @return Handle if available, or invalid handle
-  Handle acquireFromFixed() {
+  /// @brief Acquire from pool, throws if empty (fixed-size pool)
+  /// @return Handle to acquired resource
+  Handle acquireFromPool() {
     ensureInitialized();
     if (freelist_.empty()) {
-      return Handle{}; // Invalid
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
+          std::string(managerName()) + " pool is exhausted");
     }
-    Handle h = freelist_.back(); // LIFO
+    Handle h = freelist_.back();
     freelist_.pop_back();
     control_blocks_[static_cast<std::size_t>(h.index)].tryAcquire();
     return h;
   }
 
-  /// @brief Acquire, creating if needed
-  /// @tparam CreateFn Callable: void(ControlBlock&, Handle) - called if slot
-  /// not initialized
-  template <typename CreateFn> Handle acquireOrCreate(CreateFn &&createFn) {
+  /// @brief Acquire, creating resource if slot not initialized (growable pool)
+  /// @param growthSize How much to grow if pool is empty
+  /// @param createFn Callable: bool(ControlBlock&, Handle) - returns true on
+  /// success
+  /// @return Handle to the acquired resource, or invalid handle on creation
+  /// failure
+  /// @note Only calls createFn when slot.isInitialized() returns false
+  /// @note On createFn failure, handle is returned to freelist
+  template <typename CreateFn>
+    requires std::invocable<CreateFn, ControlBlock &, Handle> &&
+             std::convertible_to<
+                 std::invoke_result_t<CreateFn, ControlBlock &, Handle>, bool>
+  Handle acquireOrCreate(std::size_t growthSize, CreateFn &&createFn) {
     ensureInitialized();
-    if (freelist_.empty()) {
-      return Handle{}; // No space
-    }
-    Handle h = freelist_.back(); // LIFO
-    freelist_.pop_back();
-    auto &cb = control_blocks_[static_cast<std::size_t>(h.index)];
+    Handle h = allocate(growthSize); // Auto-grows if empty
+    auto &cb = getControlBlock(h);
 
-    // Create if not initialized (for Slot<T> with initialized flag)
-    if constexpr (requires { cb.slot.isInitialized(); }) {
-      if (!cb.slot.isInitialized()) {
-        createFn(cb, h);
-        cb.slot.markInitialized();
+    // Create only if not initialized
+    if (!cb.slot.isInitialized()) {
+      if (!createFn(cb, h)) {
+        pushToFreelist(h);
+        return Handle::invalid(); // Invalid handle on failure
       }
+      cb.slot.markInitialized();
     }
 
     cb.tryAcquire();
