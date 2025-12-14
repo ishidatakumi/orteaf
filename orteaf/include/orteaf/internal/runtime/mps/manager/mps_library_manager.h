@@ -119,10 +119,6 @@ public:
   using Base::controlBlockForTest;
   using Base::freeListSizeForTest;
   using Base::isInitializedForTest;
-
-  const LibraryControlBlock &stateForTest(std::size_t index) const {
-    return controlBlockForTest(index);
-  }
 #endif
 
 private:

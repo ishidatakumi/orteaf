@@ -131,11 +131,6 @@ public:
     return growth_chunk_size_;
   }
 
-  // Compatibility with old API: stateForTest returns control block reference
-  auto &stateForTest(std::size_t index) { return controlBlockForTest(index); }
-  const auto &stateForTest(std::size_t index) const {
-    return controlBlockForTest(index);
-  }
 #endif
 
 private:

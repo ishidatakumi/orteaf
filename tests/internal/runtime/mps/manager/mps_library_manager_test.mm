@@ -176,7 +176,7 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GetOrCreateAllocatesAndCachesLibrary) {
 
   // Assert
   EXPECT_EQ(lease.pointer(), lib_handle);
-  const auto &snapshot = manager.stateForTest(lease.handle().index);
+  const auto &snapshot = manager.controlBlockForTest(lease.handle().index);
   EXPECT_TRUE(snapshot.slot.isInitialized());
 
   // Act: Release (RawLease - no ref counting, just invalidate)
@@ -211,7 +211,7 @@ TYPED_TEST(MpsLibraryManagerTypedTest, ReleasedLeaseDoesNotAffectLibrary) {
   manager.release(second);
 
   // Assert: Library still alive (cache pattern)
-  const auto &snapshot = manager.stateForTest(0);
+  const auto &snapshot = manager.controlBlockForTest(0);
   EXPECT_TRUE(snapshot.slot.isInitialized());
 }
 
@@ -312,7 +312,7 @@ TYPED_TEST(MpsLibraryManagerTypedTest, LibraryPersistsAfterLeaseRelease) {
   manager.release(library_lease);
 
   // Assert: Library still alive after release
-  const auto &snapshot_mid = manager.stateForTest(0);
+  const auto &snapshot_mid = manager.controlBlockForTest(0);
   EXPECT_TRUE(snapshot_mid.slot.isInitialized());
 }
 
@@ -343,6 +343,6 @@ TYPED_TEST(MpsLibraryManagerTypedTest,
   manager.release(library_lease);
 
   // Assert: Library still alive after release
-  const auto &snapshot = manager.stateForTest(0);
+  const auto &snapshot = manager.controlBlockForTest(0);
   EXPECT_TRUE(snapshot.slot.isInitialized());
 }

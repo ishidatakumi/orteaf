@@ -311,8 +311,8 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
   }
 
   // Assert: State is initialized with valid resource
-  const auto &cb =
-      manager.stateForTest(static_cast<std::size_t>(lease0.handle().index));
+  const auto &cb = manager.controlBlockForTest(
+      static_cast<std::size_t>(lease0.handle().index));
   EXPECT_TRUE(cb.slot.isInitialized());
   EXPECT_TRUE(cb.slot.get().pipeline_state != nullptr);
   EXPECT_TRUE(cb.slot.get().function != nullptr);
@@ -358,7 +358,7 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
 
   // Assert: State stays alive (cache pattern)
   const auto &released_cb =
-      manager.stateForTest(static_cast<std::size_t>(handle.index));
+      manager.controlBlockForTest(static_cast<std::size_t>(handle.index));
   EXPECT_TRUE(released_cb.slot.isInitialized());
 
   // Act: Reacquire returns same cached resource
@@ -410,8 +410,8 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
   // Assert
   EXPECT_FALSE(static_cast<bool>(lease));
 
-  const auto &cb =
-      manager.stateForTest(static_cast<std::size_t>(original_handle.index));
+  const auto &cb = manager.controlBlockForTest(
+      static_cast<std::size_t>(original_handle.index));
   EXPECT_TRUE(cb.slot.isInitialized());
 
   // Cleanup
