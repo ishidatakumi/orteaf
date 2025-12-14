@@ -82,13 +82,7 @@ MpsEventManager::EventLease MpsEventManager::acquire() {
 }
 
 MpsEventManager::EventLease MpsEventManager::acquire(EventHandle handle) {
-  auto &cb = Base::getControlBlockChecked(handle);
-  if (cb.count() == 0) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-        "Cannot acquire shared handle to a released resource");
-  }
-  cb.acquire(); // Increment ref count
+  auto &cb = Base::acquireShared(handle);
   return EventLease{this, handle, cb.slot.get()};
 }
 

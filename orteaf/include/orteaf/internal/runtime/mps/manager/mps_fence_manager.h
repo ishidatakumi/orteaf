@@ -13,7 +13,7 @@
 namespace orteaf::internal::runtime::mps::manager {
 
 // Slot type: Standard Slot with initialization tracking
-using FenceSlot = ::orteaf::internal::runtime::base::Slot<
+using FenceSlot = ::orteaf::internal::runtime::base::GenerationalSlot<
     ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t>;
 
 // Control block: Shared ownership
@@ -57,16 +57,6 @@ public:
   FenceLease acquire(FenceHandle handle);
   void release(FenceLease &lease) noexcept;
   void release(FenceHandle handle) noexcept;
-
-  // Expose capacity
-  using Base::capacity;
-  using Base::isInitialized;
-
-#if ORTEAF_ENABLE_TEST
-  using Base::controlBlockForTest;
-  using Base::freeListSizeForTest;
-  using Base::isInitializedForTest;
-#endif
 
 private:
   void destroyResource(FenceType &resource);

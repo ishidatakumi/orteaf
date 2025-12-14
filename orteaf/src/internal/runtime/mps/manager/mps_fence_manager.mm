@@ -75,13 +75,7 @@ MpsFenceManager::FenceLease MpsFenceManager::acquire() {
 }
 
 MpsFenceManager::FenceLease MpsFenceManager::acquire(FenceHandle handle) {
-  auto &cb = Base::getControlBlockChecked(handle);
-  if (cb.count() == 0) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-        "Cannot acquire shared handle to a released resource");
-  }
-  cb.acquire();
+  auto &cb = Base::acquireShared(handle);
   return FenceLease{this, handle, cb.slot.get()};
 }
 

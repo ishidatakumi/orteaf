@@ -13,7 +13,7 @@
 namespace orteaf::internal::runtime::mps::manager {
 
 // Slot type: Standard Slot with initialization tracking
-using EventSlot = ::orteaf::internal::runtime::base::Slot<
+using EventSlot = ::orteaf::internal::runtime::base::GenerationalSlot<
     ::orteaf::internal::runtime::mps::platform::wrapper::MPSEvent_t>;
 
 // Control block: Shared ownership
@@ -57,16 +57,6 @@ public:
   EventLease acquire(EventHandle handle);
   void release(EventLease &lease) noexcept;
   void release(EventHandle handle) noexcept;
-
-  // Expose capacity
-  using Base::capacity;
-  using Base::isInitialized;
-
-#if ORTEAF_ENABLE_TEST
-  using Base::controlBlockForTest;
-  using Base::freeListSizeForTest;
-  using Base::isInitializedForTest;
-#endif
 
 private:
   void destroyResource(EventType &resource);
