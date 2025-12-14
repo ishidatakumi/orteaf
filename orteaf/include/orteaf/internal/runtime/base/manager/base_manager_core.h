@@ -252,6 +252,20 @@ protected:
     }
   }
 
+  /// @brief Release a shared reference. If ref count drops to zero, return to
+  /// freelist.
+  /// @note Requires ControlBlock::release() to return bool (true if count
+  /// became 0)
+  void releaseShared(Handle h) {
+    auto idx = static_cast<std::size_t>(h.index);
+    if (idx < control_blocks_.size()) {
+      auto &cb = control_blocks_[idx];
+      if (cb.release()) {
+        freelist_.push_back(h); // LIFO
+      }
+    }
+  }
+
   /// @brief Release and destroy (non-reusable)
   /// @tparam DestroyFn Callable: void(ControlBlock&, Handle)
   template <typename DestroyFn>

@@ -101,13 +101,7 @@ void MpsEventManager::release(EventHandle handle) noexcept {
   if (!Base::isValidHandle(handle)) {
     return;
   }
-  auto &cb = Base::getControlBlock(handle);
-
-  // Decrement ref count. If it drops to 0, release back to freelist.
-  // Note: resource is NOT destroyed, it remains cached in the slot.
-  if (cb.release()) {
-    Base::pushToFreelist(handle);
-  }
+  Base::releaseShared(handle);
 }
 
 } // namespace orteaf::internal::runtime::mps::manager
