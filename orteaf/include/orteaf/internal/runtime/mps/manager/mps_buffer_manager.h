@@ -87,6 +87,7 @@ public:
                                             MpsBufferManagerT>;
   using DeviceType = typename Traits::DeviceType;
   using Pool = MpsBufferPoolT<ResourceT>;
+  using LaunchParams = typename Pool::LaunchParams;
   using Resource = ResourceT;
   using State = typename Traits::StateType;
 
@@ -192,14 +193,22 @@ public:
     Base::initialized_ = true;
   }
 
-  void shutdown() {
+  // =========================================================================
+  // Shutdown (default params version)
+  // =========================================================================
+  void shutdown() { shutdown(default_params_); }
+
+  // =========================================================================
+  // Shutdown (explicit params version)
+  // =========================================================================
+  void shutdown(LaunchParams &params) {
     if (!Base::initialized_) {
       return;
     }
     for (std::size_t i = 0; i < Base::states_.size(); ++i) {
       State &state = Base::states_[i];
       if (state.alive) {
-        deallocateBuffer(state.resource.buffer);
+        deallocateBuffer(state.resource.buffer, params);
         state.resource.buffer = Buffer{};
         state.alive = false;
         state.ref_count.store(0, std::memory_order_relaxed);
@@ -218,9 +227,17 @@ public:
   }
 
   // =========================================================================
-  // Acquire (allocate new buffer)
+  // Acquire (allocate new buffer - default params version)
   // =========================================================================
   BufferLease acquire(std::size_t size, std::size_t alignment) {
+    return acquire(size, alignment, default_params_);
+  }
+
+  // =========================================================================
+  // Acquire (allocate new buffer - explicit params version)
+  // =========================================================================
+  BufferLease acquire(std::size_t size, std::size_t alignment,
+                      LaunchParams &params) {
     Base::ensureInitialized();
     if (size == 0) {
       return {};
@@ -229,7 +246,7 @@ public:
     const std::size_t index = Base::allocateSlot();
     State &state = Base::states_[index];
 
-    state.resource.buffer = allocateBuffer(size, alignment);
+    state.resource.buffer = allocateBuffer(size, alignment, params);
     if (!state.resource.buffer.valid()) {
       Base::free_list_.pushBack(index);
       return {};
@@ -276,9 +293,19 @@ public:
   }
 
   // =========================================================================
-  // Release
+  // Release (default params version)
   // =========================================================================
-  void release(BufferHandle handle) {
+  void release(BufferHandle handle) { release(handle, default_params_); }
+
+  void release(BufferLease &lease) noexcept {
+    release(lease.handle(), default_params_);
+    lease.invalidate();
+  }
+
+  // =========================================================================
+  // Release (explicit params version)
+  // =========================================================================
+  void release(BufferHandle handle, LaunchParams &params) {
     if (!Base::initialized_) {
       return;
     }
@@ -298,13 +325,13 @@ public:
 
     const auto prev = state.ref_count.fetch_sub(1, std::memory_order_acq_rel);
     if (prev == 1) {
-      deallocateBuffer(state.resource.buffer);
+      deallocateBuffer(state.resource.buffer, params);
       Base::releaseSlotAndDestroy(index);
     }
   }
 
-  void release(BufferLease &lease) noexcept {
-    release(lease.handle());
+  void release(BufferLease &lease, LaunchParams &params) noexcept {
+    release(lease.handle(), params);
     lease.invalidate();
   }
 
@@ -312,11 +339,11 @@ public:
   const Pool *pool() const { return &pool_; }
 
 private:
-  Buffer allocateBuffer(std::size_t size, std::size_t alignment) {
+  Buffer allocateBuffer(std::size_t size, std::size_t alignment,
+                        LaunchParams &params) {
     if (size == 0) {
       return {};
     }
-    typename Pool::LaunchParams params{};
     auto res = pool_.allocate(size, alignment, params);
     if (!res.valid()) {
       return {};
@@ -324,7 +351,7 @@ private:
     return Buffer{std::move(res), size, alignment};
   }
 
-  void deallocateBuffer(Buffer &buffer) {
+  void deallocateBuffer(Buffer &buffer, LaunchParams &params) {
     if (!buffer.valid()) {
       return;
     }
@@ -332,7 +359,6 @@ private:
     if (!res.valid()) {
       return;
     }
-    typename Pool::LaunchParams params{};
     pool_.deallocate(std::move(res), buffer.size(), buffer.alignment(), params);
   }
 
@@ -341,6 +367,7 @@ private:
   DeviceType device_{nullptr};
   ::orteaf::internal::base::DeviceHandle device_handle_{};
   HeapType heap_{nullptr};
+  LaunchParams default_params_{};
 };
 
 } // namespace orteaf::internal::runtime::mps::manager
