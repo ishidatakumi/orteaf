@@ -65,11 +65,18 @@ using PipelineSlot =
 using PipelineControlBlock =
     ::orteaf::internal::runtime::base::RawControlBlock<PipelineSlot>;
 
+/// @brief Traits for MpsComputePipelineStateManager
+struct MpsComputePipelineStateManagerTraits {
+  using ControlBlock = PipelineControlBlock;
+  using Handle = ::orteaf::internal::base::FunctionHandle;
+  static constexpr const char *Name = "MpsComputePipelineStateManager";
+};
+
 class MpsComputePipelineStateManager
     : protected ::orteaf::internal::runtime::base::BaseManagerCore<
-          PipelineControlBlock, ::orteaf::internal::base::FunctionHandle> {
+          MpsComputePipelineStateManagerTraits> {
   using Base = ::orteaf::internal::runtime::base::BaseManagerCore<
-      PipelineControlBlock, ::orteaf::internal::base::FunctionHandle>;
+      MpsComputePipelineStateManagerTraits>;
 
 public:
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;

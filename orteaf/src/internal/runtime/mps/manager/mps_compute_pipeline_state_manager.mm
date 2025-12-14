@@ -36,8 +36,8 @@ void MpsComputePipelineStateManager::initialize(DeviceType device,
   ops_ = ops;
   key_to_index_.clear();
 
-  // Reserve capacity but don't initialize slots (lazy creation)
-  reserveSlots(capacity);
+  // Setup empty pool (cache pattern - grows on demand)
+  setupPool(capacity);
 }
 
 void MpsComputePipelineStateManager::shutdown() {
@@ -46,9 +46,9 @@ void MpsComputePipelineStateManager::shutdown() {
   }
 
   // Destroy all created resources
-  shutdownSlots([this](auto &cb, auto handle) {
-    if (cb.payload.isInitialized()) {
-      destroyResource(cb.payload.get());
+  teardownPool([this](auto &cb, auto handle) {
+    if (cb.slot.isInitialized()) {
+      destroyResource(cb.slot.get());
     }
   });
 
@@ -63,49 +63,39 @@ MpsComputePipelineStateManager::acquire(const FunctionKey &key) {
   ensureInitialized();
   validateKey(key);
 
-  // Check if already cached
+  // Check cache first
   if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
     auto handle = static_cast<FunctionHandle>(it->second);
-    auto &cb = getControlBlock(handle);
-    return PipelineLease{this, handle, cb.payload.get().pipeline_state};
+    return PipelineLease{this, handle,
+                         getControlBlock(handle).slot.get().pipeline_state};
   }
 
-  // Need new slot - pop from freelist
-  Handle handle;
-  if (!tryPopFromFreelist(handle)) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
-        "No slots available for new pipeline state");
-  }
+  // Acquire new slot and create resource
+  Handle handle = acquireOrCreate(growth_chunk_size_, [&](auto &cb, auto) {
+    auto &resource = cb.slot.get();
+    resource.function = ops_->createFunction(library_, key.identifier);
+    if (!resource.function)
+      return false;
 
-  auto &cb = getControlBlock(handle);
-  auto &resource = cb.payload.get();
+    resource.pipeline_state =
+        ops_->createComputePipelineState(device_, resource.function);
+    if (!resource.pipeline_state) {
+      ops_->destroyFunction(resource.function);
+      resource.function = nullptr;
+      return false;
+    }
+    return true;
+  });
 
-  // Create function
-  resource.function = ops_->createFunction(library_, key.identifier);
-  if (resource.function == nullptr) {
-    pushToFreelist(handle);
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-        "Failed to create MPS function for compute pipeline");
-  }
-
-  // Create pipeline state
-  resource.pipeline_state =
-      ops_->createComputePipelineState(device_, resource.function);
-  if (resource.pipeline_state == nullptr) {
-    ops_->destroyFunction(resource.function);
-    resource.function = nullptr;
-    pushToFreelist(handle);
+  if (!handle.isValid()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "Failed to create MPS compute pipeline state");
   }
 
-  cb.payload.markInitialized();
   key_to_index_.emplace(key, static_cast<std::size_t>(handle.index));
-
-  return PipelineLease{this, handle, resource.pipeline_state};
+  return PipelineLease{this, handle,
+                       getControlBlock(handle).slot.get().pipeline_state};
 }
 
 void MpsComputePipelineStateManager::release(PipelineLease &lease) noexcept {

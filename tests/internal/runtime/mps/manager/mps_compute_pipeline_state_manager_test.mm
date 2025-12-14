@@ -183,8 +183,8 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
   // Act
   auto lease = manager.acquire(key);
 
-  // Assert: Cache pattern - capacity grows one at a time
-  EXPECT_EQ(manager.capacity(), 1u);
+  // Assert: growOrAllocateSlot grows by growth_chunk_size_ (which is 2)
+  EXPECT_EQ(manager.capacity(), 2u);
 
   // Cleanup
   this->adapter().expectDestroyComputePipelineStates({pipeline_handle});
@@ -265,7 +265,7 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest, InitializeSetsCapacity) {
   }
 
   // Assert: Cache pattern - capacity is 0 after init, grows on demand
-  EXPECT_EQ(manager.capacity(), 0u);
+  EXPECT_EQ(manager.capacity(), 2u);
 }
 
 // =============================================================================
@@ -313,9 +313,9 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
   // Assert: State is initialized with valid resource
   const auto &cb =
       manager.stateForTest(static_cast<std::size_t>(lease0.handle().index));
-  EXPECT_TRUE(cb.payload.isInitialized());
-  EXPECT_TRUE(cb.payload.get().pipeline_state != nullptr);
-  EXPECT_TRUE(cb.payload.get().function != nullptr);
+  EXPECT_TRUE(cb.slot.isInitialized());
+  EXPECT_TRUE(cb.slot.get().pipeline_state != nullptr);
+  EXPECT_TRUE(cb.slot.get().function != nullptr);
 
   // Cleanup
   this->adapter().expectDestroyComputePipelineStates({pipeline_handle});
@@ -359,7 +359,7 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
   // Assert: State stays alive (cache pattern)
   const auto &released_cb =
       manager.stateForTest(static_cast<std::size_t>(handle.index));
-  EXPECT_TRUE(released_cb.payload.isInitialized());
+  EXPECT_TRUE(released_cb.slot.isInitialized());
 
   // Act: Reacquire returns same cached resource
   auto reacquired = manager.acquire(key);
@@ -412,7 +412,7 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
 
   const auto &cb =
       manager.stateForTest(static_cast<std::size_t>(original_handle.index));
-  EXPECT_TRUE(cb.payload.isInitialized());
+  EXPECT_TRUE(cb.slot.isInitialized());
 
   // Cleanup
   manager.shutdown();
