@@ -21,8 +21,20 @@ public:
   using CompatibleCategory = ::orteaf::internal::base::lease_category::Raw;
 
   RawLease() noexcept = default;
-  RawLease(const RawLease &) = delete;
-  RawLease &operator=(const RawLease &) = delete;
+
+  // Copy is allowed - no control block, direct copy
+  RawLease(const RawLease &other) noexcept
+      : manager_(other.manager_), handle_(other.handle_),
+        resource_(other.resource_) {}
+
+  RawLease &operator=(const RawLease &other) noexcept {
+    if (this != &other) {
+      manager_ = other.manager_;
+      handle_ = other.handle_;
+      resource_ = other.resource_;
+    }
+    return *this;
+  }
 
   RawLease(RawLease &&other) noexcept
       : manager_(std::exchange(other.manager_, nullptr)),
