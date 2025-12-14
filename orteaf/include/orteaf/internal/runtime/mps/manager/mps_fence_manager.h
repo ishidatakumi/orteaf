@@ -3,37 +3,45 @@
 #if ORTEAF_ENABLE_MPS
 
 #include "orteaf/internal/base/handle.h"
-#include "orteaf/internal/base/shared_lease.h"
-#include "orteaf/internal/runtime/base/shared_pool_manager.h"
+#include "orteaf/internal/runtime/base/lease/control_block/shared.h"
+#include "orteaf/internal/runtime/base/lease/shared_lease.h"
+#include "orteaf/internal/runtime/base/lease/slot.h"
+#include "orteaf/internal/runtime/base/manager/base_manager_core.h"
 #include "orteaf/internal/runtime/mps/platform/mps_slow_ops.h"
 #include "orteaf/internal/runtime/mps/platform/wrapper/mps_fence.h"
 
 namespace orteaf::internal::runtime::mps::manager {
 
-// Use the standard SharedPoolState template
-using MpsFenceManagerState = ::orteaf::internal::runtime::base::SharedPoolState<
+// Slot type: Standard Slot with initialization tracking
+using FenceSlot = ::orteaf::internal::runtime::base::Slot<
     ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t>;
 
+// Control block: Shared ownership
+using FenceControlBlock =
+    ::orteaf::internal::runtime::base::SharedControlBlock<FenceSlot>;
+
 struct MpsFenceManagerTraits {
-  using OpsType = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
-  using StateType = MpsFenceManagerState;
+  using ControlBlock = FenceControlBlock;
+  using Handle = ::orteaf::internal::base::FenceHandle;
   static constexpr const char *Name = "MPS fence manager";
 };
 
 class MpsFenceManager
-    : public ::orteaf::internal::runtime::base::SharedPoolManager<
-          MpsFenceManager, MpsFenceManagerTraits> {
+    : protected ::orteaf::internal::runtime::base::BaseManagerCore<
+          MpsFenceManagerTraits> {
+  using Base =
+      ::orteaf::internal::runtime::base::BaseManagerCore<MpsFenceManagerTraits>;
+
 public:
-  using Base = ::orteaf::internal::runtime::base::SharedPoolManager<
-      MpsFenceManager, MpsFenceManagerTraits>;
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using DeviceType =
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
   using FenceHandle = ::orteaf::internal::base::FenceHandle;
-  using FenceLease = ::orteaf::internal::base::SharedLease<
-      FenceHandle,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t,
-      MpsFenceManager>;
+  using FenceType =
+      ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t;
+  using FenceLease =
+      ::orteaf::internal::runtime::base::SharedLease<FenceHandle, FenceType,
+                                                     MpsFenceManager>;
 
   MpsFenceManager() = default;
   MpsFenceManager(const MpsFenceManager &) = delete;
@@ -50,8 +58,22 @@ public:
   void release(FenceLease &lease) noexcept;
   void release(FenceHandle handle) noexcept;
 
+  // Expose capacity
+  using Base::capacity;
+  using Base::isInitialized;
+
+#if ORTEAF_ENABLE_TEST
+  using Base::controlBlockForTest;
+  using Base::freeListSizeForTest;
+  using Base::isInitializedForTest;
+#endif
+
 private:
+  void destroyResource(FenceType &resource);
+
   DeviceType device_{nullptr};
+  SlowOps *ops_{nullptr};
+  std::size_t growth_chunk_size_{1};
 };
 
 } // namespace orteaf::internal::runtime::mps::manager

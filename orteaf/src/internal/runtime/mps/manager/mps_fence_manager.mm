@@ -26,57 +26,63 @@ void MpsFenceManager::initialize(DeviceType device, SlowOps *ops,
   }
   device_ = device;
   ops_ = ops;
-  clearPoolStates();
-  if (capacity > 0) {
-    Base::growPool(capacity);
-  }
-  initialized_ = true;
+  Base::setupPool(capacity);
 }
 
 void MpsFenceManager::shutdown() {
-  if (!initialized_) {
+  if (!Base::isInitialized()) {
     return;
   }
-  for (std::size_t i = 0; i < states_.size(); ++i) {
-    State &state = states_[i];
-    if (state.alive && state.resource != nullptr) {
-      ops_->destroyFence(state.resource);
-      state.resource = nullptr;
-      state.alive = false;
-      state.in_use = false;
-      state.ref_count.store(0, std::memory_order_relaxed);
+  Base::teardownPool([this](FenceControlBlock &cb, FenceHandle) {
+    if (cb.slot.isInitialized()) {
+      destroyResource(cb.slot.get());
     }
-  }
-  clearPoolStates();
+  });
   device_ = nullptr;
   ops_ = nullptr;
-  initialized_ = false;
 }
 
 MpsFenceManager::FenceLease MpsFenceManager::acquire() {
-  ensureInitialized();
-  const std::size_t index = Base::allocateSlot();
-  State &state = states_[index];
+  auto handle = Base::acquireOrCreate(
+      growth_chunk_size_, [this](FenceControlBlock &cb, FenceHandle) {
+        if (!ops_) {
+          return false;
+        }
+        auto fence = ops_->createFence(device_);
+        if (fence == nullptr) {
+          return false;
+        }
+        cb.slot.get() = fence;
+        return true;
+      });
 
-  if (!state.alive) {
-    state.resource = ops_->createFence(device_);
-    if (state.resource == nullptr) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          "Failed to create MPS fence");
-    }
-    state.alive = true;
-    state.generation = 0;
+  if (!handle.isValid()) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "Failed to create MPS fence");
   }
 
-  markSlotInUse(index);
-  return FenceLease{this, createHandle<FenceHandle>(index), state.resource};
+  // Base::acquireOrCreate already calls cb.tryAcquire() for fresh resources
+  // If we reused a resource (not fresh), it does not increment if it was
+  // already alive. Wait, acquireOrCreate logic:
+  // - allocate slot
+  // - if not initialized: createFn -> initialized.
+  // - tryAcquire() -> increments strong_count from 0 to 1.
+  // So handle is owned with count=1.
+
+  return FenceLease{this, handle,
+                    Base::getControlBlockChecked(handle).slot.get()};
 }
 
 MpsFenceManager::FenceLease MpsFenceManager::acquire(FenceHandle handle) {
-  State &state = validateAndGetState(handle);
-  incrementRefCount(static_cast<std::size_t>(handle.index));
-  return FenceLease{this, handle, state.resource};
+  auto &cb = Base::getControlBlockChecked(handle);
+  if (cb.count() == 0) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "Cannot acquire shared handle to a released resource");
+  }
+  cb.acquire();
+  return FenceLease{this, handle, cb.slot.get()};
 }
 
 void MpsFenceManager::release(FenceLease &lease) noexcept {
@@ -85,14 +91,18 @@ void MpsFenceManager::release(FenceLease &lease) noexcept {
 }
 
 void MpsFenceManager::release(FenceHandle handle) noexcept {
-  State *state = getStateForRelease(handle);
-  if (state == nullptr) {
+  if (!Base::isValidHandle(handle)) {
     return;
   }
-  const std::size_t index = static_cast<std::size_t>(handle.index);
-  const std::size_t new_count = decrementRefCount(index);
-  if (new_count == 0) {
-    releaseSlot(index);
+  Base::releaseShared(handle);
+}
+
+void MpsFenceManager::destroyResource(FenceType &resource) {
+  if (resource != nullptr) {
+    if (ops_) {
+      ops_->destroyFence(resource);
+    }
+    resource = nullptr;
   }
 }
 

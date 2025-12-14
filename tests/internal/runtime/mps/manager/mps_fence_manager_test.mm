@@ -221,7 +221,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, AcquireByInvalidHandleThrows) {
   const auto invalid_handle = base::FenceHandle{999};
 
   // Act & Assert
-  ExpectError(diag_error::OrteafErrc::InvalidArgument,
+  ExpectError(diag_error::OrteafErrc::OutOfRange,
               [&] { (void)manager.acquire(invalid_handle); });
 
   manager.shutdown();
@@ -246,7 +246,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, AcquireByStaleHandleThrows) {
   auto new_lease = manager.acquire();
   manager.release(new_lease);
 
-  // Assert: Old handle is stale
+  // Assert: Old handle is stale/invalid because ref count dropped to 0
   ExpectError(diag_error::OrteafErrc::InvalidState,
               [&] { (void)manager.acquire(handle); });
 
@@ -487,9 +487,8 @@ TYPED_TEST(MpsFenceManagerTypedTest, DebugStateReflectsFenceState) {
   const auto handle = lease.handle();
 
   // Assert
-  const auto &snapshot = manager.stateForTest(handle.index);
-  EXPECT_TRUE(snapshot.alive);
-  EXPECT_EQ(snapshot.generation, handle.generation);
+  const auto &snapshot = manager.controlBlockForTest(handle.index);
+  EXPECT_TRUE(snapshot.isAlive());
 
   // Cleanup
   manager.release(lease);
