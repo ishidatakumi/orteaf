@@ -238,7 +238,6 @@ protected:
           ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
           std::string(managerName()) + " pool is exhausted");
     }
-    // Allocate handles logic
     IndexType idx = freelist_.back();
     freelist_.pop_back();
 
@@ -260,35 +259,32 @@ protected:
     return h;
   }
 
-  /// @brief Acquire, creating resource if slot not initialized (growable pool)
+  /// @brief Acquire, creating resource if needed (growable pool)
   /// @param growthSize How much to grow if pool is empty
   /// @param createFn Callable: bool(ControlBlock&, Handle) - returns true on
   /// success
   /// @return Handle to the acquired resource, or invalid handle on creation
   /// failure
-  /// @note Only calls createFn when slot.isInitialized() returns false
-  /// @note On createFn failure, handle is returned to freelist
-  /// @throws InvalidState if control block cannot be acquired (e.g., Unique
-  /// already in use)
+  /// @throws InvalidState if control block cannot be acquired
   template <typename CreateFn>
     requires std::invocable<CreateFn, ControlBlock &, Handle> &&
              std::convertible_to<
                  std::invoke_result_t<CreateFn, ControlBlock &, Handle>, bool>
   Handle acquireOrCreate(std::size_t growthSize, CreateFn &&createFn) {
     ensureInitialized();
-    Handle h = allocate(growthSize); // Allocates handle with current generation
+    Handle h = allocate(growthSize);
     auto &cb = getControlBlock(h);
 
     // Create only if not initialized
     if (!cb.slot.isInitialized()) {
       if (!createFn(cb, h)) {
         pushToFreelist(h.index);
-        return Handle::invalid(); // Invalid handle on failure
+        return Handle::invalid();
       }
       cb.slot.markInitialized();
     }
 
-    // Acquire the control block, throws if cannot acquire
+    // Acquire the control block
     if (!cb.acquire()) {
       pushToFreelist(h.index);
       ::orteaf::internal::diagnostics::error::throwError(
@@ -299,55 +295,7 @@ protected:
     return h;
   }
 
-  // =========================================================================
-  // Release Helpers
-  // =========================================================================
-
-  /// @brief Release to freelist (reusable)
-  void releaseToFreelist(Handle h) {
-    auto idx = static_cast<std::size_t>(h.index);
-    if (idx < control_blocks_.size()) {
-      auto &cb = control_blocks_[idx];
-      cb.release();
-      cb.prepareForReuse();
-      freelist_.push_back(static_cast<IndexType>(idx)); // LIFO
-    }
-  }
-
-  /// @brief Release a shared reference. If ref count drops to zero, return to
-  /// freelist.
-  /// @note Requires ControlBlock::release() to return bool (true if count
-  /// became 0)
-  void releaseShared(Handle h) {
-    auto idx = static_cast<std::size_t>(h.index);
-    if (idx < control_blocks_.size()) {
-      auto &cb = control_blocks_[idx];
-      if (cb.release()) {
-        cb.prepareForReuse();
-        freelist_.push_back(static_cast<IndexType>(idx)); // LIFO
-      }
-    }
-  }
-
-  /// @brief Acquire an existing shared resource by handle, incrementing ref
-  /// count.
-  /// @throws InvalidArgument if handle invalid
-  /// @throws InvalidState if resource is already released (count == 0)
-  ControlBlock &acquireShared(Handle h) {
-    auto &cb = getControlBlockChecked(h);
-    // Note: This assumes SharedControlBlock interface (count(), acquire())
-    if (cb.count() == 0) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          "Cannot acquire shared handle to a released resource");
-    }
-    cb.acquire();
-    return cb;
-  }
-
-  /// @brief Acquire a unique resource from pool (creating if needed).
-  /// @details Wrapper around acquireOrCreate for clearer intent with Unique
-  /// resources.
+  /// @brief Acquire a unique resource (alias for acquireOrCreate)
   template <typename CreateFn>
     requires std::invocable<CreateFn, ControlBlock &, Handle> &&
              std::convertible_to<
@@ -356,16 +304,59 @@ protected:
     return acquireOrCreate(growthSize, std::forward<CreateFn>(createFn));
   }
 
-  /// @brief Release a unique resource.
-  /// @details Marks resource as not in use and returns handle to freelist.
-  /// @note Requires ControlBlock::release() (sets in_use = false)
+  /// @brief Acquire an existing shared resource, incrementing ref count
+  /// @throws InvalidArgument if handle invalid
+  /// @throws InvalidState if resource released or cannot acquire
+  ControlBlock &acquireShared(Handle h) {
+    auto &cb = getControlBlockChecked(h);
+    if (cb.count() == 0) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          "Cannot acquire shared handle to a released resource");
+    }
+    if (!cb.acquire()) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          std::string(managerName()) + " control block cannot be acquired");
+    }
+    return cb;
+  }
+
+  // =========================================================================
+  // Release Helpers
+  // =========================================================================
+
+  /// @brief Release to freelist (reusable, generic)
+  void releaseToFreelist(Handle h) {
+    auto idx = static_cast<std::size_t>(h.index);
+    if (idx < control_blocks_.size()) {
+      auto &cb = control_blocks_[idx];
+      if (cb.release()) {
+        freelist_.push_back(static_cast<IndexType>(idx));
+      }
+    }
+  }
+
+  /// @brief Release a shared reference. If ref count drops to zero, return to
+  /// freelist.
+  void releaseShared(Handle h) {
+    auto idx = static_cast<std::size_t>(h.index);
+    if (idx < control_blocks_.size()) {
+      auto &cb = control_blocks_[idx];
+      if (cb.release()) {
+        freelist_.push_back(static_cast<IndexType>(idx));
+      }
+    }
+  }
+
+  /// @brief Release a unique resource and return to freelist.
   void releaseUnique(Handle h) {
     auto idx = static_cast<std::size_t>(h.index);
     if (idx < control_blocks_.size()) {
       auto &cb = control_blocks_[idx];
-      cb.release();
-      cb.prepareForReuse();
-      freelist_.push_back(static_cast<IndexType>(idx)); // LIFO
+      if (cb.release()) {
+        freelist_.push_back(static_cast<IndexType>(idx));
+      }
     }
   }
 
@@ -376,16 +367,14 @@ protected:
     auto idx = static_cast<std::size_t>(h.index);
     if (idx < control_blocks_.size()) {
       auto &cb = control_blocks_[idx];
-      cb.release();
       destroyFn(cb, h);
 
-      // Mark as uninitialized for Slot<T>
-      if constexpr (requires { cb.slot.markUninitialized(); }) {
-        cb.slot.markUninitialized();
-      }
+      // Mark slot as uninitialized
+      cb.invalidate();
 
-      cb.prepareForReuse();
-      freelist_.push_back(static_cast<IndexType>(idx)); // LIFO
+      if (cb.release()) {
+        freelist_.push_back(static_cast<IndexType>(idx));
+      }
     }
   }
 
