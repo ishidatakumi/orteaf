@@ -11,12 +11,18 @@
 #include <vector>
 
 #include "orteaf/internal/base/handle.h"
-#include "orteaf/internal/base/lease.h"
-#include "orteaf/internal/runtime/base/shared_cache_manager.h"
+#include "orteaf/internal/runtime/base/lease/control_block/shared.h"
+#include "orteaf/internal/runtime/base/lease/shared_lease.h"
+#include "orteaf/internal/runtime/base/lease/slot.h"
+#include "orteaf/internal/runtime/base/manager/base_manager_core.h"
 #include "orteaf/internal/runtime/mps/platform/mps_slow_ops.h"
 #include "orteaf/internal/runtime/mps/platform/wrapper/mps_graph.h"
 
 namespace orteaf::internal::runtime::mps::manager {
+
+// =============================================================================
+// Graph Key Types
+// =============================================================================
 
 enum class GraphKeyKind : std::uint8_t { kNamed };
 
@@ -64,7 +70,10 @@ struct GraphKeyHasher {
   }
 };
 
-// Resource struct: holds graph + executable
+// =============================================================================
+// Graph Resource
+// =============================================================================
+
 struct MpsGraphResource {
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraph_t graph{
       nullptr};
@@ -72,34 +81,43 @@ struct MpsGraphResource {
       executable{nullptr};
 };
 
-// Use SharedCacheState template
-using MpsGraphManagerState =
-    ::orteaf::internal::runtime::base::SharedCacheState<MpsGraphResource>;
+// =============================================================================
+// BaseManagerCore Types
+// =============================================================================
+
+using GraphSlot =
+    ::orteaf::internal::runtime::base::GenerationalSlot<MpsGraphResource>;
+using GraphControlBlock =
+    ::orteaf::internal::runtime::base::SharedControlBlock<GraphSlot>;
 
 struct MpsGraphManagerTraits {
-  using OpsType = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
-  using StateType = MpsGraphManagerState;
-  static constexpr const char *Name = "MPS graph manager";
+  using ControlBlock = GraphControlBlock;
+  using Handle = ::orteaf::internal::base::GraphHandle;
+  static constexpr const char *Name = "MpsGraphManager";
 };
 
+// =============================================================================
+// MpsGraphManager
+// =============================================================================
+
 class MpsGraphManager
-    : public ::orteaf::internal::runtime::base::SharedCacheManager<
-          MpsGraphManager, MpsGraphManagerTraits> {
+    : protected ::orteaf::internal::runtime::base::BaseManagerCore<
+          MpsGraphManagerTraits> {
+  using Base =
+      ::orteaf::internal::runtime::base::BaseManagerCore<MpsGraphManagerTraits>;
+
 public:
-  using Base = ::orteaf::internal::runtime::base::SharedCacheManager<
-      MpsGraphManager, MpsGraphManagerTraits>;
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using DeviceType =
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
   using GraphHandle = ::orteaf::internal::base::GraphHandle;
-  using GraphLease = ::orteaf::internal::base::Lease<
-      GraphHandle,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraphExecutable_t,
-      MpsGraphManager>;
-  using CompileFn = std::function<
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraphExecutable_t(
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraph_t graph,
-          DeviceType device, SlowOps *slow_ops)>;
+  using ExecutableType =
+      ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraphExecutable_t;
+  using GraphLease = ::orteaf::internal::runtime::base::SharedLease<
+      GraphHandle, ExecutableType, MpsGraphManager>;
+  using CompileFn = std::function<ExecutableType(
+      ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraph_t graph,
+      DeviceType device, SlowOps *slow_ops)>;
 
   MpsGraphManager() = default;
   MpsGraphManager(const MpsGraphManager &) = delete;
@@ -114,12 +132,24 @@ public:
   GraphLease acquire(const GraphKey &key, const CompileFn &compile_fn);
   void release(GraphLease &lease) noexcept;
 
+  // Expose base methods
+  using Base::capacity;
+  using Base::isInitialized;
+
+#if ORTEAF_ENABLE_TEST
+  using Base::controlBlockForTest;
+  using Base::freeListSizeForTest;
+  using Base::isInitializedForTest;
+#endif
+
 private:
   void validateKey(const GraphKey &key) const;
   void destroyResource(MpsGraphResource &resource);
 
   std::unordered_map<GraphKey, std::size_t, GraphKeyHasher> key_to_index_{};
   DeviceType device_{nullptr};
+  SlowOps *ops_{nullptr};
+  std::size_t growth_chunk_size_{1};
 };
 
 } // namespace orteaf::internal::runtime::mps::manager

@@ -26,36 +26,25 @@ void MpsGraphManager::initialize(DeviceType device, SlowOps *ops,
   }
   device_ = device;
   ops_ = ops;
-  clearCacheStates();
   key_to_index_.clear();
   growth_chunk_size_ = capacity > 0 ? capacity : 1;
-  if (capacity > 0) {
-    states_.reserve(capacity);
-  }
-  initialized_ = true;
+  Base::setupPool(capacity);
 }
 
 void MpsGraphManager::shutdown() {
-  if (!initialized_) {
-    return;
-  }
-  for (std::size_t i = 0; i < states_.size(); ++i) {
-    State &state = states_[i];
-    if (state.alive) {
-      destroyResource(state.resource);
-      state.alive = false;
+  Base::teardownPool([this](GraphControlBlock &cb, GraphHandle) {
+    if (cb.isInitialized()) {
+      destroyResource(cb.payload());
     }
-  }
-  clearCacheStates();
+  });
   key_to_index_.clear();
   device_ = nullptr;
   ops_ = nullptr;
-  initialized_ = false;
 }
 
 MpsGraphManager::GraphLease
 MpsGraphManager::acquire(const GraphKey &key, const CompileFn &compile_fn) {
-  ensureInitialized();
+  Base::ensureInitialized();
   validateKey(key);
   if (!compile_fn) {
     ::orteaf::internal::diagnostics::error::throwError(
@@ -65,38 +54,48 @@ MpsGraphManager::acquire(const GraphKey &key, const CompileFn &compile_fn) {
 
   // Check if already cached
   if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
-    incrementUseCount(it->second);
-    return GraphLease{this, createHandle<GraphHandle>(it->second),
-                      states_[it->second].resource.executable};
+    // Reconstruct handle from cached index
+    GraphHandle cached_handle{
+        static_cast<typename GraphHandle::index_type>(it->second)};
+    if constexpr (GraphHandle::has_generation) {
+      cached_handle.generation =
+          static_cast<typename GraphHandle::generation_type>(
+              Base::getControlBlock(cached_handle).generation());
+    }
+    auto &cb = Base::acquireShared(cached_handle);
+    return GraphLease{this, cached_handle, cb.payload().executable};
   }
 
   // Create new entry
-  const std::size_t index = allocateSlot();
-  State &state = states_[index];
+  auto handle = Base::acquireOrCreate(
+      growth_chunk_size_, [&](GraphControlBlock &cb, GraphHandle) {
+        MpsGraphResource &resource = cb.payload();
+        resource.graph = ops_->createGraph();
+        resource.executable = compile_fn(resource.graph, device_, ops_);
+        if (resource.executable == nullptr) {
+          ::orteaf::internal::diagnostics::error::throwError(
+              ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+              "MPS graph compile function returned null executable");
+        }
+        return true;
+      });
 
-  try {
-    state.resource.graph = ops_->createGraph();
-    state.resource.executable = compile_fn(state.resource.graph, device_, ops_);
-    if (state.resource.executable == nullptr) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          "MPS graph compile function returned null executable");
-    }
-    markSlotAlive(index);
-    key_to_index_.emplace(key, index);
-    return GraphLease{this, createHandle<GraphHandle>(index),
-                      state.resource.executable};
-  } catch (...) {
-    destroyResource(state.resource);
-    throw;
+  if (handle == GraphHandle::invalid()) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS graph manager failed to create graph");
   }
+
+  key_to_index_.emplace(key, static_cast<std::size_t>(handle.index));
+  return GraphLease{this, handle,
+                    Base::getControlBlock(handle).payload().executable};
 }
 
 void MpsGraphManager::release(GraphLease &lease) noexcept {
   if (!lease) {
     return;
   }
-  decrementUseCount(static_cast<std::size_t>(lease.handle().index));
+  Base::releaseShared(lease.handle());
   lease.invalidate();
 }
 
