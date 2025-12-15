@@ -29,8 +29,8 @@ void MpsCommandQueueManager::initialize(DeviceType device, SlowOps *ops,
   Base::setupPool(capacity, [&](CommandQueueControlBlock &cb, std::size_t) {
     auto queue = ops_->createCommandQueue(device_);
     if (queue) {
-      cb.slot.get() = queue;
-      cb.slot.markInitialized();
+      cb.payload() = queue;
+      cb.validate();
     }
     // in_use defaults to false
   });
@@ -42,9 +42,9 @@ void MpsCommandQueueManager::shutdown() {
   }
   // Cleanup all resources
   Base::teardownPool([this](CommandQueueControlBlock &cb, CommandQueueHandle) {
-    if (cb.slot.isInitialized()) {
-      destroyResource(cb.slot.get());
-      cb.slot.markUninitialized();
+    if (cb.isInitialized()) {
+      destroyResource(cb.payload());
+      cb.invalidate();
     }
   });
   device_ = nullptr;
@@ -77,8 +77,8 @@ void MpsCommandQueueManager::growCapacity(std::size_t additional) {
         CommandQueueHandle{static_cast<uint32_t>(start_index + i), 0});
     auto queue = ops_->createCommandQueue(device_);
     if (queue) {
-      cb.slot.get() = queue;
-      cb.slot.markInitialized();
+      cb.payload() = queue;
+      cb.validate();
     }
   }
 }
@@ -92,7 +92,7 @@ MpsCommandQueueManager::CommandQueueLease MpsCommandQueueManager::acquire() {
         auto queue = ops_->createCommandQueue(device_);
         if (!queue)
           return false;
-        cb.slot.get() = queue;
+        cb.payload() = queue;
         return true;
       });
 
@@ -103,7 +103,7 @@ MpsCommandQueueManager::CommandQueueLease MpsCommandQueueManager::acquire() {
   }
 
   return CommandQueueLease{this, handle,
-                           Base::getControlBlockChecked(handle).slot.get()};
+                           Base::getControlBlockChecked(handle).payload()};
 }
 
 void MpsCommandQueueManager::release(CommandQueueLease &lease) noexcept {
@@ -122,7 +122,7 @@ bool MpsCommandQueueManager::isInUse(CommandQueueHandle handle) const {
   if (!Base::isInitialized() || !Base::isValidHandle(handle)) {
     return false;
   }
-  return Base::getControlBlock(handle).in_use.load(std::memory_order_relaxed);
+  return Base::getControlBlock(handle).isAlive();
 }
 
 void MpsCommandQueueManager::releaseUnusedQueues() {
@@ -135,9 +135,9 @@ void MpsCommandQueueManager::releaseUnusedQueues() {
 
   // Destroy all resources and recreate pool (empty) implies teardown
   Base::teardownPool([this](CommandQueueControlBlock &cb, CommandQueueHandle) {
-    if (cb.slot.isInitialized()) {
-      destroyResource(cb.slot.get());
-      cb.slot.markUninitialized();
+    if (cb.isInitialized()) {
+      destroyResource(cb.payload());
+      cb.invalidate();
     }
   });
 

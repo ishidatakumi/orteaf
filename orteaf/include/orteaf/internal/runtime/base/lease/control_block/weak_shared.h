@@ -5,6 +5,7 @@
 
 #include <orteaf/internal/runtime/base/lease/category.h>
 #include <orteaf/internal/runtime/base/lease/concepts.h>
+#include <orteaf/internal/runtime/base/lease/slot.h>
 
 namespace orteaf::internal::runtime::base {
 
@@ -14,147 +15,150 @@ namespace orteaf::internal::runtime::base {
 /// with separate strong and weak counts.
 template <typename SlotT>
   requires SlotConcept<SlotT>
-struct WeakSharedControlBlock {
+class WeakSharedControlBlock {
+public:
   using Category = lease_category::WeakShared;
   using Slot = SlotT;
-
-  std::atomic<std::uint32_t> strong_count{0};
-  std::atomic<std::uint32_t> weak_count{0};
-  SlotT slot{};
+  using Payload = typename SlotT::Payload;
 
   WeakSharedControlBlock() = default;
   WeakSharedControlBlock(const WeakSharedControlBlock &) = delete;
   WeakSharedControlBlock &operator=(const WeakSharedControlBlock &) = delete;
 
   WeakSharedControlBlock(WeakSharedControlBlock &&other) noexcept
-      : slot(std::move(other.slot)) {
-    strong_count.store(other.strong_count.load(std::memory_order_relaxed),
-                       std::memory_order_relaxed);
-    weak_count.store(other.weak_count.load(std::memory_order_relaxed),
-                     std::memory_order_relaxed);
+      : slot_(std::move(other.slot_)) {
+    strong_count_.store(other.strong_count_.load(std::memory_order_relaxed),
+                        std::memory_order_relaxed);
+    weak_count_.store(other.weak_count_.load(std::memory_order_relaxed),
+                      std::memory_order_relaxed);
   }
 
   WeakSharedControlBlock &operator=(WeakSharedControlBlock &&other) noexcept {
     if (this != &other) {
-      strong_count.store(other.strong_count.load(std::memory_order_relaxed),
-                         std::memory_order_relaxed);
-      weak_count.store(other.weak_count.load(std::memory_order_relaxed),
-                       std::memory_order_relaxed);
-      slot = std::move(other.slot);
+      strong_count_.store(other.strong_count_.load(std::memory_order_relaxed),
+                          std::memory_order_relaxed);
+      weak_count_.store(other.weak_count_.load(std::memory_order_relaxed),
+                        std::memory_order_relaxed);
+      slot_ = std::move(other.slot_);
     }
     return *this;
   }
 
-  /// @brief Try to acquire first strong reference
-  /// @return true if this is the first acquisition
-  bool tryAcquire() noexcept {
-    std::uint32_t expected = 0;
-    return strong_count.compare_exchange_strong(
-        expected, 1, std::memory_order_acquire, std::memory_order_relaxed);
-  }
+  // =========================================================================
+  // Concept Required API
+  // =========================================================================
 
   /// @brief Acquire a strong reference (increment count)
   /// @return always true for shared resources
   bool acquire() noexcept {
-    strong_count.fetch_add(1, std::memory_order_relaxed);
+    strong_count_.fetch_add(1, std::memory_order_relaxed);
     return true;
   }
 
-  /// @brief Acquire a strong reference (alias for acquire)
-  bool acquireStrong() noexcept { return acquire(); }
-
-  /// @brief Release a strong reference and prepare for reuse if last
+  /// @brief Release a strong reference
   /// @return true if this was the last strong reference
   /// @note Automatically increments generation if this was the last reference
   bool release() noexcept {
-    if (strong_count.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-      // This was the last reference, increment generation for reuse
+    if (strong_count_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
       if constexpr (SlotT::has_generation) {
-        slot.incrementGeneration();
+        slot_.incrementGeneration();
       }
       return true;
     }
     return false;
   }
 
-  /// @brief Release a strong reference (alias for release)
-  bool releaseStrong() noexcept { return release(); }
-
-  /// @brief Acquire a weak reference
-  void acquireWeak() noexcept {
-    weak_count.fetch_add(1, std::memory_order_relaxed);
-  }
-
-  /// @brief Release a weak reference
-  /// @return true if this was the last reference (strong and weak both zero)
-  bool releaseWeak() noexcept {
-    const auto prev = weak_count.fetch_sub(1, std::memory_order_acq_rel);
-    return prev == 1 && strong_count.load(std::memory_order_acquire) == 0;
-  }
-
-  /// @brief Try to promote weak reference to strong
-  /// @return true if successfully promoted (strong count was > 0)
-  bool tryPromote() noexcept {
-    std::uint32_t current = strong_count.load(std::memory_order_acquire);
-    while (current > 0) {
-      if (strong_count.compare_exchange_weak(current, current + 1,
-                                             std::memory_order_acquire,
-                                             std::memory_order_relaxed)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /// @brief Get current strong reference count
-  std::uint32_t count() const noexcept {
-    return strong_count.load(std::memory_order_acquire);
-  }
-
   /// @brief Check if any strong references exist
   bool isAlive() const noexcept { return count() > 0; }
-
-  /// @brief Check if fully released (strong count == 0)
-  bool isReleased() const noexcept { return count() == 0; }
-
-  /// @brief Check if completely released (both strong and weak counts == 0)
-  bool isFullyReleased() const noexcept {
-    return strong_count.load(std::memory_order_acquire) == 0 &&
-           weak_count.load(std::memory_order_acquire) == 0;
-  }
 
   /// @brief Mark slot as initialized/valid
   void validate() noexcept {
     if constexpr (SlotT::has_initialized) {
-      slot.markInitialized();
+      slot_.markInitialized();
     }
   }
 
   /// @brief Mark slot as uninitialized/invalid
   void invalidate() noexcept {
     if constexpr (SlotT::has_initialized) {
-      slot.markUninitialized();
+      slot_.markUninitialized();
     }
   }
 
-  /// @brief Prepare for reuse - validates state and increments generation
-  /// @return true if successfully prepared (was released), false if still in
-  /// use
-  bool prepareForReuse() noexcept {
-    if (!isReleased()) {
-      return false;
-    }
-    if constexpr (SlotT::has_generation) {
-      slot.incrementGeneration();
-    }
-    return true;
+  // =========================================================================
+  // Shared-specific API (SharedControlBlockConcept)
+  // =========================================================================
+
+  /// @brief Get current strong reference count
+  std::uint32_t count() const noexcept {
+    return strong_count_.load(std::memory_order_acquire);
   }
+
+  // =========================================================================
+  // Weak Reference API (WeakableControlBlockConcept)
+  // =========================================================================
+
+  /// @brief Acquire a weak reference
+  void acquireWeak() noexcept {
+    weak_count_.fetch_add(1, std::memory_order_relaxed);
+  }
+
+  /// @brief Release a weak reference
+  /// @return true if this was the last reference (strong and weak both zero)
+  bool releaseWeak() noexcept {
+    const auto prev = weak_count_.fetch_sub(1, std::memory_order_acq_rel);
+    return prev == 1 && strong_count_.load(std::memory_order_acquire) == 0;
+  }
+
+  /// @brief Try to promote weak reference to strong
+  /// @return true if successfully promoted (strong count was > 0)
+  bool tryPromote() noexcept {
+    std::uint32_t current = strong_count_.load(std::memory_order_acquire);
+    while (current > 0) {
+      if (strong_count_.compare_exchange_weak(current, current + 1,
+                                              std::memory_order_acquire,
+                                              std::memory_order_relaxed)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // =========================================================================
+  // Payload Access
+  // =========================================================================
+
+  /// @brief Access the payload
+  Payload &payload() noexcept { return slot_.get(); }
+  const Payload &payload() const noexcept { return slot_.get(); }
+
+  // =========================================================================
+  // Additional Queries
+  // =========================================================================
+
+  /// @brief Check if slot is initialized
+  bool isInitialized() const noexcept { return slot_.isInitialized(); }
+
+  /// @brief Get current generation (0 if not supported)
+  auto generation() const noexcept { return slot_.generation(); }
+
+  /// @brief Get weak reference count
+  std::uint32_t weakCount() const noexcept {
+    return weak_count_.load(std::memory_order_acquire);
+  }
+
+private:
+  std::atomic<std::uint32_t> strong_count_{0};
+  std::atomic<std::uint32_t> weak_count_{0};
+  SlotT slot_{};
 };
 
 // Verify concept satisfaction
-static_assert(ControlBlockConcept<WeakSharedControlBlock<int>>);
-static_assert(SharedControlBlockConcept<WeakSharedControlBlock<int>>);
-static_assert(WeakableControlBlockConcept<WeakSharedControlBlock<int>>);
-static_assert(PromotableControlBlockConcept<WeakSharedControlBlock<int>>);
+static_assert(ControlBlockConcept<WeakSharedControlBlock<RawSlot<int>>>);
+static_assert(SharedControlBlockConcept<WeakSharedControlBlock<RawSlot<int>>>);
+static_assert(
+    WeakableControlBlockConcept<WeakSharedControlBlock<RawSlot<int>>>);
+static_assert(
+    PromotableControlBlockConcept<WeakSharedControlBlock<RawSlot<int>>>);
 
 } // namespace orteaf::internal::runtime::base

@@ -44,8 +44,8 @@ void MpsEventManager::shutdown() {
   }
   // Teardown and destroy all initialized resources
   Base::teardownPool([this](EventControlBlock &cb, EventHandle h) {
-    if (cb.slot.isInitialized()) {
-      destroyResource(cb.slot.get());
+    if (cb.isInitialized()) {
+      destroyResource(cb.payload());
     }
   });
 
@@ -64,7 +64,7 @@ MpsEventManager::EventLease MpsEventManager::acquire() {
         if (event == nullptr) {
           return false;
         }
-        cb.slot.get() = event;
+        cb.payload() = event;
         return true;
       });
 
@@ -78,12 +78,12 @@ MpsEventManager::EventLease MpsEventManager::acquire() {
   // tryAcquire)
   auto &cb = Base::getControlBlock(handle);
 
-  return EventLease{this, handle, cb.slot.get()};
+  return EventLease{this, handle, cb.payload()};
 }
 
 MpsEventManager::EventLease MpsEventManager::acquire(EventHandle handle) {
   auto &cb = Base::acquireShared(handle);
-  return EventLease{this, handle, cb.slot.get()};
+  return EventLease{this, handle, cb.payload()};
 }
 
 void MpsEventManager::release(EventLease &lease) noexcept {

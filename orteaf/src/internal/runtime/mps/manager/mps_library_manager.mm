@@ -41,8 +41,8 @@ void MpsLibraryManager::shutdown() {
 
   // Destroy all created resources
   teardownPool([this](auto &cb, auto) {
-    if (cb.slot.isInitialized()) {
-      destroyResource(cb.slot.get());
+    if (cb.isInitialized()) {
+      destroyResource(cb.payload());
     }
   });
 
@@ -60,12 +60,12 @@ MpsLibraryManager::acquire(const LibraryKey &key) {
   if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
     auto handle = static_cast<LibraryHandle>(it->second);
     return LibraryLease{this, handle,
-                        getControlBlock(handle).slot.get().library};
+                        getControlBlock(handle).payload().library};
   }
 
   // Acquire new slot and create resource
   Handle handle = acquireOrCreate(growth_chunk_size_, [&](auto &cb, auto) {
-    auto &resource = cb.slot.get();
+    auto &resource = cb.payload();
     resource.library = createLibrary(key);
     if (!resource.library)
       return false;
@@ -81,14 +81,14 @@ MpsLibraryManager::acquire(const LibraryKey &key) {
   }
 
   key_to_index_.emplace(key, static_cast<std::size_t>(handle.index));
-  return LibraryLease{this, handle, getControlBlock(handle).slot.get().library};
+  return LibraryLease{this, handle, getControlBlock(handle).payload().library};
 }
 
 MpsLibraryManager::LibraryLease
 MpsLibraryManager::acquire(LibraryHandle handle) {
   ensureInitialized();
   auto &cb = getControlBlockChecked(handle);
-  return LibraryLease{this, handle, cb.slot.get().library};
+  return LibraryLease{this, handle, cb.payload().library};
 }
 
 void MpsLibraryManager::release(LibraryLease &lease) noexcept {
@@ -103,7 +103,7 @@ void MpsLibraryManager::release(LibraryLease &lease) noexcept {
 MpsLibraryManager::PipelineManager *
 MpsLibraryManager::pipelineManager(const LibraryLease &lease) {
   auto &cb = getControlBlockChecked(lease.handle());
-  return &cb.slot.get().pipeline_manager;
+  return &cb.payload().pipeline_manager;
 }
 
 MpsLibraryManager::PipelineManager *
@@ -114,12 +114,12 @@ MpsLibraryManager::pipelineManager(const LibraryKey &key) {
   // Check cache first
   if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
     auto handle = static_cast<LibraryHandle>(it->second);
-    return &getControlBlock(handle).slot.get().pipeline_manager;
+    return &getControlBlock(handle).payload().pipeline_manager;
   }
 
   // Create new
   Handle handle = acquireOrCreate(growth_chunk_size_, [&](auto &cb, auto) {
-    auto &resource = cb.slot.get();
+    auto &resource = cb.payload();
     resource.library = createLibrary(key);
     if (!resource.library)
       return false;
@@ -135,7 +135,7 @@ MpsLibraryManager::pipelineManager(const LibraryKey &key) {
   }
 
   key_to_index_.emplace(key, static_cast<std::size_t>(handle.index));
-  return &getControlBlock(handle).slot.get().pipeline_manager;
+  return &getControlBlock(handle).payload().pipeline_manager;
 }
 
 void MpsLibraryManager::validateKey(const LibraryKey &key) const {

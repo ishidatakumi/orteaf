@@ -137,7 +137,7 @@ protected:
       Handle h{static_cast<typename Handle::index_type>(i)};
       if constexpr (Handle::has_generation) {
         h.generation = static_cast<typename Handle::generation_type>(
-            control_blocks_[i].slot.generation());
+            control_blocks_[i].generation());
       }
       destroyFn(control_blocks_[i], h);
     }
@@ -174,7 +174,7 @@ protected:
     Handle h{idx};
     if constexpr (Handle::has_generation) {
       h.generation = static_cast<typename Handle::generation_type>(
-          control_blocks_[idx].slot.generation());
+          control_blocks_[idx].generation());
     }
     return h;
   }
@@ -191,7 +191,7 @@ protected:
     outHandle = Handle{idx};
     if constexpr (Handle::has_generation) {
       outHandle.generation = static_cast<typename Handle::generation_type>(
-          control_blocks_[idx].slot.generation());
+          control_blocks_[idx].generation());
     }
     return true;
   }
@@ -218,7 +218,7 @@ protected:
     Handle h{idx};
     if constexpr (Handle::has_generation) {
       h.generation = static_cast<typename Handle::generation_type>(
-          control_blocks_[idx].slot.generation());
+          control_blocks_[idx].generation());
     }
     return h;
   }
@@ -254,7 +254,7 @@ protected:
     Handle h{idx};
     if constexpr (Handle::has_generation) {
       h.generation =
-          static_cast<typename Handle::generation_type>(cb.slot.generation());
+          static_cast<typename Handle::generation_type>(cb.generation());
     }
     return h;
   }
@@ -276,12 +276,12 @@ protected:
     auto &cb = getControlBlock(h);
 
     // Create only if not initialized
-    if (!cb.slot.isInitialized()) {
+    if (!cb.isInitialized()) {
       if (!createFn(cb, h)) {
         pushToFreelist(h.index);
         return Handle::invalid();
       }
-      cb.slot.markInitialized();
+      cb.validate();
     }
 
     // Acquire the control block
@@ -431,7 +431,7 @@ protected:
     }
     if constexpr (Handle::has_generation) {
       if (h.generation != static_cast<typename Handle::generation_type>(
-                              control_blocks_[idx].slot.generation())) {
+                              control_blocks_[idx].generation())) {
         return false;
       }
     }

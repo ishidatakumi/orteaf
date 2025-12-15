@@ -260,7 +260,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, ManualReleaseInvalidatesLease) {
   EXPECT_FALSE(static_cast<bool>(lease));
 
   const auto &state = manager.controlBlockForTest(original_handle.index);
-  EXPECT_FALSE(state.in_use);
+  EXPECT_FALSE(state.isAlive());
   // BaseManagerCore does not track generation in this way (Slot has it, but
   // accessor returns ControlBlock). Slot generation is hidden or available via
   // slot.generation? Basic Slot does not have generation. Only GenerationalSlot
@@ -479,6 +479,6 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, DebugStateReflectsSetterUpdates) {
 
   // Assert
   const auto &released_state = manager.controlBlockForTest(handle.index);
-  EXPECT_FALSE(released_state.in_use);
+  EXPECT_FALSE(released_state.isAlive());
 }
 #endif

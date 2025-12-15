@@ -47,8 +47,8 @@ void MpsComputePipelineStateManager::shutdown() {
 
   // Destroy all created resources
   teardownPool([this](auto &cb, auto handle) {
-    if (cb.slot.isInitialized()) {
-      destroyResource(cb.slot.get());
+    if (cb.isInitialized()) {
+      destroyResource(cb.payload());
     }
   });
 
@@ -67,12 +67,12 @@ MpsComputePipelineStateManager::acquire(const FunctionKey &key) {
   if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
     auto handle = static_cast<FunctionHandle>(it->second);
     return PipelineLease{this, handle,
-                         getControlBlock(handle).slot.get().pipeline_state};
+                         getControlBlock(handle).payload().pipeline_state};
   }
 
   // Acquire new slot and create resource
   Handle handle = acquireOrCreate(growth_chunk_size_, [&](auto &cb, auto) {
-    auto &resource = cb.slot.get();
+    auto &resource = cb.payload();
     resource.function = ops_->createFunction(library_, key.identifier);
     if (!resource.function)
       return false;
@@ -95,7 +95,7 @@ MpsComputePipelineStateManager::acquire(const FunctionKey &key) {
 
   key_to_index_.emplace(key, static_cast<std::size_t>(handle.index));
   return PipelineLease{this, handle,
-                       getControlBlock(handle).slot.get().pipeline_state};
+                       getControlBlock(handle).payload().pipeline_state};
 }
 
 void MpsComputePipelineStateManager::release(PipelineLease &lease) noexcept {

@@ -34,8 +34,8 @@ void MpsFenceManager::shutdown() {
     return;
   }
   Base::teardownPool([this](FenceControlBlock &cb, FenceHandle) {
-    if (cb.slot.isInitialized()) {
-      destroyResource(cb.slot.get());
+    if (cb.isInitialized()) {
+      destroyResource(cb.payload());
     }
   });
   device_ = nullptr;
@@ -52,7 +52,7 @@ MpsFenceManager::FenceLease MpsFenceManager::acquire() {
         if (fence == nullptr) {
           return false;
         }
-        cb.slot.get() = fence;
+        cb.payload() = fence;
         return true;
       });
 
@@ -71,12 +71,12 @@ MpsFenceManager::FenceLease MpsFenceManager::acquire() {
   // So handle is owned with count=1.
 
   return FenceLease{this, handle,
-                    Base::getControlBlockChecked(handle).slot.get()};
+                    Base::getControlBlockChecked(handle).payload()};
 }
 
 MpsFenceManager::FenceLease MpsFenceManager::acquire(FenceHandle handle) {
   auto &cb = Base::acquireShared(handle);
-  return FenceLease{this, handle, cb.slot.get()};
+  return FenceLease{this, handle, cb.payload()};
 }
 
 void MpsFenceManager::release(FenceLease &lease) noexcept {
