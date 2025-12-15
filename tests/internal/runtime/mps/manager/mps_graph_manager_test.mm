@@ -15,8 +15,8 @@ using orteaf::tests::ExpectError;
 
 namespace {
 
-mps_wrapper::MPSDevice_t makeDevice(std::uintptr_t value) {
-  return reinterpret_cast<mps_wrapper::MPSDevice_t>(value);
+mps_wrapper::MpsDevice_t makeDevice(std::uintptr_t value) {
+  return reinterpret_cast<mps_wrapper::MpsDevice_t>(value);
 }
 
 mps_wrapper::MPSGraph_t makeGraph(std::uintptr_t value) {
@@ -43,7 +43,7 @@ protected:
 
   mps_rt::MpsGraphManager manager_{};
   ::testing::NiceMock<orteaf::tests::runtime::mps::MpsBackendOpsMock> mock_{};
-  mps_wrapper::MPSDevice_t device_{nullptr};
+  mps_wrapper::MpsDevice_t device_{nullptr};
 };
 
 // =============================================================================
@@ -88,7 +88,7 @@ TEST_F(MpsGraphManagerTest, AcquireCachesExecutableForSameKey) {
   key.data_type = mps_wrapper::MpsGraphDataType::kFloat32;
   key.target_tensor_count = 1;
 
-  auto compile_fn = [&](mps_wrapper::MPSGraph_t g, mps_wrapper::MPSDevice_t dev,
+  auto compile_fn = [&](mps_wrapper::MPSGraph_t g, mps_wrapper::MpsDevice_t dev,
                         mps_rt::MpsGraphManager::SlowOps *ops) {
     mps_wrapper::MpsGraphFeed feed{target, feed_data};
     return ops->compileGraph(g, dev, &feed, 1, &target, 1, nullptr, 0);
@@ -133,7 +133,7 @@ TEST_F(MpsGraphManagerTest, DifferentKeyShapeTriggersNewCompile) {
 
   manager_.initialize(device_, &mock_, /*capacity=*/2);
 
-  auto compile_fn = [&](mps_wrapper::MPSGraph_t g, mps_wrapper::MPSDevice_t dev,
+  auto compile_fn = [&](mps_wrapper::MPSGraph_t g, mps_wrapper::MpsDevice_t dev,
                         mps_rt::MpsGraphManager::SlowOps *ops) {
     mps_wrapper::MpsGraphFeed feed{target, feed_data};
     return ops->compileGraph(g, dev, &feed, 1, &target, 1, nullptr, 0);
@@ -193,7 +193,7 @@ TEST_F(MpsGraphManagerTest, NullExecutableFromCompileThrowsAndCleansUp) {
   key.data_type = mps_wrapper::MpsGraphDataType::kFloat32;
   key.target_tensor_count = 1;
 
-  auto compile_fn = [](mps_wrapper::MPSGraph_t, mps_wrapper::MPSDevice_t,
+  auto compile_fn = [](mps_wrapper::MPSGraph_t, mps_wrapper::MpsDevice_t,
                        mps_rt::MpsGraphManager::SlowOps *) {
     return mps_wrapper::MPSGraphExecutable_t{};
   };

@@ -55,7 +55,7 @@ template <> struct BackendTraits<::orteaf::internal::backend::Backend::Cuda> {
   using Stream = ::orteaf::internal::runtime::cuda::platform::wrapper::
       CudaStream_t; // CUDA stream handle
   using Device = ::orteaf::internal::runtime::cuda::platform::wrapper::
-      CudaDevice_t;      // opaque CUDA device handle
+      CudaDevice_t;    // opaque CUDA device handle
   using Context = int; // placeholder until context abstraction exists
   using FenceToken = ::orteaf::internal::runtime::cuda::resource::
       FenceToken; // placeholder fence token until CUDA token is defined
@@ -77,7 +77,7 @@ template <> struct BackendTraits<::orteaf::internal::backend::Backend::Mps> {
   using Stream = ::orteaf::internal::runtime::mps::platform::wrapper::
       MPSCommandQueue_t; // command queue as stream token
   using Device = ::orteaf::internal::runtime::mps::platform::wrapper::
-      MPSDevice_t; // opaque Metal device handle
+      MpsDevice_t; // opaque Metal device handle
   using FenceToken = ::orteaf::internal::runtime::mps::resource::MpsFenceToken;
   using ReuseToken = ::orteaf::internal::runtime::mps::resource::MpsReuseToken;
   struct KernelLaunchParams {

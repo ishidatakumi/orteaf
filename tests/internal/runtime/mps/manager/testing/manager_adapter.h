@@ -35,7 +35,7 @@ public:
                                 wrapper::MPSCommandQueue_t>
           handles,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           matcher = ::testing::_) {
     if constexpr (Provider::is_mock) {
       auto &mock = Provider::mock(*context_);
@@ -49,7 +49,7 @@ public:
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSEvent_t>
           handles,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           matcher = ::testing::_) {
     if constexpr (Provider::is_mock) {
       auto &mock = Provider::mock(*context_);
@@ -62,7 +62,7 @@ public:
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t>
           handles,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           matcher = ::testing::_) {
     if constexpr (Provider::is_mock) {
       auto &mock = Provider::mock(*context_);
@@ -76,7 +76,7 @@ public:
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSLibrary_t>>
           expectations,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           matcher = ::testing::_) {
     if constexpr (Provider::is_mock) {
       auto &mock = Provider::mock(*context_);
@@ -107,7 +107,7 @@ public:
               MPSComputePipelineState_t>>
           expectations,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           matcher = ::testing::_) {
     if constexpr (Provider::is_mock) {
       auto &mock = Provider::mock(*context_);
@@ -182,7 +182,7 @@ public:
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t>
           handles,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           device_matcher = ::testing::_,
       ::testing::Matcher<::orteaf::internal::runtime::mps::platform::wrapper::
                              MPSHeapDescriptor_t>
@@ -211,7 +211,7 @@ public:
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t>>
           expectations,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           device_matcher = ::testing::_) {
     if constexpr (Provider::is_mock) {
       auto &mock = Provider::mock(*context_);
@@ -352,7 +352,7 @@ public:
   void expectGetDevices(
       std::initializer_list<std::pair<
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSInt_t,
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>>
           expectations) {
     if constexpr (Provider::is_mock) {
       auto &mock = Provider::mock(*context_);
@@ -373,7 +373,7 @@ public:
 
   void expectReleaseDevices(
       std::initializer_list<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           devices) {
     if constexpr (Provider::is_mock) {
       auto &mock = Provider::mock(*context_);
@@ -381,7 +381,7 @@ public:
     }
   }
 
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device() {
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device() {
     if (!device_initialized_) {
       acquireDeviceOrSkip();
     }
@@ -389,10 +389,10 @@ public:
   }
 
 private:
-  static ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t
+  static ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t
   mockDeviceHandle() {
     return reinterpret_cast<
-        ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>(0xD1);
+        ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>(0xD1);
   }
 
   void acquireDeviceOrSkip() {
@@ -416,7 +416,7 @@ private:
 
   Manager *manager_{nullptr};
   Context *context_{nullptr};
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device_{
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device_{
       nullptr};
   bool device_initialized_{false};
 };

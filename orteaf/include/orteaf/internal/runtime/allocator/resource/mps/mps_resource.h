@@ -27,10 +27,10 @@ class MpsResource {
 public:
   static constexpr auto BackendType = ::orteaf::internal::backend::Backend::Mps;
   using BufferView = ::orteaf::internal::runtime::mps::resource::MpsBufferView;
-  using BufferBlock = ::orteaf::internal::runtime::allocator::BufferBlock<
-      BackendType>;
-  using BufferResource = ::orteaf::internal::runtime::allocator::BufferResource<
-      BackendType>;
+  using BufferBlock =
+      ::orteaf::internal::runtime::allocator::BufferBlock<BackendType>;
+  using BufferResource =
+      ::orteaf::internal::runtime::allocator::BufferResource<BackendType>;
   using FenceToken = ::orteaf::internal::runtime::mps::resource::MpsFenceToken;
   using ReuseToken = ::orteaf::internal::runtime::mps::resource::MpsReuseToken;
   using MPSBuffer_t =
@@ -51,7 +51,7 @@ public:
 
   struct Config {
     ::orteaf::internal::base::DeviceHandle device_handle{};
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device{
+    ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device{
         nullptr};
     ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t heap{
         nullptr};
@@ -84,7 +84,7 @@ public:
   void deallocate(BufferView view, std::size_t size,
                   std::size_t alignment) noexcept;
 
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t
   device() const noexcept {
     return device_;
   }
@@ -111,7 +111,7 @@ private:
   void destroyFreelist();
   void ensureList(std::size_t list_index);
 
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device_{
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device_{
       nullptr};
   ::orteaf::internal::base::DeviceHandle device_handle_{};
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t heap_{nullptr};

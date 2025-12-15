@@ -69,7 +69,7 @@ template <typename ResourceT> struct MpsBufferManagerTraitsT {
   using ControlBlock = BufferControlBlock;
   using Handle = ::orteaf::internal::base::BufferHandle;
   using DeviceType =
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t;
   static constexpr const char *Name = "MpsBufferManager";
 };
 

@@ -81,7 +81,7 @@ class MpsComputePipelineStateManager
 public:
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using DeviceType =
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t;
   using LibraryType =
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSLibrary_t;
   using FunctionHandle = ::orteaf::internal::base::FunctionHandle;

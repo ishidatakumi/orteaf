@@ -66,7 +66,6 @@ static_assert(sizeof(MpsLibrary_t) == sizeof(void *),
               "MpsLibrary must be pointer-sized.");
 struct MpsDevice_st;
 using MpsDevice_t = MpsDevice_st *;
-using MPSDevice_t = MpsDevice_t;
 
 static_assert(sizeof(MpsDevice_t) == sizeof(void *),
               "MpsDevice must be pointer-sized.");

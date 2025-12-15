@@ -75,7 +75,7 @@ public:
       MpsLibraryManagerTraits>;
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using DeviceType =
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t;
   using PipelineManager = MpsComputePipelineStateManager;
   using LibraryHandle = ::orteaf::internal::base::LibraryHandle;
   using Handle = LibraryHandle;

@@ -22,13 +22,13 @@ namespace orteaf::tests::runtime::mps {
 struct MpsBackendOpsMock
     : public orteaf::internal::runtime::mps::platform::MpsSlowOps {
   MOCK_METHOD(int, getDeviceCount, (), (override));
-  MOCK_METHOD(::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t,
+  MOCK_METHOD(::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t,
               getDevice,
               (::orteaf::internal::runtime::mps::platform::wrapper::MPSInt_t),
               (override));
   MOCK_METHOD(
       void, releaseDevice,
-      (::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t),
+      (::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t),
       (override));
   MOCK_METHOD(::orteaf::internal::architecture::Architecture,
               detectArchitecture, (::orteaf::internal::base::DeviceHandle),
@@ -36,7 +36,7 @@ struct MpsBackendOpsMock
   MOCK_METHOD(
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandQueue_t,
       createCommandQueue,
-      (::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t),
+      (::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t),
       (override));
   MOCK_METHOD(
       void, destroyCommandQueue,
@@ -45,7 +45,7 @@ struct MpsBackendOpsMock
   MOCK_METHOD(
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSEvent_t,
       createEvent,
-      (::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t),
+      (::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t),
       (override));
   MOCK_METHOD(void, destroyEvent,
               (::orteaf::internal::runtime::mps::platform::wrapper::MPSEvent_t),
@@ -53,14 +53,14 @@ struct MpsBackendOpsMock
   MOCK_METHOD(
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t,
       createFence,
-      (::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t),
+      (::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t),
       (override));
   MOCK_METHOD(void, destroyFence,
               (::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t),
               (override));
   MOCK_METHOD(::orteaf::internal::runtime::mps::platform::wrapper::MPSLibrary_t,
               createLibraryWithName,
-              (::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t,
+              (::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t,
                std::string_view),
               (override));
   MOCK_METHOD(
@@ -81,7 +81,7 @@ struct MpsBackendOpsMock
       ::orteaf::internal::runtime::mps::platform::wrapper::
           MPSComputePipelineState_t,
       createComputePipelineState,
-      (::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t,
+      (::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t,
        ::orteaf::internal::runtime::mps::platform::wrapper::MPSFunction_t),
       (override));
   MOCK_METHOD(void, destroyComputePipelineState,
@@ -129,7 +129,7 @@ struct MpsBackendOpsMock
       (override));
   MOCK_METHOD(::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t,
               createHeap,
-              (::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t,
+              (::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t,
                ::orteaf::internal::runtime::mps::platform::wrapper::
                    MPSHeapDescriptor_t),
               (override));
@@ -156,7 +156,7 @@ struct MpsBackendOpsMock
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraphExecutable_t,
       compileGraph,
       (::orteaf::internal::runtime::mps::platform::wrapper::MPSGraph_t,
-       ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t,
+       ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t,
        const ::orteaf::internal::runtime::mps::platform::wrapper::MpsGraphFeed
            *,
        std::size_t,

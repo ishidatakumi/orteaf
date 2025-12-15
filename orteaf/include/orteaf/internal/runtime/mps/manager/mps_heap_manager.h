@@ -106,7 +106,7 @@ class MpsHeapManager
 public:
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using DeviceType =
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t;
   using HeapHandle = ::orteaf::internal::base::HeapHandle;
   using HeapType =
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t;

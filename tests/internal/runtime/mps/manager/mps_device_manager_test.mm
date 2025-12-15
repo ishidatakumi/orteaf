@@ -27,8 +27,8 @@ using orteaf::tests::ExpectError;
 
 namespace {
 
-mps_wrapper::MPSDevice_t makeDevice(std::uintptr_t value) {
-  return reinterpret_cast<mps_wrapper::MPSDevice_t>(value);
+mps_wrapper::MpsDevice_t makeDevice(std::uintptr_t value) {
+  return reinterpret_cast<mps_wrapper::MpsDevice_t>(value);
 }
 
 mps_wrapper::MPSCommandQueue_t makeQueue(std::uintptr_t value) {
@@ -170,7 +170,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetDeviceReturnsRegisteredHandle) {
   auto &manager = this->manager();
 
   // Arrange
-  std::vector<mps_wrapper::MPSDevice_t> expected_handles;
+  std::vector<mps_wrapper::MpsDevice_t> expected_handles;
   int expected_count = -1;
   if (const char *expected_env = std::getenv(ORTEAF_MPS_ENV_COUNT)) {
     expected_count = std::stoi(expected_env);
@@ -203,18 +203,18 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetDeviceReturnsRegisteredHandle) {
   // Assert: Verify each device
   for (std::uint32_t idx = 0; idx < count; ++idx) {
     const auto device = manager.device(base::DeviceHandle{idx});
-    const auto &snapshot = manager.stateForTest(idx);
-    EXPECT_EQ(snapshot.resource.device != nullptr, device != nullptr);
-    EXPECT_EQ(snapshot.alive, device != nullptr);
+    const auto &snapshot = manager.controlBlockForTest(idx);
+    EXPECT_EQ(snapshot.payload().device != nullptr, device != nullptr);
+    EXPECT_EQ(snapshot.isAlive(), device != nullptr);
     if constexpr (TypeParam::is_mock) {
       EXPECT_EQ(device, expected_handles[idx]);
       const auto expected_arch = (idx == 0) ? architecture::Architecture::MpsM3
                                             : architecture::Architecture::MpsM4;
-      EXPECT_EQ(snapshot.resource.arch, expected_arch);
+      EXPECT_EQ(snapshot.payload().arch, expected_arch);
     } else {
       EXPECT_NE(device, nullptr);
       if (expected_count >= 0 && idx == 0) {
-        EXPECT_NE(snapshot.resource.arch,
+        EXPECT_NE(snapshot.payload().arch,
                   architecture::Architecture::MpsGeneric);
       }
     }
@@ -253,21 +253,21 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetArchMatchesReportedArchitecture) {
   // Assert: Verify architecture for each device
   for (std::uint32_t idx = 0; idx < count; ++idx) {
     const auto arch = manager.getArch(base::DeviceHandle{idx});
-    const auto &snapshot = manager.stateForTest(idx);
+    const auto &snapshot = manager.controlBlockForTest(idx);
     if constexpr (TypeParam::is_mock) {
       const auto expected_arch = (idx == 0) ? architecture::Architecture::MpsM4
                                             : architecture::Architecture::MpsM3;
       EXPECT_EQ(arch, expected_arch);
-      EXPECT_EQ(snapshot.resource.arch, expected_arch);
-      EXPECT_TRUE(snapshot.resource.device != nullptr);
-      EXPECT_TRUE(snapshot.alive);
+      EXPECT_EQ(snapshot.payload().arch, expected_arch);
+      EXPECT_TRUE(snapshot.payload().device != nullptr);
+      EXPECT_TRUE(snapshot.isAlive());
     } else if (expected_arch_env && *expected_arch_env != '\0' && idx == 0) {
       EXPECT_STREQ(expected_arch_env, architecture::idOf(arch).data());
       EXPECT_STREQ(expected_arch_env,
-                   architecture::idOf(snapshot.resource.arch).data());
+                   architecture::idOf(snapshot.payload().arch).data());
     } else {
       EXPECT_FALSE(architecture::idOf(arch).empty());
-      EXPECT_FALSE(architecture::idOf(snapshot.resource.arch).empty());
+      EXPECT_FALSE(architecture::idOf(snapshot.payload().arch).empty());
     }
   }
 
@@ -371,10 +371,10 @@ TYPED_TEST(MpsDeviceManagerTypedTest, IsAliveReflectsReportedDeviceCount) {
   for (std::uint32_t index = 0; index < static_cast<std::uint32_t>(count);
        ++index) {
     const auto id = base::DeviceHandle{index};
-    const auto &snapshot = manager.stateForTest(index);
+    const auto &snapshot = manager.controlBlockForTest(index);
     EXPECT_TRUE(manager.isAlive(id))
         << "Device " << index << " should be alive";
-    EXPECT_TRUE(snapshot.alive);
+    EXPECT_TRUE(snapshot.isAlive());
   }
 
   // Assert: Out-of-range ID is not alive
@@ -425,9 +425,9 @@ TYPED_TEST(MpsDeviceManagerTypedTest, DeviceNotAliveThrowsOnAccess) {
   ExpectError(diag_error::OrteafErrc::InvalidState,
               [&] { (void)manager.fencePool(base::DeviceHandle{0}); });
 
-  const auto &snapshot = manager.stateForTest(0);
-  EXPECT_FALSE(snapshot.alive);
-  EXPECT_FALSE(snapshot.resource.device != nullptr);
+  const auto &snapshot = manager.controlBlockForTest(0);
+  EXPECT_FALSE(snapshot.isAlive());
+  EXPECT_FALSE(snapshot.payload().device != nullptr);
 
   // Cleanup
   manager.shutdown();

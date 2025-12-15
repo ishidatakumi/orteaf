@@ -182,12 +182,12 @@ protected:
                         cfg, capacity);
   }
 
-  mps_wrapper::MPSDevice_t device() { return device_; }
+  mps_wrapper::MpsDevice_t device() { return device_; }
   bool setupSuccessful() const { return setup_successful_; }
 
   mps_platform::MpsSlowOpsImpl ops_{};
   Manager manager_{};
-  mps_wrapper::MPSDevice_t device_{nullptr};
+  mps_wrapper::MpsDevice_t device_{nullptr};
   mps_wrapper::MPSHeapDescriptor_t heap_descriptor_{nullptr};
   mps_wrapper::MPSHeap_t heap_{nullptr};
   mps_rt::MpsLibraryManager lib_manager_{};

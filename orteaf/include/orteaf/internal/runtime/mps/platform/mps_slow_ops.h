@@ -25,12 +25,12 @@ struct MpsSlowOps {
 
   virtual int getDeviceCount() = 0;
 
-  virtual ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t
+  virtual ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t
   getDevice(
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSInt_t index) = 0;
 
   virtual void
-  releaseDevice(::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t
+  releaseDevice(::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t
                     device) = 0;
 
   virtual ::orteaf::internal::architecture::Architecture
@@ -38,7 +38,7 @@ struct MpsSlowOps {
 
   virtual ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandQueue_t
   createCommandQueue(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t
           device) = 0;
 
   virtual void destroyCommandQueue(
@@ -46,7 +46,7 @@ struct MpsSlowOps {
           queue) = 0;
 
   virtual ::orteaf::internal::runtime::mps::platform::wrapper::MPSEvent_t
-  createEvent(::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t
+  createEvent(::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t
                   device) = 0;
 
   virtual void
@@ -54,7 +54,7 @@ struct MpsSlowOps {
                    event) = 0;
 
   virtual ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t
-  createFence(::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t
+  createFence(::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t
                   device) = 0;
 
   virtual void
@@ -63,7 +63,7 @@ struct MpsSlowOps {
 
   virtual ::orteaf::internal::runtime::mps::platform::wrapper::MPSLibrary_t
   createLibraryWithName(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device,
       std::string_view name) = 0;
 
   virtual void destroyLibrary(
@@ -82,7 +82,7 @@ struct MpsSlowOps {
   virtual ::orteaf::internal::runtime::mps::platform::wrapper::
       MPSComputePipelineState_t
       createComputePipelineState(
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t
               device,
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSFunction_t
               function) = 0;
@@ -136,7 +136,7 @@ struct MpsSlowOps {
 
   virtual ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t
   createHeap(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device,
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeapDescriptor_t
           descriptor) = 0;
 
@@ -167,7 +167,7 @@ struct MpsSlowOps {
       MPSGraphExecutable_t
       compileGraph(
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraph_t graph,
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t
               device,
           const ::orteaf::internal::runtime::mps::platform::wrapper::
               MpsGraphFeed *feeds,
@@ -205,12 +205,12 @@ struct MpsSlowOps {
 struct MpsSlowOpsImpl final : public MpsSlowOps {
   int getDeviceCount() override;
 
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t
   getDevice(::orteaf::internal::runtime::mps::platform::wrapper::MPSInt_t index)
       override;
 
   void releaseDevice(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device)
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device)
       override;
 
   ::orteaf::internal::architecture::Architecture
@@ -218,7 +218,7 @@ struct MpsSlowOpsImpl final : public MpsSlowOps {
 
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandQueue_t
   createCommandQueue(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device)
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device)
       override;
 
   void destroyCommandQueue(
@@ -226,7 +226,7 @@ struct MpsSlowOpsImpl final : public MpsSlowOps {
           queue) override;
 
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSEvent_t createEvent(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device)
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device)
       override;
 
   void destroyEvent(
@@ -234,7 +234,7 @@ struct MpsSlowOpsImpl final : public MpsSlowOps {
       override;
 
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t createFence(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device)
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device)
       override;
 
   void destroyFence(
@@ -243,7 +243,7 @@ struct MpsSlowOpsImpl final : public MpsSlowOps {
 
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSLibrary_t
   createLibraryWithName(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device,
       std::string_view name) override;
 
   void destroyLibrary(
@@ -261,7 +261,7 @@ struct MpsSlowOpsImpl final : public MpsSlowOps {
 
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSComputePipelineState_t
   createComputePipelineState(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device,
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSFunction_t
           function) override;
 
@@ -312,7 +312,7 @@ struct MpsSlowOpsImpl final : public MpsSlowOps {
       override;
 
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t createHeap(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device,
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeapDescriptor_t
           descriptor) override;
 
@@ -341,7 +341,7 @@ struct MpsSlowOpsImpl final : public MpsSlowOps {
   ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraphExecutable_t
   compileGraph(
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraph_t graph,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device,
       const ::orteaf::internal::runtime::mps::platform::wrapper::MpsGraphFeed
           *feeds,
       std::size_t feed_count,

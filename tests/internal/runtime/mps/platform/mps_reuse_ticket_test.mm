@@ -56,7 +56,7 @@ protected:
   }
 
 #if ORTEAF_ENABLE_MPS
-  mps_wrapper::MPSDevice_t device_{nullptr};
+  mps_wrapper::MpsDevice_t device_{nullptr};
   mps_wrapper::MPSCommandQueue_t command_queue_{nullptr};
   mps_wrapper::MPSCommandBuffer_t command_buffer_{nullptr};
   base::CommandQueueHandle queue_id_{base::CommandQueueHandle{9}};

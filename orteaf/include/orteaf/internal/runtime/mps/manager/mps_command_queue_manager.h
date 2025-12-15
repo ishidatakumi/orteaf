@@ -38,7 +38,7 @@ class MpsCommandQueueManager
 public:
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using DeviceType =
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t;
   using CommandQueueHandle = ::orteaf::internal::base::CommandQueueHandle;
   using CommandQueueType =
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandQueue_t;

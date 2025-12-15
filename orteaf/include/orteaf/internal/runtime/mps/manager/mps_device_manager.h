@@ -10,7 +10,9 @@
 #include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/base/heap_vector.h"
 #include "orteaf/internal/diagnostics/error/error.h"
-#include "orteaf/internal/runtime/base/shared_cache_manager.h"
+#include "orteaf/internal/runtime/base/lease/control_block/raw.h"
+#include "orteaf/internal/runtime/base/lease/slot.h"
+#include "orteaf/internal/runtime/base/manager/base_manager_core.h"
 #include "orteaf/internal/runtime/mps/manager/mps_buffer_manager.h"
 #include "orteaf/internal/runtime/mps/manager/mps_command_queue_manager.h"
 #include "orteaf/internal/runtime/mps/manager/mps_event_manager.h"
@@ -23,11 +25,14 @@
 
 namespace orteaf::internal::runtime::mps::manager {
 
-// Resource struct: holds device and all child managers
+// =============================================================================
+// Device Resource
+// =============================================================================
+
 struct MpsDeviceResource {
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
 
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device{
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device{
       nullptr};
   ::orteaf::internal::architecture::Architecture arch{
       ::orteaf::internal::architecture::Architecture::MpsGeneric};
@@ -84,24 +89,35 @@ private:
   }
 };
 
-// Use SharedCacheState template
-using MpsDeviceManagerState =
-    ::orteaf::internal::runtime::base::SharedCacheState<MpsDeviceResource>;
+// =============================================================================
+// BaseManagerCore Types (RawControlBlock - no lifecycle tracking)
+// =============================================================================
+
+using DeviceSlot =
+    ::orteaf::internal::runtime::base::RawSlot<MpsDeviceResource>;
+using DeviceControlBlock =
+    ::orteaf::internal::runtime::base::RawControlBlock<DeviceSlot>;
 
 struct MpsDeviceManagerTraits {
-  using DeviceType = void *;
-  using OpsType = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
-  using StateType = MpsDeviceManagerState;
-  static constexpr const char *Name = "MPS device manager";
+  using ControlBlock = DeviceControlBlock;
+  using Handle = ::orteaf::internal::base::DeviceHandle;
+  static constexpr const char *Name = "MpsDeviceManager";
 };
 
+// =============================================================================
+// MpsDeviceManager
+// =============================================================================
+
 class MpsDeviceManager
-    : public ::orteaf::internal::runtime::base::SharedCacheManager<
-          MpsDeviceManager, MpsDeviceManagerTraits> {
+    : protected ::orteaf::internal::runtime::base::BaseManagerCore<
+          MpsDeviceManagerTraits> {
+  using Base = ::orteaf::internal::runtime::base::BaseManagerCore<
+      MpsDeviceManagerTraits>;
+
 public:
-  using Base = ::orteaf::internal::runtime::base::SharedCacheManager<
-      MpsDeviceManager, MpsDeviceManagerTraits>;
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
+  using DeviceHandle = ::orteaf::internal::base::DeviceHandle;
+  using ControlBlock = typename Base::ControlBlock;
 
   MpsDeviceManager() = default;
   MpsDeviceManager(const MpsDeviceManager &) = delete;
@@ -150,38 +166,41 @@ public:
   // =========================================================================
   // Device info
   // =========================================================================
-  std::size_t getDeviceCount() const { return states_.size(); }
+  std::size_t getDeviceCount() const { return Base::capacity(); }
 
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t
-  device(::orteaf::internal::base::DeviceHandle handle) const;
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t
+  device(DeviceHandle handle) const;
 
   ::orteaf::internal::architecture::Architecture
-  getArch(::orteaf::internal::base::DeviceHandle handle) const;
+  getArch(DeviceHandle handle) const;
 
-  bool isAlive(::orteaf::internal::base::DeviceHandle handle) const;
+  bool isAlive(DeviceHandle handle) const;
 
   // =========================================================================
   // Direct access to child managers
   // =========================================================================
-  MpsCommandQueueManager *
-  commandQueueManager(::orteaf::internal::base::DeviceHandle handle);
+  MpsCommandQueueManager *commandQueueManager(DeviceHandle handle);
+  MpsHeapManager *heapManager(DeviceHandle handle);
+  MpsLibraryManager *libraryManager(DeviceHandle handle);
+  MpsGraphManager *graphManager(DeviceHandle handle);
+  MpsEventManager *eventPool(DeviceHandle handle);
+  MpsFenceManager *fencePool(DeviceHandle handle);
 
-  MpsHeapManager *heapManager(::orteaf::internal::base::DeviceHandle handle);
+  // Expose base methods
+  using Base::capacity;
+  using Base::isInitialized;
 
-  MpsLibraryManager *
-  libraryManager(::orteaf::internal::base::DeviceHandle handle);
-
-  MpsGraphManager *graphManager(::orteaf::internal::base::DeviceHandle handle);
-
-  MpsEventManager *eventPool(::orteaf::internal::base::DeviceHandle handle);
-
-  MpsFenceManager *fencePool(::orteaf::internal::base::DeviceHandle handle);
+#if ORTEAF_ENABLE_TEST
+  using Base::controlBlockForTest;
+  using Base::freeListSizeForTest;
+  using Base::isInitializedForTest;
+#endif
 
 private:
-  State &ensureValidState(::orteaf::internal::base::DeviceHandle handle);
-  const State &
-  ensureValidStateConst(::orteaf::internal::base::DeviceHandle handle) const;
+  ControlBlock &ensureValidControlBlock(DeviceHandle handle);
+  const ControlBlock &ensureValidControlBlockConst(DeviceHandle handle) const;
 
+  SlowOps *ops_{nullptr};
   std::size_t command_queue_initial_capacity_{0};
   std::size_t heap_initial_capacity_{0};
   std::size_t library_initial_capacity_{0};

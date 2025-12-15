@@ -26,7 +26,7 @@ TEST(MpsResourceTest, InitializeNullDeviceThrows) {
 
 TEST(MpsResourceTest, InitializeNullHeapThrows) {
   MpsResource::Config cfg{};
-  cfg.device = reinterpret_cast<mps::MPSDevice_t>(0x1);
+  cfg.device = reinterpret_cast<mps::MpsDevice_t>(0x1);
   cfg.heap = nullptr;
   ExpectErrorMessage(diag_error::OrteafErrc::NullPointer, {"heap"}, [&] {
     MpsResource resource(cfg);

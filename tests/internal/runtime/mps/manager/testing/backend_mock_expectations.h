@@ -39,7 +39,7 @@ struct BackendMockExpectations {
       MpsBackendOpsMock &mock,
       std::initializer_list<std::pair<
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSInt_t,
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>>
           expectations) {
     for (const auto &[index, device] : expectations) {
       EXPECT_CALL(mock, getDevice(index)).WillOnce(::testing::Return(device));
@@ -49,7 +49,7 @@ struct BackendMockExpectations {
   static void expectReleaseDevices(
       MpsBackendOpsMock &mock,
       std::initializer_list<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           devices) {
     if (devices.size() == 0) {
       EXPECT_CALL(mock, releaseDevice(::testing::_)).Times(0);
@@ -78,7 +78,7 @@ struct BackendMockExpectations {
                                 wrapper::MPSCommandQueue_t>
           handles,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           device_matcher = ::testing::_) {
     if (handles.size() == 0) {
       EXPECT_CALL(mock, createCommandQueue(device_matcher)).Times(0);
@@ -97,7 +97,7 @@ struct BackendMockExpectations {
         .Times(call_count)
         .WillRepeatedly(::testing::Invoke(
             [state](::orteaf::internal::runtime::mps::platform::wrapper::
-                        MPSDevice_t /*device*/) mutable {
+                        MpsDevice_t /*device*/) mutable {
               const auto handle = state->values[state->next];
               ++state->next;
               return handle;
@@ -139,7 +139,7 @@ struct BackendMockExpectations {
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSEvent_t>
           handles,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           device_matcher = ::testing::_) {
     if (handles.size() == 0) {
       EXPECT_CALL(mock, createEvent(device_matcher)).Times(0);
@@ -158,7 +158,7 @@ struct BackendMockExpectations {
         .Times(call_count)
         .WillRepeatedly(::testing::Invoke(
             [state](::orteaf::internal::runtime::mps::platform::wrapper::
-                        MPSDevice_t /*device*/) mutable {
+                        MpsDevice_t /*device*/) mutable {
               const auto handle = state->values[state->next];
               ++state->next;
               return handle;
@@ -200,7 +200,7 @@ struct BackendMockExpectations {
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t>
           handles,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           device_matcher = ::testing::_) {
     if (handles.size() == 0) {
       EXPECT_CALL(mock, createFence(device_matcher)).Times(0);
@@ -219,7 +219,7 @@ struct BackendMockExpectations {
         .Times(call_count)
         .WillRepeatedly(::testing::Invoke(
             [state](::orteaf::internal::runtime::mps::platform::wrapper::
-                        MPSDevice_t /*device*/) mutable {
+                        MpsDevice_t /*device*/) mutable {
               const auto handle = state->values[state->next];
               ++state->next;
               return handle;
@@ -247,7 +247,7 @@ struct BackendMockExpectations {
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSLibrary_t>>
           expectations,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           device_matcher = ::testing::_) {
     if (expectations.size() == 0) {
       EXPECT_CALL(mock, createLibraryWithName(device_matcher, ::testing::_))
@@ -271,7 +271,7 @@ struct BackendMockExpectations {
         .Times(call_count)
         .WillRepeatedly(::testing::Invoke(
             [state](::orteaf::internal::runtime::mps::platform::wrapper::
-                        MPSDevice_t /*device*/,
+                        MpsDevice_t /*device*/,
                     std::string_view requested_name) mutable {
               const auto index = state->next;
               EXPECT_LT(index, state->names.size());
@@ -363,7 +363,7 @@ struct BackendMockExpectations {
               MPSComputePipelineState_t>>
           expectations,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           device_matcher = ::testing::_) {
     if (expectations.size() == 0) {
       EXPECT_CALL(mock,
@@ -390,7 +390,7 @@ struct BackendMockExpectations {
         .Times(call_count)
         .WillRepeatedly(::testing::Invoke(
             [state](::orteaf::internal::runtime::mps::platform::wrapper::
-                        MPSDevice_t /*device*/,
+                        MpsDevice_t /*device*/,
                     ::orteaf::internal::runtime::mps::platform::wrapper::
                         MPSFunction_t function) mutable {
               const auto index = state->next;
@@ -424,7 +424,7 @@ struct BackendMockExpectations {
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t>
           handles,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           device_matcher = ::testing::_,
       ::testing::Matcher<::orteaf::internal::runtime::mps::platform::wrapper::
                              MPSHeapDescriptor_t>
@@ -447,7 +447,7 @@ struct BackendMockExpectations {
         .Times(call_count)
         .WillRepeatedly(::testing::Invoke(
             [state](::orteaf::internal::runtime::mps::platform::wrapper::
-                        MPSDevice_t,
+                        MpsDevice_t,
                     ::orteaf::internal::runtime::mps::platform::wrapper::
                         MPSHeapDescriptor_t) mutable {
               const auto handle = state->values[state->next];
@@ -464,7 +464,7 @@ struct BackendMockExpectations {
           ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t>>
           expectations,
       ::testing::Matcher<
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t>
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t>
           device_matcher = ::testing::_) {
     if (expectations.size() == 0) {
       EXPECT_CALL(mock, createHeap(device_matcher, ::testing::_)).Times(0);

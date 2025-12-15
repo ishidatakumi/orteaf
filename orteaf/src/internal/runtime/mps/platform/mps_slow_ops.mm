@@ -8,14 +8,14 @@ int MpsSlowOpsImpl::getDeviceCount() {
   return ::orteaf::internal::runtime::mps::platform::wrapper::getDeviceCount();
 }
 
-::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t
+::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t
 MpsSlowOpsImpl::getDevice(
     ::orteaf::internal::runtime::mps::platform::wrapper::MPSInt_t index) {
   return ::orteaf::internal::runtime::mps::platform::wrapper::getDevice(index);
 }
 
 void MpsSlowOpsImpl::releaseDevice(
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device) {
+    ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device) {
   ::orteaf::internal::runtime::mps::platform::wrapper::deviceRelease(device);
 }
 
@@ -28,7 +28,7 @@ MpsSlowOpsImpl::detectArchitecture(
 
 ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandQueue_t
 MpsSlowOpsImpl::createCommandQueue(
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device) {
+    ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device) {
   return ::orteaf::internal::runtime::mps::platform::wrapper::
       createCommandQueue(device);
 }
@@ -42,7 +42,7 @@ void MpsSlowOpsImpl::destroyCommandQueue(
 
 ::orteaf::internal::runtime::mps::platform::wrapper::MPSEvent_t
 MpsSlowOpsImpl::createEvent(
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device) {
+    ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device) {
   return ::orteaf::internal::runtime::mps::platform::wrapper::createEvent(
       device);
 }
@@ -54,7 +54,7 @@ void MpsSlowOpsImpl::destroyEvent(
 
 ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t
 MpsSlowOpsImpl::createFence(
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device) {
+    ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device) {
   return ::orteaf::internal::runtime::mps::platform::wrapper::createFence(
       device);
 }
@@ -66,7 +66,7 @@ void MpsSlowOpsImpl::destroyFence(
 
 ::orteaf::internal::runtime::mps::platform::wrapper::MPSLibrary_t
 MpsSlowOpsImpl::createLibraryWithName(
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
+    ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device,
     std::string_view name) {
   auto library = ::orteaf::internal::runtime::mps::platform::
       metal_kernel_embed::createEmbeddedLibrary(device, name, nullptr);
@@ -103,7 +103,7 @@ void MpsSlowOpsImpl::destroyFunction(
 
 ::orteaf::internal::runtime::mps::platform::wrapper::MPSComputePipelineState_t
 MpsSlowOpsImpl::createComputePipelineState(
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
+    ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device,
     ::orteaf::internal::runtime::mps::platform::wrapper::MPSFunction_t
         function) {
   return ::orteaf::internal::runtime::mps::platform::wrapper::
@@ -184,7 +184,7 @@ void MpsSlowOpsImpl::setHeapDescriptorType(
 
 ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t
 MpsSlowOpsImpl::createHeap(
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
+    ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device,
     ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeapDescriptor_t
         descriptor) {
   return ::orteaf::internal::runtime::mps::platform::wrapper::createHeap(
@@ -226,7 +226,7 @@ void MpsSlowOpsImpl::destroyGraphTensorData(
 ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraphExecutable_t
 MpsSlowOpsImpl::compileGraph(
     ::orteaf::internal::runtime::mps::platform::wrapper::MPSGraph_t graph,
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
+    ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device,
     const ::orteaf::internal::runtime::mps::platform::wrapper::MpsGraphFeed
         *feeds,
     std::size_t feed_count,

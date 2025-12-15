@@ -35,7 +35,7 @@ class MpsFenceManager
 public:
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using DeviceType =
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t;
   using FenceHandle = ::orteaf::internal::base::FenceHandle;
   using FenceType =
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t;

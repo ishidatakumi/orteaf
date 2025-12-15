@@ -3,8 +3,8 @@
 #if ORTEAF_ENABLE_MPS
 
 #include <orteaf/internal/runtime/mps/platform/wrapper/mps_device.h>
-#include <orteaf/internal/runtime/mps/platform/wrapper/mps_function.h>
 #include <orteaf/internal/runtime/mps/platform/wrapper/mps_error.h>
+#include <orteaf/internal/runtime/mps/platform/wrapper/mps_function.h>
 #include <orteaf/internal/runtime/mps/platform/wrapper/mps_library.h>
 
 #include <cstddef>
@@ -27,23 +27,23 @@ namespace orteaf::internal::runtime::mps::platform::metal_kernel_embed {
  * using namespace orteaf::internal::runtime::mps::platform::wrapper;
  * using namespace orteaf::internal::runtime::mps::platform::metal_kernel_embed;
  *
- * MPSDevice_t device = acquire_default_device();  // user-defined helper
+ * MpsDevice_t device = acquire_default_device();  // user-defined helper
  * MPSError_t error = nullptr;
- * MPSLibrary_t lib = createEmbeddedLibrary(device, "embed_test_library", &error);
- * MPSFunction_t fn = createFunction(lib, "my_kernel");
+ * MPSLibrary_t lib = createEmbeddedLibrary(device, "embed_test_library",
+ * &error); MPSFunction_t fn = createFunction(lib, "my_kernel");
  * // Continue with pipeline creation, command encoder setup, etc.
  * @endcode
  */
 
 struct MetallibBlob {
-    const void* data;
-    std::size_t size;
+  const void *data;
+  std::size_t size;
 };
 
 struct MetallibEntry {
-    const char* name;
-    const unsigned char* begin;
-    const unsigned char* end;
+  const char *name;
+  const unsigned char *begin;
+  const unsigned char *end;
 };
 
 std::span<const MetallibEntry> libraries();
@@ -52,11 +52,13 @@ MetallibBlob findLibraryData(std::string_view library_name);
 
 bool available(std::string_view library_name);
 
- ::orteaf::internal::runtime::mps::platform::wrapper::MPSLibrary_t createEmbeddedLibrary(
-     ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t device,
-     std::string_view library_name,
-     ::orteaf::internal::runtime::mps::platform::wrapper::MPSError_t* error = nullptr);
+::orteaf::internal::runtime::mps::platform::wrapper::MPSLibrary_t
+createEmbeddedLibrary(
+    ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t device,
+    std::string_view library_name,
+    ::orteaf::internal::runtime::mps::platform::wrapper::MPSError_t *error =
+        nullptr);
 
 } // namespace orteaf::internal::runtime::mps::platform::metal_kernel_embed
 
-#endif  // ORTEAF_ENABLE_MPS
+#endif // ORTEAF_ENABLE_MPS
