@@ -58,7 +58,7 @@ struct MpsBufferResource {
 // BaseManagerCore Types
 // ============================================================================
 using BufferSlot =
-    ::orteaf::internal::runtime::base::GenerationalRawSlot<MpsBufferResource>;
+    ::orteaf::internal::runtime::base::GenerationalSlot<MpsBufferResource>;
 using BufferControlBlock =
     ::orteaf::internal::runtime::base::SharedControlBlock<BufferSlot>;
 

@@ -117,15 +117,19 @@ TEST_F(MpsGraphManagerTest, DifferentKeyShapeTriggersNewCompile) {
   mps_wrapper::MpsGraphTensor_t target = makeTensor(0x5555);
   mps_wrapper::MpsGraphTensorData_t feed_data = makeTensorData(0x6666);
 
-  ::testing::InSequence seq;
-  EXPECT_CALL(mock_, createGraph()).WillOnce(::testing::Return(graph1));
-  EXPECT_CALL(mock_, compileGraph(graph1, device_, ::testing::_, 1,
-                                  ::testing::_, 1, ::testing::_, 0))
-      .WillOnce(::testing::Return(exe1));
-  EXPECT_CALL(mock_, createGraph()).WillOnce(::testing::Return(graph2));
-  EXPECT_CALL(mock_, compileGraph(graph2, device_, ::testing::_, 1,
-                                  ::testing::_, 1, ::testing::_, 0))
-      .WillOnce(::testing::Return(exe2));
+  // Creation order is strict
+  {
+    ::testing::InSequence seq;
+    EXPECT_CALL(mock_, createGraph()).WillOnce(::testing::Return(graph1));
+    EXPECT_CALL(mock_, compileGraph(graph1, device_, ::testing::_, 1,
+                                    ::testing::_, 1, ::testing::_, 0))
+        .WillOnce(::testing::Return(exe1));
+    EXPECT_CALL(mock_, createGraph()).WillOnce(::testing::Return(graph2));
+    EXPECT_CALL(mock_, compileGraph(graph2, device_, ::testing::_, 1,
+                                    ::testing::_, 1, ::testing::_, 0))
+        .WillOnce(::testing::Return(exe2));
+  }
+  // Destroy order is not guaranteed (depends on pool iteration)
   EXPECT_CALL(mock_, destroyGraphExecutable(exe1)).Times(1);
   EXPECT_CALL(mock_, destroyGraph(graph1)).Times(1);
   EXPECT_CALL(mock_, destroyGraphExecutable(exe2)).Times(1);

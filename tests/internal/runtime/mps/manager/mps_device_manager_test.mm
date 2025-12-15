@@ -426,7 +426,9 @@ TYPED_TEST(MpsDeviceManagerTypedTest, DeviceNotAliveThrowsOnAccess) {
               [&] { (void)manager.fencePool(base::DeviceHandle{0}); });
 
   const auto &snapshot = manager.controlBlockForTest(0);
-  EXPECT_FALSE(snapshot.isAlive());
+  // Note: RawControlBlock::isAlive() always returns true (no lifecycle
+  // tracking) Check isInitialized() or payload directly instead
+  EXPECT_FALSE(snapshot.isInitialized());
   EXPECT_FALSE(snapshot.payload().device != nullptr);
 
   // Cleanup
@@ -636,13 +638,13 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
     GTEST_SKIP() << "No MPS devices available";
   }
 
-  // Assert: HeapManagers initialized (cache pattern: capacity grows on demand)
+  // Assert: HeapManagers initialized with configured capacity
   for (std::uint32_t index = 0; index < static_cast<std::uint32_t>(count);
        ++index) {
     const auto id = base::DeviceHandle{index};
     auto *heap_manager = manager.heapManager(id);
     EXPECT_NE(heap_manager, nullptr);
-    EXPECT_EQ(heap_manager->capacity(), 0u);
+    EXPECT_EQ(heap_manager->capacity(), kCapacity);
   }
 
   // Cleanup
@@ -672,13 +674,13 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
     GTEST_SKIP() << "No MPS devices available";
   }
 
-  // Assert: LibraryManagers initialized (cache pattern)
+  // Assert: LibraryManagers initialized with configured capacity
   for (std::uint32_t index = 0; index < static_cast<std::uint32_t>(count);
        ++index) {
     const auto id = base::DeviceHandle{index};
     auto *library_manager = manager.libraryManager(id);
     EXPECT_NE(library_manager, nullptr);
-    EXPECT_EQ(library_manager->capacity(), 0u);
+    EXPECT_EQ(library_manager->capacity(), kCapacity);
   }
 
   // Cleanup

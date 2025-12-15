@@ -62,7 +62,10 @@ MpsGraphManager::acquire(const GraphKey &key, const CompileFn &compile_fn) {
           static_cast<typename GraphHandle::generation_type>(
               Base::getControlBlock(cached_handle).generation());
     }
-    auto &cb = Base::acquireShared(cached_handle);
+    // For cache pattern: use direct acquire() instead of acquireShared()
+    // acquireShared requires count>0, but cached resources may have count=0
+    auto &cb = Base::getControlBlock(cached_handle);
+    cb.acquire();
     return GraphLease{this, cached_handle, cb.payload().executable};
   }
 
@@ -73,6 +76,9 @@ MpsGraphManager::acquire(const GraphKey &key, const CompileFn &compile_fn) {
         resource.graph = ops_->createGraph();
         resource.executable = compile_fn(resource.graph, device_, ops_);
         if (resource.executable == nullptr) {
+          // Cleanup the graph before throwing
+          ops_->destroyGraph(resource.graph);
+          resource.graph = nullptr;
           ::orteaf::internal::diagnostics::error::throwError(
               ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
               "MPS graph compile function returned null executable");

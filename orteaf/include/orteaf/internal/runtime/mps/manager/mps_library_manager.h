@@ -56,9 +56,9 @@ struct MpsLibraryResource {
   MpsComputePipelineStateManager pipeline_manager{};
 };
 
-// ControlBlock type using RawControlBlock with Slot
+// ControlBlock type using RawControlBlock with RawSlot
 using LibraryControlBlock = ::orteaf::internal::runtime::base::RawControlBlock<
-    ::orteaf::internal::runtime::base::Slot<MpsLibraryResource>>;
+    ::orteaf::internal::runtime::base::RawSlot<MpsLibraryResource>>;
 
 // Traits for BaseManagerCore
 struct MpsLibraryManagerTraits {
