@@ -224,110 +224,85 @@ protected:
   }
 
   // =========================================================================
-  // Acquire Helpers
+  // Growth Size Configuration
   // =========================================================================
 
-  /// @brief Acquire from pool, throws if empty (fixed-size pool)
-  /// @return Handle to acquired resource
-  /// @throws OutOfRange if pool is exhausted
-  /// @throws InvalidState if control block cannot be acquired
-  Handle acquireFromPool() {
-    ensureInitialized();
-    if (freelist_.empty()) {
+  /// @brief Get the growth size for pool expansion
+  std::size_t growthSize() const noexcept { return growth_size_; }
+
+  /// @brief Set the growth size for pool expansion
+  void setGrowthSize(std::size_t size) {
+    if (size == 0) {
       ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
-          std::string(managerName()) + " pool is exhausted");
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+          std::string(managerName()) + " growth size must be > 0");
     }
-    IndexType idx = freelist_.back();
-    freelist_.pop_back();
-
-    auto &cb = control_blocks_[idx];
-
-    // Acquire the control block
-    if (!cb.acquire()) {
-      freelist_.push_back(idx); // Return to freelist
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          std::string(managerName()) + " control block cannot be acquired");
-    }
-
-    Handle h{idx};
-    if constexpr (Handle::has_generation) {
-      h.generation =
-          static_cast<typename Handle::generation_type>(cb.generation());
-    }
-    return h;
+    growth_size_ = size;
   }
 
-  /// @brief Acquire, creating resource if needed (growable pool)
-  /// @param growthSize How much to grow if pool is empty
-  /// @param createFn Callable: bool(ControlBlock&, Handle) - returns true on
-  /// success
-  /// @return Handle to the acquired resource, or invalid handle on creation
-  /// failure
-  /// @throws InvalidState if control block cannot be acquired
+  // =========================================================================
+  // Acquire Methods
+  // =========================================================================
+
+  /// @brief Acquire a fresh resource from pool (allocate + acquire)
+  /// @details Allocates a slot from freelist (expanding pool if needed),
+  ///          then acquires it using the provided create function.
+  /// @param createFn Callable: bool(Payload&) - returns true on success
+  /// @return Handle to the acquired resource, or invalid handle on failure
   template <typename CreateFn>
-    requires std::invocable<CreateFn, ControlBlock &, Handle> &&
+    requires std::invocable<CreateFn, typename ControlBlock::Payload &> &&
              std::convertible_to<
-                 std::invoke_result_t<CreateFn, ControlBlock &, Handle>, bool>
-  Handle acquireOrCreate(std::size_t growthSize, CreateFn &&createFn) {
+                 std::invoke_result_t<CreateFn,
+                                      typename ControlBlock::Payload &>,
+                 bool>
+  Handle acquireFresh(CreateFn &&createFn) {
     ensureInitialized();
-    Handle h = allocate(growthSize);
+    Handle h = allocate(growth_size_);
     auto &cb = getControlBlock(h);
 
-    // Create only if not initialized (not alive yet)
-    if (!cb.isAlive()) {
-      if (!createFn(cb, h)) {
-        pushToFreelist(h.index);
-        return Handle::invalid();
-      }
-      // Note: is_alive_ will be set by acquire() below
-    }
-
-    // Acquire the control block
-    if (!cb.acquire()) {
+    // cb.acquire() handles create internally (idempotent)
+    if (!cb.acquire(std::forward<CreateFn>(createFn))) {
       pushToFreelist(h.index);
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          std::string(managerName()) + " control block cannot be acquired");
+      return Handle::invalid();
     }
 
     return h;
   }
 
-  /// @brief Acquire a unique resource (alias for acquireOrCreate)
+  /// @brief Acquire an existing resource by handle (no allocation)
+  /// @details Increments the reference count on an existing resource.
+  /// @param h Handle to the resource
+  /// @param createFn Callable: bool(Payload&) - returns true on success
+  /// @return Reference to the control block
+  /// @throws OutOfRange if handle is invalid
+  /// @throws InvalidState if resource cannot be acquired
   template <typename CreateFn>
-    requires std::invocable<CreateFn, ControlBlock &, Handle> &&
-             std::convertible_to<
-                 std::invoke_result_t<CreateFn, ControlBlock &, Handle>, bool>
-  Handle acquireUniqueOrCreate(std::size_t growthSize, CreateFn &&createFn) {
-    return acquireOrCreate(growthSize, std::forward<CreateFn>(createFn));
-  }
-
-  /// @brief Acquire an existing shared resource, incrementing ref count
-  /// @throws InvalidArgument if handle invalid
-  /// @throws InvalidState if resource released or cannot acquire
-  ControlBlock &acquireShared(Handle h) {
+    requires std::invocable<CreateFn, typename ControlBlock::Payload &>
+  ControlBlock &acquireExisting(Handle h, CreateFn &&createFn) {
     auto &cb = getControlBlockChecked(h);
-    if (cb.count() == 0) {
+    if (!cb.acquire(std::forward<CreateFn>(createFn))) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          "Cannot acquire shared handle to a released resource");
-    }
-    if (!cb.acquire()) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          std::string(managerName()) + " control block cannot be acquired");
+          std::string(managerName()) + " resource cannot be acquired");
     }
     return cb;
+  }
+
+  /// @brief Acquire an existing resource by handle (no-op create)
+  /// @param h Handle to the resource
+  /// @return Reference to the control block
+  ControlBlock &acquireExisting(Handle h) {
+    return acquireExisting(h, [](auto &) { return true; });
   }
 
   // =========================================================================
   // Release Helpers
   // =========================================================================
 
-  /// @brief Release to freelist (reusable, generic)
-  void releaseToFreelist(Handle h) {
+  /// @brief Release for reuse (recycling pattern)
+  /// @details Releases the control block and returns slot to freelist if fully
+  /// released. Resource remains created for future reuse.
+  void releaseForReuse(Handle h) {
     auto idx = static_cast<std::size_t>(h.index);
     if (idx < control_blocks_.size()) {
       auto &cb = control_blocks_[idx];
@@ -337,44 +312,29 @@ protected:
     }
   }
 
-  /// @brief Release a shared reference. If ref count drops to zero, return to
-  /// freelist.
-  void releaseShared(Handle h) {
-    auto idx = static_cast<std::size_t>(h.index);
-    if (idx < control_blocks_.size()) {
-      auto &cb = control_blocks_[idx];
-      if (cb.release()) {
-        freelist_.push_back(static_cast<IndexType>(idx));
-      }
-    }
-  }
-
-  /// @brief Release a unique resource and return to freelist.
-  void releaseUnique(Handle h) {
-    auto idx = static_cast<std::size_t>(h.index);
-    if (idx < control_blocks_.size()) {
-      auto &cb = control_blocks_[idx];
-      if (cb.release()) {
-        freelist_.push_back(static_cast<IndexType>(idx));
-      }
-    }
-  }
-
-  /// @brief Release and destroy (non-reusable)
-  /// @tparam DestroyFn Callable: void(ControlBlock&, Handle)
+  /// @brief Release and destroy (non-reusable pattern)
+  /// @details Releases the control block, destroys the resource, and returns
+  /// slot to freelist if fully released.
+  /// @tparam DestroyFn Callable: void(Payload&)
   template <typename DestroyFn>
   void releaseAndDestroy(Handle h, DestroyFn &&destroyFn) {
     auto idx = static_cast<std::size_t>(h.index);
     if (idx < control_blocks_.size()) {
       auto &cb = control_blocks_[idx];
-      destroyFn(cb, h);
-
-      // Release will automatically set is_alive_ = false
-      if (cb.release()) {
+      if (cb.releaseAndDestroy(std::forward<DestroyFn>(destroyFn))) {
         freelist_.push_back(static_cast<IndexType>(idx));
       }
     }
   }
+
+  /// @deprecated Use releaseForReuse() instead
+  void releaseToFreelist(Handle h) { releaseForReuse(h); }
+
+  /// @deprecated Use releaseForReuse() instead
+  void releaseShared(Handle h) { releaseForReuse(h); }
+
+  /// @deprecated Use releaseForReuse() instead
+  void releaseUnique(Handle h) { releaseForReuse(h); }
 
   // =========================================================================
   // ControlBlock Accessors
@@ -468,6 +428,7 @@ protected:
 
 private:
   bool initialized_{false};
+  std::size_t growth_size_{1};
   std::vector<ControlBlock> control_blocks_;
   std::vector<IndexType> freelist_; // LIFO, stores indices only
 };
