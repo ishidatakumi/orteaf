@@ -33,7 +33,8 @@ void MpsCommandQueueManager::initialize(DeviceType device, SlowOps *ops,
       // is_alive_ is set automatically by acquire(), we don't call acquire here
       // so we leave it for when the queue is actually acquired
     }
-    // in_use defaults to false
+    // in_use defaults to false, always add to freelist
+    return true;
   });
 }
 
