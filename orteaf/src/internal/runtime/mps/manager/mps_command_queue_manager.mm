@@ -86,6 +86,10 @@ void MpsCommandQueueManager::growCapacity(std::size_t additional) {
 
 MpsCommandQueueManager::CommandQueueLease MpsCommandQueueManager::acquire() {
   auto handle = Base::acquireFresh([this](CommandQueueType &payload) {
+    // If already pre-created during initialize/growCapacity, skip creation
+    if (payload != nullptr) {
+      return true;
+    }
     if (!ops_)
       return false;
     auto queue = ops_->createCommandQueue(device_);

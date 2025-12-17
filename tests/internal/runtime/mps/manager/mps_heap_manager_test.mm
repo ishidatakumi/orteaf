@@ -208,8 +208,8 @@ TYPED_TEST(MpsHeapManagerTypedTest, GrowthChunkControlsPoolExpansion) {
   // Act: Acquire one heap
   auto lease = manager.acquire(key);
 
-  // Assert: Cache pattern - capacity grows one at a time
-  EXPECT_EQ(manager.capacity(), 1u);
+  // Assert: Pool expanded by growthChunkSize (3)
+  EXPECT_EQ(manager.capacity(), 3u);
 
   // Cleanup
   lease.release();

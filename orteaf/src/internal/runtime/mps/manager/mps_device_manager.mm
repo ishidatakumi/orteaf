@@ -48,6 +48,8 @@ void MpsDeviceManager::initialize(SlowOps *slow_ops) {
                                             graph_initial_capacity_);
           resource.event_pool.initialize(device, ops_, 0);
           resource.fence_pool.initialize(device, ops_, 0);
+          // Mark as acquired (alive)
+          cb.acquire([](auto &) { return true; });
         } else {
           resource.arch =
               ::orteaf::internal::architecture::Architecture::MpsGeneric;

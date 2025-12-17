@@ -71,19 +71,25 @@ MpsGraphManager::acquire(const GraphKey &key, const CompileFn &compile_fn) {
   }
 
   // Create new entry
+  bool null_executable = false;
   auto handle = Base::acquireFresh([&](MpsGraphResource &resource) {
     resource.graph = ops_->createGraph();
     resource.executable = compile_fn(resource.graph, device_, ops_);
     if (resource.executable == nullptr) {
-      // Cleanup the graph before throwing
+      // Cleanup the graph and signal failure
       ops_->destroyGraph(resource.graph);
       resource.graph = nullptr;
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          "MPS graph compile function returned null executable");
+      null_executable = true;
+      return false;
     }
     return true;
   });
+
+  if (null_executable) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS graph compile function returned null executable");
+  }
 
   if (handle == GraphHandle::invalid()) {
     ::orteaf::internal::diagnostics::error::throwError(

@@ -356,7 +356,7 @@ protected:
     return control_blocks_[static_cast<std::size_t>(h.index)];
   }
 
-  ControlBlock &getControlBlssockChecked(Handle h) {
+  ControlBlock &getControlBlockChecked(Handle h) {
     ensureInitialized();
     auto idx = static_cast<std::size_t>(h.index);
     if (idx >= control_blocks_.size()) {
