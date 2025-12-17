@@ -428,6 +428,17 @@ protected:
     return true;
   }
 
+  /// @brief Check if resource at handle is alive (valid handle + created)
+  /// @details Returns true if:
+  ///   1. Handle is valid (index in range, generation matches if applicable)
+  ///   2. Resource at that slot has been created
+  bool isAlive(Handle h) const noexcept {
+    if (!isValidHandle(h)) {
+      return false;
+    }
+    return control_blocks_[static_cast<std::size_t>(h.index)].isCreated();
+  }
+
   // =========================================================================
   // Test Support
   // =========================================================================

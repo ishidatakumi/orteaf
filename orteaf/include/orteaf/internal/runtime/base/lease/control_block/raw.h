@@ -10,8 +10,8 @@ namespace orteaf::internal::runtime::base {
 
 /// @brief Raw control block - no reference counting
 /// @details Used for resources that don't need lifecycle management.
-/// isAlive() simply returns isCreated() since Raw resources have no
-/// acquisition semantics.
+/// canTeardown() always returns true since Raw resources have no
+/// strong reference semantics (they are "always weak").
 template <typename SlotT>
   requires SlotConcept<SlotT>
 class RawControlBlock {
@@ -62,9 +62,6 @@ public:
     }
     return destroyed;
   }
-
-  /// @brief Check if resource is alive (for Raw, this means created)
-  bool isAlive() const noexcept { return slot_.isCreated(); }
 
   /// @brief Check if teardown is allowed
   /// @note Raw resources are "always weak" - teardown is always allowed

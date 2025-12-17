@@ -14,7 +14,7 @@ namespace orteaf::internal::runtime::base {
 /// support
 /// @details Like std::shared_ptr with std::weak_ptr support. Reference counted
 /// with separate strong and weak counts.
-/// isAlive() returns true when count > 0.
+/// canTeardown() returns true when count == 0.
 template <typename SlotT>
   requires SlotConcept<SlotT>
 class WeakSharedControlBlock {
@@ -107,9 +107,6 @@ public:
     }
     return false;
   }
-
-  /// @brief Check if resource is currently acquired
-  bool isAlive() const noexcept { return count() > 0; }
 
   /// @brief Check if teardown is allowed
   /// @return true if no strong references (count == 0)

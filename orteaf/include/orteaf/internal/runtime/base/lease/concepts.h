@@ -15,14 +15,16 @@ namespace orteaf::internal::runtime::base {
 /// - acquire: take ownership (template, can't check in concept)
 /// - release: release ownership for reuse, returns bool
 /// - releaseAndDestroy: release and destroy resource (template)
-/// - isAlive: check if currently acquired/active
+/// - canTeardown: check if teardown is allowed (no strong refs blocking)
+/// - isCreated: check if resource has been created
 template <typename CB>
 concept ControlBlockConcept = requires(CB cb, const CB ccb) {
   typename CB::Category;
   typename CB::Slot;
   // Note: acquire() is a template so can't be checked here
   { cb.release() } -> std::same_as<bool>;
-  { ccb.isAlive() } -> std::same_as<bool>;
+  { ccb.canTeardown() } -> std::same_as<bool>;
+  { ccb.isCreated() } -> std::same_as<bool>;
   // Note: releaseAndDestroy() is a template so can't be checked here
 };
 

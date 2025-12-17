@@ -15,7 +15,9 @@ namespace orteaf::internal::runtime::base {
 /// @details Allows weak references to observe the resource without owning it.
 /// The resource is destroyed when the strong owner releases, but control block
 /// persists until all weak references are gone.
-/// isAlive() returns the in_use state.
+/// canTeardown() returns !in_use.
+/// Generation is incremented only when both strong (in_use) and weak references
+/// are all released.
 /// Generation is incremented only when both strong (in_use) and weak references
 /// are all released.
 template <typename SlotT>
@@ -129,11 +131,6 @@ public:
       return true;
     }
     return false;
-  }
-
-  /// @brief Check if resource is currently acquired
-  bool isAlive() const noexcept {
-    return in_use_.load(std::memory_order_acquire);
   }
 
   /// @brief Check if teardown is allowed

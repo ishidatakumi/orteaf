@@ -13,7 +13,7 @@ namespace orteaf::internal::runtime::base {
 /// @brief Shared control block - shared ownership with reference counting
 /// @details Multiple leases can share this resource. Uses atomic reference
 /// count for thread-safe sharing.
-/// isAlive() returns true when count > 0.
+/// canTeardown() returns true when count == 0.
 template <typename SlotT>
   requires SlotConcept<SlotT>
 class SharedControlBlock {
@@ -90,9 +90,6 @@ public:
     }
     return false;
   }
-
-  /// @brief Check if resource is currently acquired
-  bool isAlive() const noexcept { return count() > 0; }
 
   /// @brief Check if teardown is allowed
   /// @return true if no strong references (count == 0)

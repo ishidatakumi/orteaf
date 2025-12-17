@@ -159,13 +159,6 @@ void MpsCommandQueueManager::dropWeakRef(
   lease.invalidate();
 }
 
-bool MpsCommandQueueManager::isAlive(CommandQueueHandle handle) const noexcept {
-  if (!Base::isInitialized() || !Base::isValidHandle(handle)) {
-    return false;
-  }
-  return Base::getControlBlock(handle).isAlive();
-}
-
 MpsCommandQueueManager::CommandQueueLease
 MpsCommandQueueManager::tryPromote(CommandQueueHandle handle) {
   if (!Base::isValidHandle(handle)) {
