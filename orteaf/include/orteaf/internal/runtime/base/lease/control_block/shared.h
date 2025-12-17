@@ -94,6 +94,10 @@ public:
   /// @brief Check if resource is currently acquired
   bool isAlive() const noexcept { return count() > 0; }
 
+  /// @brief Check if teardown is allowed
+  /// @return true if no strong references (count == 0)
+  bool canTeardown() const noexcept { return count() == 0; }
+
   // =========================================================================
   // Shared-specific API (SharedControlBlockConcept)
   // =========================================================================

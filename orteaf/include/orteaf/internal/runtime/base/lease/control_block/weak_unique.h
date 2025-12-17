@@ -136,6 +136,12 @@ public:
     return in_use_.load(std::memory_order_acquire);
   }
 
+  /// @brief Check if teardown is allowed
+  /// @return true if not in use (no strong reference blocking)
+  bool canTeardown() const noexcept {
+    return !in_use_.load(std::memory_order_acquire);
+  }
+
   // =========================================================================
   // Weak Reference API (WeakableControlBlockConcept)
   // =========================================================================

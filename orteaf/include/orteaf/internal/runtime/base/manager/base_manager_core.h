@@ -146,13 +146,14 @@ protected:
       return;
     }
     for (std::size_t i = 0; i < control_blocks_.size(); ++i) {
-      // Use Slot's destroy() for proper lifecycle tracking
-      if (control_blocks_[i].isAlive()) {
+      // Check if teardown is allowed (no strong references blocking)
+      if (!control_blocks_[i].canTeardown()) {
         ::orteaf::internal::diagnostics::error::throwError(
             ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
             std::string(managerName()) + " control block " + std::to_string(i) +
-                " is still alive");
+                " is still in use");
       }
+      // Use Slot's destroy() for proper lifecycle tracking
       control_blocks_[i].destroy(std::forward<DestroyFn>(destroyFn));
     }
     control_blocks_.clear();

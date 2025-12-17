@@ -66,6 +66,11 @@ public:
   /// @brief Check if resource is alive (for Raw, this means created)
   bool isAlive() const noexcept { return slot_.isCreated(); }
 
+  /// @brief Check if teardown is allowed
+  /// @note Raw resources are "always weak" - teardown is always allowed
+  /// @return Always true for Raw (no strong reference blocking)
+  bool canTeardown() const noexcept { return true; }
+
   // =========================================================================
   // Payload Access
   // =========================================================================
