@@ -180,7 +180,6 @@ public:
   ::orteaf::internal::architecture::Architecture
   getArch(DeviceHandle handle) const;
 
-  bool isAlive(DeviceHandle handle) const;
 
   // =========================================================================
   // Direct access to child managers
@@ -193,6 +192,7 @@ public:
   MpsFenceManager *fencePool(DeviceHandle handle);
 
   // Expose base methods
+  using Base::isAlive;
   using Base::capacity;
   using Base::isInitialized;
 

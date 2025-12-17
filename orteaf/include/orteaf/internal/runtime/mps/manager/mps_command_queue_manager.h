@@ -73,8 +73,9 @@ public:
   // Internal methods required by WeakUniqueLease
   void addWeakRef(CommandQueueHandle handle) noexcept;
   void dropWeakRef(CommandQueueWeakLease &lease) noexcept;
-  bool isAlive(CommandQueueHandle handle) const noexcept;
   CommandQueueLease tryPromote(CommandQueueHandle handle);
+
+  using Base::isAlive;
 
   // Config
   using Base::growthChunkSize;
