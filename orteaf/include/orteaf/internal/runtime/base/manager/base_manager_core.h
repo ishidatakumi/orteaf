@@ -77,16 +77,21 @@ protected:
   // =========================================================================
 
   /// @brief Setup pool with capacity, calling createFn for each control block
-  /// @tparam CreateFn Callable: bool(ControlBlock&, size_t index) - returns
-  /// true to add to freelist
+  /// @tparam CreateFn Callable: bool(Payload&) - passed to Slot::create()
   /// @param capacity Number of control blocks to create
-  /// @param createFn Factory function called for each control block
+  /// @param createFn Factory function passed to Slot::create() for each block
   template <typename CreateFn>
+    requires std::invocable<CreateFn, typename ControlBlock::Payload &> &&
+             std::convertible_to<
+                 std::invoke_result_t<CreateFn,
+                                      typename ControlBlock::Payload &>,
+                 bool>
   void setupPool(std::size_t capacity, CreateFn &&createFn) {
     ensureNotInitialized();
     control_blocks_.resize(capacity);
     for (std::size_t i = 0; i < capacity; ++i) {
-      if (createFn(control_blocks_[i], i)) {
+      // Use Slot's create() for proper lifecycle tracking
+      if (control_blocks_[i].create(std::forward<CreateFn>(createFn))) {
         freelist_.push_back(static_cast<IndexType>(i));
       }
     }
@@ -132,20 +137,17 @@ protected:
   }
 
   /// @brief Teardown pool, calling destroyFn for each control block
-  /// @tparam DestroyFn Callable: void(ControlBlock&, Handle)
+  /// @tparam DestroyFn Callable: void(Payload&) - passed to Slot::destroy()
   /// @note Safe to call when not initialized (no-op)
-  template <typename DestroyFn> void teardownPool(DestroyFn &&destroyFn) {
+  template <typename DestroyFn>
+    requires std::invocable<DestroyFn, typename ControlBlock::Payload &>
+  void teardownPool(DestroyFn &&destroyFn) {
     if (!initialized_) {
       return;
     }
     for (std::size_t i = 0; i < control_blocks_.size(); ++i) {
-      // Reconstruct handle for destruction callback using current generation
-      Handle h{static_cast<typename Handle::index_type>(i)};
-      if constexpr (Handle::has_generation) {
-        h.generation = static_cast<typename Handle::generation_type>(
-            control_blocks_[i].generation());
-      }
-      destroyFn(control_blocks_[i], h);
+      // Use Slot's destroy() for proper lifecycle tracking
+      control_blocks_[i].destroy(std::forward<DestroyFn>(destroyFn));
     }
     control_blocks_.clear();
     freelist_.clear();
