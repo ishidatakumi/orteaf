@@ -111,9 +111,9 @@ public:
   // backend wrapper details to launcher users.
   template <
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps>
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandBuffer_t
   createCommandBuffer(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandQueue_t
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandQueue_t
           command_queue) const {
     return FastOps::createCommandBuffer(command_queue);
   }
@@ -122,9 +122,9 @@ public:
   template <
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps>
   ::orteaf::internal::runtime::mps::platform::wrapper::
-      MPSComputeCommandEncoder_t
+      MpsComputeCommandEncoder_t
       createComputeEncoder(::orteaf::internal::runtime::mps::platform::wrapper::
-                               MPSCommandBuffer_t command_buffer,
+                               MpsCommandBuffer_t command_buffer,
                            ::orteaf::internal::base::DeviceHandle device,
                            std::size_t pipeline_index) const {
     const auto entry_idx = findEntryIndex(device);
@@ -143,9 +143,9 @@ public:
   template <
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps>
   ::orteaf::internal::runtime::mps::platform::wrapper::
-      MPSComputeCommandEncoder_t
+      MpsComputeCommandEncoder_t
       createComputeEncoder(::orteaf::internal::runtime::mps::platform::wrapper::
-                               MPSCommandBuffer_t command_buffer,
+                               MpsCommandBuffer_t command_buffer,
                            ::orteaf::internal::base::DeviceHandle device,
                            std::string_view library,
                            std::string_view function) const {
@@ -167,8 +167,8 @@ public:
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps>
   void setBuffer(
       ::orteaf::internal::runtime::mps::platform::wrapper::
-          MPSComputeCommandEncoder_t encoder,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSBuffer_t buffer,
+          MpsComputeCommandEncoder_t encoder,
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsBuffer_t buffer,
       std::size_t offset, std::size_t index) const {
     FastOps::setBuffer(encoder, buffer, offset, index);
   }
@@ -177,7 +177,7 @@ public:
   template <
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps>
   void setBytes(::orteaf::internal::runtime::mps::platform::wrapper::
-                    MPSComputeCommandEncoder_t encoder,
+                    MpsComputeCommandEncoder_t encoder,
                 const void *bytes, std::size_t length,
                 std::size_t index) const {
     FastOps::setBytes(encoder, bytes, length, index);
@@ -188,7 +188,7 @@ public:
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps>
   void dispatchThreadgroups(
       ::orteaf::internal::runtime::mps::platform::wrapper::
-          MPSComputeCommandEncoder_t encoder,
+          MpsComputeCommandEncoder_t encoder,
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSSize_t
           threadgroups,
       ::orteaf::internal::runtime::mps::platform::wrapper::MPSSize_t
@@ -200,7 +200,7 @@ public:
   template <
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps>
   void endEncoding(::orteaf::internal::runtime::mps::platform::wrapper::
-                       MPSComputeCommandEncoder_t encoder) const {
+                       MpsComputeCommandEncoder_t encoder) const {
     FastOps::endEncoding(encoder);
   }
 
@@ -208,7 +208,7 @@ public:
   template <
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps>
   void
-  commit(::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
+  commit(::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandBuffer_t
              command_buffer) const {
     FastOps::commit(command_buffer);
   }
@@ -219,7 +219,7 @@ public:
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps>
   void updateFence(
       ::orteaf::internal::runtime::mps::platform::wrapper::
-          MPSComputeCommandEncoder_t encoder,
+          MpsComputeCommandEncoder_t encoder,
       ::orteaf::internal::runtime::mps::manager::MpsFenceManager::FenceLease
           &fence) const {
     FastOps::updateFence(encoder, fence.pointer());
@@ -230,7 +230,7 @@ public:
   template <
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps>
   void waitForFence(::orteaf::internal::runtime::mps::platform::wrapper::
-                        MPSComputeCommandEncoder_t encoder,
+                        MpsComputeCommandEncoder_t encoder,
                     const ::orteaf::internal::runtime::mps::manager::
                         MpsFenceManager::FenceLease &fence) const {
     FastOps::waitForFence(encoder, fence.pointer());
@@ -241,7 +241,7 @@ public:
       typename FastOps = ::orteaf::internal::runtime::mps::platform::MpsFastOps>
   void
   waitForFence(::orteaf::internal::runtime::mps::platform::wrapper::
-                   MPSComputeCommandEncoder_t encoder,
+                   MpsComputeCommandEncoder_t encoder,
                const ::orteaf::internal::runtime::mps::resource::MpsFenceToken
                    &token) const {
     for (const auto &ticket : token) {
@@ -262,8 +262,8 @@ public:
       const ::orteaf::internal::runtime::mps::manager::MpsCommandQueueManager::
           CommandQueueLease &queue_lease,
       ::orteaf::internal::runtime::mps::platform::wrapper::
-          MPSComputeCommandEncoder_t encoder,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
+          MpsComputeCommandEncoder_t encoder,
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandBuffer_t
           command_buffer) const {
     auto fence_lease = RuntimeApi::acquireFence(device);
     FastOps::updateFence(encoder, fence_lease.pointer());
@@ -282,8 +282,8 @@ public:
       const ::orteaf::internal::runtime::mps::manager::MpsCommandQueueManager::
           CommandQueueLease &queue_lease,
       ::orteaf::internal::runtime::mps::platform::wrapper::
-          MPSComputeCommandEncoder_t encoder,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
+          MpsComputeCommandEncoder_t encoder,
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandBuffer_t
           command_buffer,
       ::orteaf::internal::runtime::mps::resource::MpsFenceToken &token) const {
     auto ticket = updateFence<FastOps, RuntimeApi>(device, queue_lease, encoder,
@@ -301,7 +301,7 @@ public:
       typename RuntimeApi =
           ::orteaf::internal::runtime::mps::api::MpsRuntimeApi,
       typename Binder>
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandBuffer_t
   dispatchOneShot(const ::orteaf::internal::runtime::mps::manager::
                       MpsCommandQueueManager::CommandQueueLease &queue_lease,
                   ::orteaf::internal::base::DeviceHandle device,
@@ -344,7 +344,7 @@ public:
       typename RuntimeApi =
           ::orteaf::internal::runtime::mps::api::MpsRuntimeApi,
       typename Binder>
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandBuffer_t
   dispatchOneShot(const ::orteaf::internal::runtime::mps::manager::
                       MpsCommandQueueManager::CommandQueueLease &queue_lease,
                   ::orteaf::internal::base::DeviceHandle device,

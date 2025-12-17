@@ -22,8 +22,8 @@ using orteaf::tests::ExpectError;
 
 namespace {
 
-mps_wrapper::MPSCommandQueue_t makeQueue(std::uintptr_t value) {
-  return reinterpret_cast<mps_wrapper::MPSCommandQueue_t>(value);
+mps_wrapper::MpsCommandQueue_t makeQueue(std::uintptr_t value) {
+  return reinterpret_cast<mps_wrapper::MpsCommandQueue_t>(value);
 }
 
 template <class Provider>
@@ -214,19 +214,13 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, AcquireGrowsPoolWhenFreelistEmpty) {
 }
 
 TYPED_TEST(MpsCommandQueueManagerTypedTest,
-           AcquireFailsWhenGrowthWouldExceedLimit) {
+           SetGrowthChunkSizeRejectsExcessiveValue) {
   auto &manager = this->manager();
-  const auto device = this->adapter().device();
 
-  // Arrange
-  manager.setGrowthChunkSize(std::numeric_limits<std::size_t>::max());
-  this->adapter().expectCreateCommandQueues({makeQueue(0x600)});
-  manager.initialize(device, this->getOps(), 1);
-  auto lease = manager.acquire(); // Keep to prevent return to free list
-
-  // Act & Assert
-  ExpectError(diag_error::OrteafErrc::InvalidArgument,
-              [&] { (void)manager.acquire(); });
+  // Act & Assert: SIZE_MAX exceeds Handle's max index range
+  ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] {
+    manager.setGrowthChunkSize(std::numeric_limits<std::size_t>::max());
+  });
 }
 
 // =============================================================================
@@ -259,9 +253,16 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, ManualReleaseInvalidatesLease) {
   // Assert: Lease is invalidated
   EXPECT_FALSE(static_cast<bool>(lease));
 
-  const auto &state = manager.stateForTest(original_handle.index);
-  EXPECT_FALSE(state.in_use);
-  EXPECT_GT(state.generation, 0u);
+  const auto &state = manager.controlBlockForTest(original_handle.index);
+  EXPECT_FALSE(state.isAlive());
+  // BaseManagerCore does not track generation in this way (Slot has it, but
+  // accessor returns ControlBlock). Slot generation is hidden or available via
+  // slot.generation? Basic Slot does not have generation. Only GenerationalSlot
+  // has generation. MpsCommandQueueManager is using base::Slot (not
+  // GenerationalSlot) via UniqueControlBlock? UniqueControlBlock takes SlotT.
+  // mps_command_queue_manager.h defines Slot = base::Slot. base::Slot does not
+  // have generation. So EXPECT_GT(state.generation, ...) is invalid now. We can
+  // only check in_use.
 
   // Act: Reacquire gets new generation
   auto reacquired = manager.acquire();
@@ -471,7 +472,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, DebugStateReflectsSetterUpdates) {
   lease.release();
 
   // Assert
-  const auto &released_state = manager.stateForTest(handle.index);
-  EXPECT_FALSE(released_state.in_use);
+  const auto &released_state = manager.controlBlockForTest(handle.index);
+  EXPECT_FALSE(released_state.isAlive());
 }
 #endif

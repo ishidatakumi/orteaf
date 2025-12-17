@@ -66,10 +66,10 @@ protected:
   }
 
 #if ORTEAF_ENABLE_MPS
-  mps_wrapper::MPSDevice_t device_{nullptr};
-  mps_wrapper::MPSCommandQueue_t queue_{nullptr};
-  mps_wrapper::MPSCommandBuffer_t command_buffer_a_{nullptr};
-  mps_wrapper::MPSCommandBuffer_t command_buffer_b_{nullptr};
+  mps_wrapper::MpsDevice_t device_{nullptr};
+  mps_wrapper::MpsCommandQueue_t queue_{nullptr};
+  mps_wrapper::MpsCommandBuffer_t command_buffer_a_{nullptr};
+  mps_wrapper::MpsCommandBuffer_t command_buffer_b_{nullptr};
   mps_rt::manager::MpsFenceManager fence_pool_{};
   ::orteaf::internal::runtime::mps::platform::MpsSlowOpsImpl ops_{};
   base::CommandQueueHandle queue_id_{base::CommandQueueHandle{11}};

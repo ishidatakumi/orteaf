@@ -29,110 +29,102 @@ void MpsHeapManager::initialize(
   device_handle_ = device_handle;
   library_manager_ = library_manager;
   ops_ = ops;
-  clearCacheStates();
   key_to_index_.clear();
-  if (capacity > 0) {
-    states_.reserve(capacity);
-  }
-  initialized_ = true;
+  Base::setupPool(capacity);
 }
 
 void MpsHeapManager::shutdown() {
-  if (!initialized_) {
-    return;
-  }
-  for (std::size_t i = 0; i < states_.size(); ++i) {
-    State &state = states_[i];
-    if (state.alive) {
-      // Shutdown buffer manager first
-      if (state.resource.buffer_manager) {
-        state.resource.buffer_manager->shutdown();
-        state.resource.buffer_manager.reset();
-      }
-      // Then destroy heap
-      if (state.resource.heap != nullptr) {
-        ops_->destroyHeap(state.resource.heap);
-        state.resource.heap = nullptr;
-      }
-      state.alive = false;
-    }
-  }
-  clearCacheStates();
+  Base::teardownPool(
+      [this](ControlBlock &cb, HeapHandle) { destroyResource(cb.payload()); });
   key_to_index_.clear();
   device_ = nullptr;
   device_handle_ = {};
   library_manager_ = nullptr;
   ops_ = nullptr;
-  initialized_ = false;
 }
 
 MpsHeapManager::HeapLease
 MpsHeapManager::acquire(const HeapDescriptorKey &key) {
-  ensureInitialized();
+  Base::ensureInitialized();
   validateKey(key);
 
   // Check if already cached
   if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
-    incrementUseCount(it->second);
-    return HeapLease{this, createHandle<HeapHandle>(it->second),
-                     states_[it->second].resource.heap};
+    HeapHandle cached_handle{
+        static_cast<typename HeapHandle::index_type>(it->second)};
+    Base::getControlBlock(cached_handle).acquire([](auto &) { return true; });
+    return HeapLease{this, cached_handle,
+                     Base::getControlBlock(cached_handle).payload().heap};
   }
 
   // Create new entry
-  const std::size_t index = allocateSlot();
-  State &state = states_[index];
-  state.resource.heap = createHeap(key);
+  auto handle = Base::acquireFresh([this, &key](MpsHeapResource &resource) {
+    resource.heap = createHeap(key);
+    // Initialize buffer manager for this heap
+    resource.buffer_manager = std::make_unique<BufferManager>();
+    BufferManager::Config buf_cfg{}; // Use defaults
+    resource.buffer_manager->initialize(device_, device_handle_, resource.heap,
+                                        library_manager_, buf_cfg, 0);
+    return true;
+  });
 
-  // Initialize buffer manager for this heap
-  state.resource.buffer_manager = std::make_unique<BufferManager>();
-  BufferManager::Config buf_cfg{}; // Use defaults
-  state.resource.buffer_manager->initialize(device_, device_handle_,
-                                            state.resource.heap,
-                                            library_manager_, buf_cfg, 0);
+  if (handle == HeapHandle::invalid()) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS heap manager failed to create heap");
+  }
 
-  markSlotAlive(index);
-  key_to_index_.emplace(key, index);
-
-  return HeapLease{this, createHandle<HeapHandle>(index), state.resource.heap};
+  key_to_index_.emplace(key, static_cast<std::size_t>(handle.index));
+  return HeapLease{this, handle, Base::getControlBlock(handle).payload().heap};
 }
 
 void MpsHeapManager::release(HeapLease &lease) noexcept {
   if (!lease) {
     return;
   }
-  decrementUseCount(static_cast<std::size_t>(lease.handle().index));
+  Base::releaseToFreelist(lease.handle());
   lease.invalidate();
 }
 
 MpsHeapManager::BufferManager *
 MpsHeapManager::bufferManager(const HeapLease &lease) {
-  State &state = validateAndGetState(lease.handle());
-  return state.resource.buffer_manager.get();
+  if (!lease) {
+    return nullptr;
+  }
+  auto &cb = Base::getControlBlockChecked(lease.handle());
+  return cb.payload().buffer_manager.get();
 }
 
 MpsHeapManager::BufferManager *
 MpsHeapManager::bufferManager(const HeapDescriptorKey &key) {
-  ensureInitialized();
+  Base::ensureInitialized();
   validateKey(key);
 
-  std::size_t index = 0;
-
+  // Check if already cached
   if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
-    index = it->second;
-  } else {
-    index = allocateSlot();
-    State &state = states_[index];
-    state.resource.heap = createHeap(key);
-    state.resource.buffer_manager = std::make_unique<BufferManager>();
-    BufferManager::Config buf_cfg{}; // Use defaults
-    state.resource.buffer_manager->initialize(device_, device_handle_,
-                                              state.resource.heap,
-                                              library_manager_, buf_cfg, 0);
-    markSlotAlive(index);
-    key_to_index_.emplace(key, index);
+    HeapHandle cached_handle{
+        static_cast<typename HeapHandle::index_type>(it->second)};
+    return Base::getControlBlock(cached_handle).payload().buffer_manager.get();
   }
 
-  return states_[index].resource.buffer_manager.get();
+  // Create new entry (same as acquire but don't return lease)
+  auto handle = Base::acquireFresh([this, &key](MpsHeapResource &resource) {
+    resource.heap = createHeap(key);
+    resource.buffer_manager = std::make_unique<BufferManager>();
+    BufferManager::Config buf_cfg{};
+    resource.buffer_manager->initialize(device_, device_handle_, resource.heap,
+                                        library_manager_, buf_cfg, 0);
+    return true;
+  });
+
+  if (handle == HeapHandle::invalid()) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS heap manager failed to create heap");
+  }
+
+  key_to_index_.emplace(key, static_cast<std::size_t>(handle.index));
+  return Base::getControlBlock(handle).payload().buffer_manager.get();
 }
 
 void MpsHeapManager::validateKey(const HeapDescriptorKey &key) const {
@@ -143,7 +135,20 @@ void MpsHeapManager::validateKey(const HeapDescriptorKey &key) const {
   }
 }
 
-::orteaf::internal::runtime::mps::platform::wrapper::MPSHeap_t
+void MpsHeapManager::destroyResource(MpsHeapResource &resource) {
+  // Shutdown buffer manager first
+  if (resource.buffer_manager) {
+    resource.buffer_manager->shutdown();
+    resource.buffer_manager.reset();
+  }
+  // Then destroy heap
+  if (resource.heap != nullptr) {
+    ops_->destroyHeap(resource.heap);
+    resource.heap = nullptr;
+  }
+}
+
+::orteaf::internal::runtime::mps::platform::wrapper::MpsHeap_t
 MpsHeapManager::createHeap(const HeapDescriptorKey &key) {
   auto descriptor = ops_->createHeapDescriptor();
   if (descriptor == nullptr) {
@@ -152,7 +157,7 @@ MpsHeapManager::createHeap(const HeapDescriptorKey &key) {
         "Failed to allocate MPS heap descriptor");
   }
   struct DescriptorGuard {
-    ::orteaf::internal::runtime::mps::platform::wrapper::MPSHeapDescriptor_t
+    ::orteaf::internal::runtime::mps::platform::wrapper::MpsHeapDescriptor_t
         handle{nullptr};
     SlowOps *slow_ops{nullptr};
     ~DescriptorGuard() {

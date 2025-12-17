@@ -6,38 +6,44 @@
 #include <cstdint>
 
 #include "orteaf/internal/base/handle.h"
-#include "orteaf/internal/base/lease.h"
-#include "orteaf/internal/runtime/base/exclusive_pool_manager.h"
+#include "orteaf/internal/runtime/base/lease/control_block/unique.h"
+#include "orteaf/internal/runtime/base/lease/slot.h"
+#include "orteaf/internal/runtime/base/lease/unique_lease.h"
+#include "orteaf/internal/runtime/base/manager/base_manager_core.h"
 #include "orteaf/internal/runtime/mps/platform/mps_slow_ops.h"
 #include "orteaf/internal/runtime/mps/platform/wrapper/mps_command_queue.h"
 
 namespace orteaf::internal::runtime::mps::manager {
 
-// Use the standard ExclusivePoolState template
-using MpsCommandQueueManagerState =
-    ::orteaf::internal::runtime::base::ExclusivePoolState<
-        ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandQueue_t>;
+// Slot type
+using CommandQueueSlot = ::orteaf::internal::runtime::base::GenerationalSlot<
+    ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandQueue_t>;
+
+// Control block: Unique (exclusive) ownership
+using CommandQueueControlBlock =
+    ::orteaf::internal::runtime::base::UniqueControlBlock<CommandQueueSlot>;
 
 struct MpsCommandQueueManagerTraits {
-  using OpsType = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
-  using StateType = MpsCommandQueueManagerState;
+  using ControlBlock = CommandQueueControlBlock;
+  using Handle = ::orteaf::internal::base::CommandQueueHandle;
   static constexpr const char *Name = "MPS command queue manager";
 };
 
 class MpsCommandQueueManager
-    : public ::orteaf::internal::runtime::base::ExclusivePoolManager<
-          MpsCommandQueueManager, MpsCommandQueueManagerTraits> {
+    : protected ::orteaf::internal::runtime::base::BaseManagerCore<
+          MpsCommandQueueManagerTraits> {
+  using Base = ::orteaf::internal::runtime::base::BaseManagerCore<
+      MpsCommandQueueManagerTraits>;
+
 public:
-  using Base = ::orteaf::internal::runtime::base::ExclusivePoolManager<
-      MpsCommandQueueManager, MpsCommandQueueManagerTraits>;
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using DeviceType =
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSDevice_t;
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t;
   using CommandQueueHandle = ::orteaf::internal::base::CommandQueueHandle;
-  using CommandQueueLease = ::orteaf::internal::base::Lease<
-      CommandQueueHandle,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandQueue_t,
-      MpsCommandQueueManager>;
+  using CommandQueueType =
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandQueue_t;
+  using CommandQueueLease = ::orteaf::internal::runtime::base::UniqueLease<
+      CommandQueueHandle, CommandQueueType, MpsCommandQueueManager>;
 
   MpsCommandQueueManager() = default;
   MpsCommandQueueManager(const MpsCommandQueueManager &) = delete;
@@ -52,12 +58,30 @@ public:
 
   CommandQueueLease acquire();
   void release(CommandQueueLease &lease) noexcept;
+  void release(CommandQueueHandle handle) noexcept;
 
   bool isInUse(CommandQueueHandle handle) const;
   void releaseUnusedQueues();
 
+  // Config
+  using Base::growthChunkSize;
+  using Base::setGrowthChunkSize;
+
+  // Expose capacity
+  using Base::capacity;
+  using Base::isInitialized;
+
+#if ORTEAF_ENABLE_TEST
+  using Base::controlBlockForTest;
+  using Base::freeListSizeForTest;
+  using Base::isInitializedForTest;
+#endif
+
 private:
+  void destroyResource(CommandQueueType &resource);
+
   DeviceType device_{nullptr};
+  SlowOps *ops_{nullptr};
 };
 
 } // namespace orteaf::internal::runtime::mps::manager

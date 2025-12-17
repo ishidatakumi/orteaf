@@ -18,7 +18,7 @@ public:
   MpsFenceTicket() noexcept = default;
   MpsFenceTicket(
       ::orteaf::internal::base::CommandQueueHandle handle,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandBuffer_t
           command_buffer,
       MpsFenceLease &&fence_handle) noexcept
       : command_queue_handle_(handle), command_buffer_(command_buffer),
@@ -42,7 +42,7 @@ public:
   commandQueueHandle() const noexcept {
     return command_queue_handle_;
   }
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandBuffer_t
   commandBuffer() const noexcept {
     return command_buffer_;
   }
@@ -58,7 +58,7 @@ public:
   }
 
   MpsFenceTicket &setCommandBuffer(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandBuffer_t
           command_buffer) noexcept {
     command_buffer_ = command_buffer;
     return *this;
@@ -89,7 +89,7 @@ private:
   }
 
   ::orteaf::internal::base::CommandQueueHandle command_queue_handle_{};
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandBuffer_t
       command_buffer_{nullptr};
   std::optional<MpsFenceLease> fence_handle_{};
 };

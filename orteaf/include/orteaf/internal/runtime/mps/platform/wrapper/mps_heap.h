@@ -13,22 +13,22 @@
 
 namespace orteaf::internal::runtime::mps::platform::wrapper {
 
-inline constexpr MPSStorageMode_t kMPSStorageModeShared = 0;
-inline constexpr MPSStorageMode_t kMPSStorageModeManaged = 1;
-inline constexpr MPSStorageMode_t kMPSStorageModePrivate = 2;
-inline constexpr MPSStorageMode_t kMPSStorageModeMemoryless = 3;
+inline constexpr MpsStorageMode_t kMPSStorageModeShared = 0;
+inline constexpr MpsStorageMode_t kMPSStorageModeManaged = 1;
+inline constexpr MpsStorageMode_t kMPSStorageModePrivate = 2;
+inline constexpr MpsStorageMode_t kMPSStorageModeMemoryless = 3;
 
-inline constexpr MPSCPUCacheMode_t kMPSCPUCacheModeDefaultCache = 0;
-inline constexpr MPSCPUCacheMode_t kMPSCPUCacheModeWriteCombined = 1;
+inline constexpr MpsCPUCacheMode_t kMPSCPUCacheModeDefaultCache = 0;
+inline constexpr MpsCPUCacheMode_t kMPSCPUCacheModeWriteCombined = 1;
 
-inline constexpr MPSHazardTrackingMode_t kMPSHazardTrackingModeDefault = 0;
-inline constexpr MPSHazardTrackingMode_t kMPSHazardTrackingModeTracked = 1;
-inline constexpr MPSHazardTrackingMode_t kMPSHazardTrackingModeUntracked = 2;
+inline constexpr MpsHazardTrackingMode_t kMPSHazardTrackingModeDefault = 0;
+inline constexpr MpsHazardTrackingMode_t kMPSHazardTrackingModeTracked = 1;
+inline constexpr MpsHazardTrackingMode_t kMPSHazardTrackingModeUntracked = 2;
 
-inline constexpr MPSHeapType_t kMPSHeapTypeAutomatic = 0;
-inline constexpr MPSHeapType_t kMPSHeapTypePlacement = 1;
+inline constexpr MpsHeapType_t kMPSHeapTypeAutomatic = 0;
+inline constexpr MpsHeapType_t kMPSHeapTypePlacement = 1;
 
-inline constexpr MPSResourceOptions_t kMPSDefaultResourceOptions = 0;
+inline constexpr MpsResourceOptions_t kMPSDefaultResourceOptions = 0;
 
 /** Create a new `MTLHeapDescriptor` object (opaque). */
 [[nodiscard]] MpsHeapDescriptor_t createHeapDescriptor();
@@ -44,22 +44,23 @@ std::size_t getHeapDescriptorSize(MpsHeapDescriptor_t descriptor);
 
 /** Set storage mode on the descriptor. */
 void setHeapDescriptorStorageMode(MpsHeapDescriptor_t descriptor,
-                                  MPSStorageMode_t storage_mode);
+                                  MpsStorageMode_t storage_mode);
 
 /** Set CPU cache mode on the descriptor. */
 void setHeapDescriptorCPUCacheMode(MpsHeapDescriptor_t descriptor,
-                                   MPSCPUCacheMode_t cache_mode);
+                                   MpsCPUCacheMode_t cache_mode);
 
 /** Set hazard tracking mode on the descriptor. */
 void setHeapDescriptorHazardTrackingMode(MpsHeapDescriptor_t descriptor,
-                                         MPSHazardTrackingMode_t hazard_mode);
+                                         MpsHazardTrackingMode_t hazard_mode);
 
 /** Set heap type (automatic/placement). */
-void setHeapDescriptorType(MpsHeapDescriptor_t descriptor, MPSHeapType_t heap_type);
+void setHeapDescriptorType(MpsHeapDescriptor_t descriptor,
+                           MpsHeapType_t heap_type);
 
 /** Set resource options bitmask on the descriptor. */
 void setHeapDescriptorResourceOptions(MpsHeapDescriptor_t descriptor,
-                                     MPSResourceOptions_t resource_options);
+                                      MpsResourceOptions_t resource_options);
 
 /** Create a heap from a descriptor. */
 [[nodiscard]] MpsHeap_t createHeap(MpsDevice_t device,
@@ -78,20 +79,20 @@ std::size_t heapUsedSize(MpsHeap_t heap);
 std::size_t heapMaxAvailableSize(MpsHeap_t heap, std::size_t alignment);
 
 /** Current resource options flags for the heap. */
-MPSResourceOptions_t heapResourceOptions(MpsHeap_t heap);
+MpsResourceOptions_t heapResourceOptions(MpsHeap_t heap);
 
 /** The heap's storage mode. */
-MPSStorageMode_t heapStorageMode(MpsHeap_t heap);
+MpsStorageMode_t heapStorageMode(MpsHeap_t heap);
 
 /** The heap's CPU cache mode. */
-MPSCPUCacheMode_t heapCPUCacheMode(MpsHeap_t heap);
+MpsCPUCacheMode_t heapCPUCacheMode(MpsHeap_t heap);
 
 /** The heap's hazard tracking mode. */
-MPSHazardTrackingMode_t heapHazardTrackingMode(MpsHeap_t heap);
+MpsHazardTrackingMode_t heapHazardTrackingMode(MpsHeap_t heap);
 
 /** The heap's type (automatic/placement). */
-MPSHeapType_t heapType(MpsHeap_t heap);
+MpsHeapType_t heapType(MpsHeap_t heap);
 
 } // namespace orteaf::internal::runtime::mps::platform::wrapper
 
-#endif  // ORTEAF_ENABLE_MPS
+#endif // ORTEAF_ENABLE_MPS

@@ -25,10 +25,12 @@ namespace {
 class MpsBufferManagerSimpleTest : public ::testing::Test {
 protected:
   using Manager = mps_rt::MpsBufferManager;
+  using LaunchParams = typename Manager::LaunchParams;
 
   Manager &manager() { return manager_; }
 
   Manager manager_{};
+  LaunchParams params_{};
 };
 
 // -----------------------------------------------------------------------------
@@ -37,15 +39,15 @@ protected:
 
 TEST_F(MpsBufferManagerSimpleTest, ShutdownWithoutInitializeIsNoOp) {
   // Act & Assert: Shutdown before initialization is safe
-  EXPECT_NO_THROW(manager().shutdown());
+  EXPECT_NO_THROW(manager().shutdown(params_));
 }
 
 TEST_F(MpsBufferManagerSimpleTest,
        MultipleShutdownsWithoutInitializeAreIdempotent) {
   // Act & Assert: Multiple shutdowns are idempotent
-  EXPECT_NO_THROW(manager().shutdown());
-  EXPECT_NO_THROW(manager().shutdown());
-  EXPECT_NO_THROW(manager().shutdown());
+  EXPECT_NO_THROW(manager().shutdown(params_));
+  EXPECT_NO_THROW(manager().shutdown(params_));
+  EXPECT_NO_THROW(manager().shutdown(params_));
 }
 
 // -----------------------------------------------------------------------------
@@ -65,7 +67,7 @@ TEST_F(MpsBufferManagerSimpleTest, CapacityIsZeroBeforeInitialize) {
 TEST_F(MpsBufferManagerSimpleTest, AcquireBeforeInitializationThrows) {
   // Act & Assert: Acquire before initialization throws InvalidState
   ExpectError(diag_error::OrteafErrc::InvalidState,
-              [&] { (void)manager().acquire(1024, 16); });
+              [&] { (void)manager().acquire(1024, 16, params_); });
 }
 
 TEST_F(MpsBufferManagerSimpleTest, AcquireByHandleBeforeInitializationThrows) {
@@ -156,7 +158,8 @@ protected:
   }
 
   void TearDown() override {
-    manager_.shutdown();
+    Manager::LaunchParams params{};
+    manager_.shutdown(params);
     lib_manager_.shutdown();
     if (heap_) {
       mps_wrapper::destroyHeap(heap_);
@@ -179,16 +182,17 @@ protected:
                         cfg, capacity);
   }
 
-  mps_wrapper::MPSDevice_t device() { return device_; }
+  mps_wrapper::MpsDevice_t device() { return device_; }
   bool setupSuccessful() const { return setup_successful_; }
 
   mps_platform::MpsSlowOpsImpl ops_{};
   Manager manager_{};
-  mps_wrapper::MPSDevice_t device_{nullptr};
-  mps_wrapper::MPSHeapDescriptor_t heap_descriptor_{nullptr};
-  mps_wrapper::MPSHeap_t heap_{nullptr};
+  mps_wrapper::MpsDevice_t device_{nullptr};
+  mps_wrapper::MpsHeapDescriptor_t heap_descriptor_{nullptr};
+  mps_wrapper::MpsHeap_t heap_{nullptr};
   mps_rt::MpsLibraryManager lib_manager_{};
   bool setup_successful_{false};
+  Manager::LaunchParams params_{};
 };
 
 // -----------------------------------------------------------------------------
@@ -227,7 +231,7 @@ TEST_F(MpsBufferManagerIntegrationTest, ShutdownAfterInitializeWorks) {
   initializeManager();
 
   // Act
-  EXPECT_NO_THROW(manager().shutdown());
+  EXPECT_NO_THROW(manager().shutdown(params_));
 
   // Assert
   EXPECT_FALSE(manager().isInitialized());
@@ -242,7 +246,7 @@ TEST_F(MpsBufferManagerIntegrationTest, MultipleInitializeShutdownCyclesWork) {
   for (int i = 0; i < 3; ++i) {
     EXPECT_NO_THROW(initializeManager());
     EXPECT_TRUE(manager().isInitialized());
-    EXPECT_NO_THROW(manager().shutdown());
+    EXPECT_NO_THROW(manager().shutdown(params_));
     EXPECT_FALSE(manager().isInitialized());
   }
 }
@@ -260,14 +264,14 @@ TEST_F(MpsBufferManagerIntegrationTest, AcquireReturnsValidLease) {
   initializeManager();
 
   // Act
-  auto lease = manager().acquire(1024, 16);
+  auto lease = manager().acquire(1024, 16, params_);
 
   // Assert
   EXPECT_TRUE(lease);
   EXPECT_TRUE(lease.handle().isValid());
 
   // Cleanup
-  manager().release(lease);
+  manager().release(lease, params_);
 }
 
 TEST_F(MpsBufferManagerIntegrationTest,
@@ -280,7 +284,7 @@ TEST_F(MpsBufferManagerIntegrationTest,
   initializeManager();
 
   // Act
-  auto lease = manager().acquire(0, 16);
+  auto lease = manager().acquire(0, 16, params_);
 
   // Assert: Zero size returns invalid lease
   EXPECT_FALSE(lease);
@@ -295,9 +299,9 @@ TEST_F(MpsBufferManagerIntegrationTest, MultipleAllocationsWork) {
   initializeManager();
 
   // Act
-  auto lease1 = manager().acquire(1024, 16);
-  auto lease2 = manager().acquire(2048, 32);
-  auto lease3 = manager().acquire(4096, 64);
+  auto lease1 = manager().acquire(1024, 16, params_);
+  auto lease2 = manager().acquire(2048, 32, params_);
+  auto lease3 = manager().acquire(4096, 64, params_);
 
   // Assert: All leases are valid and distinct
   EXPECT_TRUE(lease1);
@@ -308,9 +312,9 @@ TEST_F(MpsBufferManagerIntegrationTest, MultipleAllocationsWork) {
   EXPECT_NE(lease1.handle().index, lease3.handle().index);
 
   // Cleanup
-  manager().release(lease1);
-  manager().release(lease2);
-  manager().release(lease3);
+  manager().release(lease1, params_);
+  manager().release(lease2, params_);
+  manager().release(lease3, params_);
 }
 
 TEST_F(MpsBufferManagerIntegrationTest, BufferRecyclingReusesSlots) {
@@ -320,18 +324,18 @@ TEST_F(MpsBufferManagerIntegrationTest, BufferRecyclingReusesSlots) {
 
   // Arrange
   initializeManager();
-  auto first = manager().acquire(1024, 16);
+  auto first = manager().acquire(1024, 16, params_);
   const auto first_index = first.handle().index;
 
   // Act: Release and acquire again
-  manager().release(first);
-  auto second = manager().acquire(2048, 16);
+  manager().release(first, params_);
+  auto second = manager().acquire(2048, 16, params_);
 
   // Assert: Same slot is reused
   EXPECT_EQ(second.handle().index, first_index);
 
   // Cleanup
-  manager().release(second);
+  manager().release(second, params_);
 }
 
 } // namespace
@@ -353,6 +357,7 @@ class MpsBufferManagerMockTest : public ::testing::Test {
 protected:
   using Manager = StubBufferManager;
   using Config = typename Manager::Config;
+  using LaunchParams = typename Manager::LaunchParams;
   using StubResource = orteaf::tests::runtime::mps::StubMpsResource;
 
   Manager &manager() { return manager_; }
@@ -374,6 +379,7 @@ protected:
   }
 
   Manager manager_{};
+  LaunchParams params_{};
 };
 
 // -----------------------------------------------------------------------------
@@ -391,7 +397,7 @@ TEST_F(MpsBufferManagerMockTest, ShutdownAfterInitializeWorks) {
   initializeManager();
 
   // Act
-  EXPECT_NO_THROW(manager_.shutdown());
+  EXPECT_NO_THROW(manager_.shutdown(params_));
 
   // Assert
   EXPECT_FALSE(manager_.isInitialized());
@@ -406,14 +412,14 @@ TEST_F(MpsBufferManagerMockTest, AcquireReturnsValidLease) {
   initializeManager();
 
   // Act
-  auto lease = manager_.acquire(1024, 16);
+  auto lease = manager_.acquire(1024, 16, params_);
 
   // Assert
   EXPECT_TRUE(lease);
   EXPECT_TRUE(lease.handle().isValid());
 
   // Cleanup
-  manager_.release(lease);
+  manager_.release(lease, params_);
 }
 
 TEST_F(MpsBufferManagerMockTest, MultipleAcquisitionsWork) {
@@ -421,9 +427,9 @@ TEST_F(MpsBufferManagerMockTest, MultipleAcquisitionsWork) {
   initializeManager();
 
   // Act
-  auto lease1 = manager_.acquire(256, 16);
-  auto lease2 = manager_.acquire(512, 32);
-  auto lease3 = manager_.acquire(1024, 64);
+  auto lease1 = manager_.acquire(256, 16, params_);
+  auto lease2 = manager_.acquire(512, 32, params_);
+  auto lease3 = manager_.acquire(1024, 64, params_);
 
   // Assert: All distinct handles
   EXPECT_TRUE(lease1);
@@ -433,32 +439,32 @@ TEST_F(MpsBufferManagerMockTest, MultipleAcquisitionsWork) {
   EXPECT_NE(lease2.handle().index, lease3.handle().index);
 
   // Cleanup
-  manager_.release(lease1);
-  manager_.release(lease2);
-  manager_.release(lease3);
+  manager_.release(lease1, params_);
+  manager_.release(lease2, params_);
+  manager_.release(lease3, params_);
 }
 
 TEST_F(MpsBufferManagerMockTest, ReleaseRecyclesSlot) {
   // Arrange
   initializeManager();
-  auto first = manager_.acquire(256, 16);
+  auto first = manager_.acquire(256, 16, params_);
   const auto first_index = first.handle().index;
 
   // Act: Release and acquire
-  manager_.release(first);
-  auto second = manager_.acquire(512, 16);
+  manager_.release(first, params_);
+  auto second = manager_.acquire(512, 16, params_);
 
   // Assert: Same slot reused
   EXPECT_EQ(second.handle().index, first_index);
 
   // Cleanup
-  manager_.release(second);
+  manager_.release(second, params_);
 }
 
 TEST_F(MpsBufferManagerMockTest, AcquireByHandleIncreasesRefCount) {
   // Arrange
   initializeManager();
-  auto lease1 = manager_.acquire(256, 16);
+  auto lease1 = manager_.acquire(256, 16, params_);
   const auto handle = lease1.handle();
 
   // Act: Acquire by handle
@@ -470,8 +476,8 @@ TEST_F(MpsBufferManagerMockTest, AcquireByHandleIncreasesRefCount) {
   EXPECT_EQ(lease2.handle().generation, handle.generation);
 
   // Cleanup
-  manager_.release(lease1);
-  manager_.release(lease2);
+  manager_.release(lease1, params_);
+  manager_.release(lease2, params_);
 }
 
 TEST_F(MpsBufferManagerMockTest, AcquireWithZeroSizeReturnsInvalidLease) {
@@ -479,7 +485,7 @@ TEST_F(MpsBufferManagerMockTest, AcquireWithZeroSizeReturnsInvalidLease) {
   initializeManager();
 
   // Act
-  auto lease = manager_.acquire(0, 16);
+  auto lease = manager_.acquire(0, 16, params_);
 
   // Assert
   EXPECT_FALSE(lease);
@@ -490,15 +496,15 @@ TEST_F(MpsBufferManagerMockTest, CapacityGrowsOnAcquire) {
   initializeManager(4);
 
   // Act
-  auto lease1 = manager_.acquire(256, 16);
-  auto lease2 = manager_.acquire(256, 16);
+  auto lease1 = manager_.acquire(256, 16, params_);
+  auto lease2 = manager_.acquire(256, 16, params_);
 
   // Assert: Capacity grows
   EXPECT_GE(manager_.capacity(), 2u);
 
   // Cleanup
-  manager_.release(lease1);
-  manager_.release(lease2);
+  manager_.release(lease1, params_);
+  manager_.release(lease2, params_);
 }
 
 #endif // ORTEAF_ENABLE_MPS

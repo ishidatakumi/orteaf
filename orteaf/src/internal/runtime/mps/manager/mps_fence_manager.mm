@@ -26,57 +26,49 @@ void MpsFenceManager::initialize(DeviceType device, SlowOps *ops,
   }
   device_ = device;
   ops_ = ops;
-  clearPoolStates();
-  if (capacity > 0) {
-    Base::growPool(capacity);
-  }
-  initialized_ = true;
+  Base::setupPool(capacity);
 }
 
 void MpsFenceManager::shutdown() {
-  if (!initialized_) {
+  if (!Base::isInitialized()) {
     return;
   }
-  for (std::size_t i = 0; i < states_.size(); ++i) {
-    State &state = states_[i];
-    if (state.alive && state.resource != nullptr) {
-      ops_->destroyFence(state.resource);
-      state.resource = nullptr;
-      state.alive = false;
-      state.in_use = false;
-      state.ref_count.store(0, std::memory_order_relaxed);
+  Base::teardownPool([this](FenceControlBlock &cb, FenceHandle) {
+    // Check if resource was created (payload is valid)
+    if (cb.payload() != nullptr) {
+      destroyResource(cb.payload());
     }
-  }
-  clearPoolStates();
+  });
   device_ = nullptr;
   ops_ = nullptr;
-  initialized_ = false;
 }
 
 MpsFenceManager::FenceLease MpsFenceManager::acquire() {
-  ensureInitialized();
-  const std::size_t index = Base::allocateSlot();
-  State &state = states_[index];
-
-  if (!state.alive) {
-    state.resource = ops_->createFence(device_);
-    if (state.resource == nullptr) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          "Failed to create MPS fence");
+  auto handle = Base::acquireFresh([this](FenceType &payload) {
+    if (!ops_) {
+      return false;
     }
-    state.alive = true;
-    state.generation = 0;
+    auto fence = ops_->createFence(device_);
+    if (fence == nullptr) {
+      return false;
+    }
+    payload = fence;
+    return true;
+  });
+
+  if (!handle.isValid()) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "Failed to create MPS fence");
   }
 
-  markSlotInUse(index);
-  return FenceLease{this, createHandle<FenceHandle>(index), state.resource};
+  return FenceLease{this, handle,
+                    Base::getControlBlockChecked(handle).payload()};
 }
 
 MpsFenceManager::FenceLease MpsFenceManager::acquire(FenceHandle handle) {
-  State &state = validateAndGetState(handle);
-  incrementRefCount(static_cast<std::size_t>(handle.index));
-  return FenceLease{this, handle, state.resource};
+  auto &cb = Base::acquireExisting(handle);
+  return FenceLease{this, handle, cb.payload()};
 }
 
 void MpsFenceManager::release(FenceLease &lease) noexcept {
@@ -85,14 +77,18 @@ void MpsFenceManager::release(FenceLease &lease) noexcept {
 }
 
 void MpsFenceManager::release(FenceHandle handle) noexcept {
-  State *state = getStateForRelease(handle);
-  if (state == nullptr) {
+  if (!Base::isValidHandle(handle)) {
     return;
   }
-  const std::size_t index = static_cast<std::size_t>(handle.index);
-  const std::size_t new_count = decrementRefCount(index);
-  if (new_count == 0) {
-    releaseSlot(index);
+  Base::releaseForReuse(handle);
+}
+
+void MpsFenceManager::destroyResource(FenceType &resource) {
+  if (resource != nullptr) {
+    if (ops_) {
+      ops_->destroyFence(resource);
+    }
+    resource = nullptr;
   }
 }
 

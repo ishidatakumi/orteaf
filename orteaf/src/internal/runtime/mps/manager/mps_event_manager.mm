@@ -26,57 +26,59 @@ void MpsEventManager::initialize(DeviceType device, SlowOps *ops,
   }
   device_ = device;
   ops_ = ops;
-  clearPoolStates();
-  if (capacity > 0) {
-    Base::growPool(capacity);
+
+  // Fill pool with capacity
+  Base::setupPool(capacity);
+}
+
+void MpsEventManager::destroyResource(EventType &resource) {
+  if (resource != nullptr) {
+    ops_->destroyEvent(resource);
+    resource = nullptr;
   }
-  initialized_ = true;
 }
 
 void MpsEventManager::shutdown() {
-  if (!initialized_) {
+  if (!Base::isInitialized()) {
     return;
   }
-  for (std::size_t i = 0; i < states_.size(); ++i) {
-    State &state = states_[i];
-    if (state.alive && state.resource != nullptr) {
-      ops_->destroyEvent(state.resource);
-      state.resource = nullptr;
-      state.alive = false;
-      state.in_use = false;
-      state.ref_count.store(0, std::memory_order_relaxed);
+  // Teardown and destroy all created resources
+  Base::teardownPool([this](EventControlBlock &cb, EventHandle h) {
+    // Check if resource was created (payload is valid)
+    if (cb.payload() != nullptr) {
+      destroyResource(cb.payload());
     }
-  }
-  clearPoolStates();
+  });
+
   device_ = nullptr;
   ops_ = nullptr;
-  initialized_ = false;
 }
 
 MpsEventManager::EventLease MpsEventManager::acquire() {
   ensureInitialized();
-  const std::size_t index = Base::allocateSlot();
-  State &state = states_[index];
 
-  if (!state.alive) {
-    state.resource = ops_->createEvent(device_);
-    if (state.resource == nullptr) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          "Failed to create MPS event");
+  auto handle = Base::acquireFresh([this](EventType &payload) {
+    auto event = ops_->createEvent(device_);
+    if (event == nullptr) {
+      return false;
     }
-    state.alive = true;
-    state.generation = 0;
+    payload = event;
+    return true;
+  });
+
+  if (!handle.isValid()) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "Failed to create MPS event");
   }
 
-  markSlotInUse(index);
-  return EventLease{this, createHandle<EventHandle>(index), state.resource};
+  auto &cb = Base::getControlBlock(handle);
+  return EventLease{this, handle, cb.payload()};
 }
 
 MpsEventManager::EventLease MpsEventManager::acquire(EventHandle handle) {
-  State &state = validateAndGetState(handle);
-  incrementRefCount(static_cast<std::size_t>(handle.index));
-  return EventLease{this, handle, state.resource};
+  auto &cb = Base::acquireExisting(handle);
+  return EventLease{this, handle, cb.payload()};
 }
 
 void MpsEventManager::release(EventLease &lease) noexcept {
@@ -85,15 +87,10 @@ void MpsEventManager::release(EventLease &lease) noexcept {
 }
 
 void MpsEventManager::release(EventHandle handle) noexcept {
-  State *state = getStateForRelease(handle);
-  if (state == nullptr) {
+  if (!Base::isValidHandle(handle)) {
     return;
   }
-  const std::size_t index = static_cast<std::size_t>(handle.index);
-  const std::size_t new_count = decrementRefCount(index);
-  if (new_count == 0) {
-    releaseSlot(index);
-  }
+  Base::releaseForReuse(handle);
 }
 
 } // namespace orteaf::internal::runtime::mps::manager

@@ -20,12 +20,12 @@ using orteaf::tests::ExpectError;
 
 namespace {
 
-mps_wrapper::MPSHeap_t makeHeap(std::uintptr_t value) {
-  return reinterpret_cast<mps_wrapper::MPSHeap_t>(value);
+mps_wrapper::MpsHeap_t makeHeap(std::uintptr_t value) {
+  return reinterpret_cast<mps_wrapper::MpsHeap_t>(value);
 }
 
-mps_wrapper::MPSHeapDescriptor_t makeHeapDescriptor(std::uintptr_t value) {
-  return reinterpret_cast<mps_wrapper::MPSHeapDescriptor_t>(value);
+mps_wrapper::MpsHeapDescriptor_t makeHeapDescriptor(std::uintptr_t value) {
+  return reinterpret_cast<mps_wrapper::MpsHeapDescriptor_t>(value);
 }
 
 template <class Provider>
@@ -47,7 +47,7 @@ protected:
 
   void
   expectDescriptorConfiguration(const mps_rt::HeapDescriptorKey &key,
-                                mps_wrapper::MPSHeapDescriptor_t descriptor,
+                                mps_wrapper::MpsHeapDescriptor_t descriptor,
                                 bool expect_creation = true) {
     if constexpr (!Provider::is_mock) {
       (void)key;
@@ -125,8 +125,8 @@ TYPED_TEST(MpsHeapManagerTypedTest, GrowthChunkSizeReflectedInDebugState) {
   // Act: Acquire a heap
   auto lease = manager.acquire(key);
 
-  // Assert: Growth chunk size is reflected in debug state
-  EXPECT_EQ(manager.growthChunkSizeForTest(), 2u);
+  // Assert: Growth chunk size is reflected
+  EXPECT_EQ(manager.growthChunkSize(), 2u);
 
   // Cleanup
   lease.release();
@@ -177,9 +177,9 @@ TYPED_TEST(MpsHeapManagerTypedTest, CapacityReflectsConfiguredPool) {
   // Before initialization
   EXPECT_EQ(manager.capacity(), 0u);
 
-  // After initialization (cache pattern: starts at 0, grows on demand)
+  // After initialization: capacity matches configured pool size
   manager.initialize(device, base::DeviceHandle{0}, nullptr, this->getOps(), 2);
-  EXPECT_EQ(manager.capacity(), 0u);
+  EXPECT_EQ(manager.capacity(), 2u);
 
   // After shutdown
   manager.shutdown();
@@ -208,8 +208,8 @@ TYPED_TEST(MpsHeapManagerTypedTest, GrowthChunkControlsPoolExpansion) {
   // Act: Acquire one heap
   auto lease = manager.acquire(key);
 
-  // Assert: Cache pattern - capacity grows one at a time
-  EXPECT_EQ(manager.capacity(), 1u);
+  // Assert: Pool expanded by growthChunkSize (3)
+  EXPECT_EQ(manager.capacity(), 3u);
 
   // Cleanup
   lease.release();
@@ -239,10 +239,9 @@ TYPED_TEST(MpsHeapManagerTypedTest, GetOrCreateCachesByDescriptor) {
   // Assert: Same handle returned (cached)
   EXPECT_EQ(first.handle(), second.handle());
 
-  // Assert: use_count reflects both leases
-  const auto &snapshot = manager.stateForTest(first.handle().index);
-  EXPECT_TRUE(snapshot.alive);
-  EXPECT_EQ(snapshot.use_count, 2u);
+  // Assert: count reflects both leases (RawControlBlock uses isAlive() only)
+  const auto &snapshot = manager.controlBlockForTest(first.handle().index);
+  EXPECT_TRUE(snapshot.isAlive());
 
   // Cleanup
   first.release();

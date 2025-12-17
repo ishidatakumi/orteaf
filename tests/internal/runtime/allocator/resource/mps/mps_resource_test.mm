@@ -17,7 +17,7 @@ namespace mps = ::orteaf::internal::runtime::mps::platform::wrapper;
 TEST(MpsResourceTest, InitializeNullDeviceThrows) {
   MpsResource::Config cfg{};
   cfg.device = nullptr;
-  cfg.heap = reinterpret_cast<mps::MPSHeap_t>(0x1);
+  cfg.heap = reinterpret_cast<mps::MpsHeap_t>(0x1);
   ExpectErrorMessage(diag_error::OrteafErrc::NullPointer, {"device"}, [&] {
     MpsResource resource(cfg);
     (void)resource;
@@ -26,7 +26,7 @@ TEST(MpsResourceTest, InitializeNullDeviceThrows) {
 
 TEST(MpsResourceTest, InitializeNullHeapThrows) {
   MpsResource::Config cfg{};
-  cfg.device = reinterpret_cast<mps::MPSDevice_t>(0x1);
+  cfg.device = reinterpret_cast<mps::MpsDevice_t>(0x1);
   cfg.heap = nullptr;
   ExpectErrorMessage(diag_error::OrteafErrc::NullPointer, {"heap"}, [&] {
     MpsResource resource(cfg);

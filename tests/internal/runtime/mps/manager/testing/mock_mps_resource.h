@@ -33,8 +33,8 @@ public:
   using ReuseToken = ::orteaf::internal::runtime::mps::resource::MpsReuseToken;
   using LaunchParams = ::orteaf::internal::runtime::base::BackendTraits<
       ::orteaf::internal::backend::Backend::Mps>::KernelLaunchParams;
-  using MPSBuffer_t =
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSBuffer_t;
+  using MpsBuffer_t =
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsBuffer_t;
 
   struct Config {
     ::orteaf::internal::base::DeviceHandle device_handle{};
@@ -42,7 +42,7 @@ public:
     void *heap{nullptr};
     std::size_t chunk_table_capacity{16};
     // For compatibility with MpsBufferManager
-    int usage{0};                   // Stub - MpsResource has MPSBufferUsage_t
+    int usage{0};                   // Stub - MpsResource has MpsBufferUsage_t
     void *library_manager{nullptr}; // Stub - MpsResource has MpsLibraryManager*
   };
 
@@ -93,8 +93,8 @@ public:
     ++allocate_count_;
     // Return a fake buffer view with a unique "handle" based on allocation
     // count
-    MPSBuffer_t fake_buffer =
-        reinterpret_cast<MPSBuffer_t>(0x1000 + allocate_count_ * 0x1000);
+    MpsBuffer_t fake_buffer =
+        reinterpret_cast<MpsBuffer_t>(0x1000 + allocate_count_ * 0x1000);
     return BufferView{fake_buffer, 0, size};
   }
 

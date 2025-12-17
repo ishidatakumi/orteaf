@@ -9,9 +9,9 @@ namespace orteaf::internal::runtime::mps::platform {
 struct MpsFastOps {
   // Fast-path wrapper for command buffer creation.
   static inline ::orteaf::internal::runtime::mps::platform::wrapper::
-      MPSCommandBuffer_t
+      MpsCommandBuffer_t
       createCommandBuffer(
-          ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandQueue_t
+          ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandQueue_t
               command_queue) {
     return ::orteaf::internal::runtime::mps::platform::wrapper::
         createCommandBuffer(command_queue);
@@ -20,34 +20,34 @@ struct MpsFastOps {
   // Fast-path wrapper for compute encoder creation and configuration
   // primitives.
   static inline ::orteaf::internal::runtime::mps::platform::wrapper::
-      MPSComputeCommandEncoder_t
+      MpsComputeCommandEncoder_t
       createComputeCommandEncoder(
           ::orteaf::internal::runtime::mps::platform::wrapper::
-              MPSCommandBuffer_t command_buffer) {
+              MpsCommandBuffer_t command_buffer) {
     return ::orteaf::internal::runtime::mps::platform::wrapper::
         createComputeCommandEncoder(command_buffer);
   }
 
   static inline void
   setPipelineState(::orteaf::internal::runtime::mps::platform::wrapper::
-                       MPSComputeCommandEncoder_t encoder,
+                       MpsComputeCommandEncoder_t encoder,
                    ::orteaf::internal::runtime::mps::platform::wrapper::
-                       MPSComputePipelineState_t pipeline) {
+                       MpsComputePipelineState_t pipeline) {
     ::orteaf::internal::runtime::mps::platform::wrapper::setPipelineState(
         encoder, pipeline);
   }
 
   static inline void setBuffer(
       ::orteaf::internal::runtime::mps::platform::wrapper::
-          MPSComputeCommandEncoder_t encoder,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSBuffer_t buffer,
+          MpsComputeCommandEncoder_t encoder,
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsBuffer_t buffer,
       std::size_t offset, std::size_t index) {
     ::orteaf::internal::runtime::mps::platform::wrapper::setBuffer(
         encoder, buffer, offset, index);
   }
 
   static inline void setBytes(::orteaf::internal::runtime::mps::platform::
-                                  wrapper::MPSComputeCommandEncoder_t encoder,
+                                  wrapper::MpsComputeCommandEncoder_t encoder,
                               const void *bytes, std::size_t length,
                               std::size_t index) {
     ::orteaf::internal::runtime::mps::platform::wrapper::setBytes(
@@ -56,7 +56,7 @@ struct MpsFastOps {
 
   static inline void
   setThreadgroups(::orteaf::internal::runtime::mps::platform::wrapper::
-                      MPSComputeCommandEncoder_t encoder,
+                      MpsComputeCommandEncoder_t encoder,
                   ::orteaf::internal::runtime::mps::platform::wrapper::MPSSize_t
                       threadgroups,
                   ::orteaf::internal::runtime::mps::platform::wrapper::MPSSize_t
@@ -67,34 +67,34 @@ struct MpsFastOps {
 
   static inline void
   endEncoding(::orteaf::internal::runtime::mps::platform::wrapper::
-                  MPSComputeCommandEncoder_t encoder) {
+                  MpsComputeCommandEncoder_t encoder) {
     ::orteaf::internal::runtime::mps::platform::wrapper::endEncoding(encoder);
   }
 
   static inline void
-  commit(::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
+  commit(::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandBuffer_t
              command_buffer) {
     ::orteaf::internal::runtime::mps::platform::wrapper::commit(command_buffer);
   }
 
   static inline void updateFence(
       ::orteaf::internal::runtime::mps::platform::wrapper::
-          MPSComputeCommandEncoder_t encoder,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t fence) {
+          MpsComputeCommandEncoder_t encoder,
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsFence_t fence) {
     ::orteaf::internal::runtime::mps::platform::wrapper::updateFence(encoder,
                                                                      fence);
   }
 
   static inline void waitForFence(
       ::orteaf::internal::runtime::mps::platform::wrapper::
-          MPSComputeCommandEncoder_t encoder,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSFence_t fence) {
+          MpsComputeCommandEncoder_t encoder,
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsFence_t fence) {
     ::orteaf::internal::runtime::mps::platform::wrapper::waitForFence(encoder,
                                                                       fence);
   }
 
   static inline bool isCompleted(
-      ::orteaf::internal::runtime::mps::platform::wrapper::MPSCommandBuffer_t
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsCommandBuffer_t
           command_buffer) {
     return ::orteaf::internal::runtime::mps::platform::wrapper::isCompleted(
         command_buffer);

@@ -22,33 +22,35 @@ void MpsCommandQueueManager::initialize(DeviceType device, SlowOps *ops,
   }
   device_ = device;
   ops_ = ops;
-  clearPoolStates();
 
-  // Pre-create command queues
-  for (std::size_t i = 0; i < capacity; ++i) {
-    State state{};
-    state.resource = ops_->createCommandQueue(device_);
-    state.alive = true;
-    state.in_use = false;
-    state.generation = 0;
-    states_.pushBack(std::move(state));
-    Base::free_list_.pushBack(i);
-  }
-  initialized_ = true;
+  // Initialize and pre-create resources (lazy creation is also supported, but
+  // this matches previous implementation of pre-creation if capacity > 0)
+  // Actually, let's use setupPool with factory to pre-create.
+  Base::setupPool(capacity, [&](CommandQueueControlBlock &cb, std::size_t) {
+    auto queue = ops_->createCommandQueue(device_);
+    if (queue) {
+      cb.payload() = queue;
+      // is_alive_ is set automatically by acquire(), we don't call acquire here
+      // so we leave it for when the queue is actually acquired
+    }
+    // in_use defaults to false, always add to freelist
+    return true;
+  });
 }
 
 void MpsCommandQueueManager::shutdown() {
-  for (std::size_t i = 0; i < states_.size(); ++i) {
-    State &state = states_[i];
-    if (state.resource != nullptr) {
-      ops_->destroyCommandQueue(state.resource);
-      state.resource = nullptr;
-    }
+  if (!Base::isInitialized()) {
+    return;
   }
-  clearPoolStates();
+  // Cleanup all resources
+  Base::teardownPool([this](CommandQueueControlBlock &cb, CommandQueueHandle) {
+    if (cb.payload() != nullptr) {
+      destroyResource(cb.payload());
+      cb.payload() = nullptr;
+    }
+  });
   device_ = nullptr;
   ops_ = nullptr;
-  initialized_ = false;
 }
 
 void MpsCommandQueueManager::growCapacity(std::size_t additional) {
@@ -56,81 +58,110 @@ void MpsCommandQueueManager::growCapacity(std::size_t additional) {
   if (additional == 0) {
     return;
   }
-  const std::size_t start_index = states_.size();
-  if (additional > (CommandQueueHandle::invalid_index() - start_index)) {
+  const std::size_t current_capacity = Base::capacity();
+  const std::size_t max_index =
+      static_cast<std::size_t>(CommandQueueHandle::invalid_index());
+  if (current_capacity > max_index ||
+      additional > (max_index - current_capacity)) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "MPS command queue manager capacity exceeds maximum handle range");
   }
+
+  // Provide a factory to pre-create resources for the new slots
+  // expandPool does not take a factory, it only resizes.
+  // We need to iterate and initialize manually if we want eager creation.
+  const std::size_t start_index =
+      Base::expandPool(additional, /*addToFreelist=*/true);
+
   for (std::size_t i = 0; i < additional; ++i) {
-    State state{};
-    state.resource = ops_->createCommandQueue(device_);
-    state.alive = true;
-    state.in_use = false;
-    state.generation = 0;
-    states_.pushBack(std::move(state));
-    Base::free_list_.pushBack(start_index + i);
+    auto &cb = Base::getControlBlockChecked(
+        CommandQueueHandle{static_cast<uint32_t>(start_index + i), 0});
+    auto queue = ops_->createCommandQueue(device_);
+    if (queue) {
+      cb.payload() = queue;
+      // is_alive_ is set automatically by acquire()
+    }
   }
 }
 
 MpsCommandQueueManager::CommandQueueLease MpsCommandQueueManager::acquire() {
-  ensureInitialized();
-  if (Base::free_list_.empty()) {
-    growCapacity(growth_chunk_size_);
+  auto handle = Base::acquireFresh([this](CommandQueueType &payload) {
+    // If already pre-created during initialize/growCapacity, skip creation
+    if (payload != nullptr) {
+      return true;
+    }
+    if (!ops_)
+      return false;
+    auto queue = ops_->createCommandQueue(device_);
+    if (!queue)
+      return false;
+    payload = queue;
+    return true;
+  });
+
+  if (!handle.isValid()) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "Failed to create MPS command queue");
   }
-  const std::size_t index = Base::allocateSlot();
-  State &state = states_[index];
-  markSlotInUse(index);
-  return CommandQueueLease{this, createHandle<CommandQueueHandle>(index),
-                           state.resource};
+
+  return CommandQueueLease{this, handle,
+                           Base::getControlBlockChecked(handle).payload()};
 }
 
 void MpsCommandQueueManager::release(CommandQueueLease &lease) noexcept {
-  if (!lease) {
-    return;
-  }
-  State *state = getStateForRelease(lease.handle());
-  if (state == nullptr) {
-    return;
-  }
-  releaseSlot(static_cast<std::size_t>(lease.handle().index));
+  release(lease.handle());
   lease.invalidate();
 }
 
+void MpsCommandQueueManager::release(CommandQueueHandle handle) noexcept {
+  if (!Base::isValidHandle(handle)) {
+    return;
+  }
+  Base::releaseForReuse(handle);
+}
+
 bool MpsCommandQueueManager::isInUse(CommandQueueHandle handle) const {
-  if (!initialized_) {
+  if (!Base::isInitialized() || !Base::isValidHandle(handle)) {
     return false;
   }
-  const std::size_t index = static_cast<std::size_t>(handle.index);
-  if (index >= states_.size()) {
-    return false;
-  }
-  const State &state = states_[index];
-  if (!isGenerationValid(index, handle)) {
-    return false;
-  }
-  return state.in_use;
+  return Base::getControlBlock(handle).isAlive();
 }
 
 void MpsCommandQueueManager::releaseUnusedQueues() {
   ensureInitialized();
-  if (states_.empty() || Base::free_list_.empty()) {
-    return;
+  if (Base::inUse() > 0) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "Cannot release unused queues while queues are in use");
   }
-  for (std::size_t i = 0; i < states_.size(); ++i) {
-    if (states_[i].in_use) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          "Cannot release unused queues while queues are in use");
+
+  // Destroy all resources and recreate pool (empty) implies teardown
+  Base::teardownPool([this](CommandQueueControlBlock &cb, CommandQueueHandle) {
+    if (cb.payload() != nullptr) {
+      destroyResource(cb.payload());
+      cb.payload() = nullptr;
     }
-  }
-  for (std::size_t i = 0; i < states_.size(); ++i) {
-    if (states_[i].resource != nullptr) {
-      ops_->destroyCommandQueue(states_[i].resource);
-      states_[i].resource = nullptr;
+  });
+
+  // Restore state to "Initialized but empty"
+  // Previous implementation cleared internal states but kept initialized=true?
+  // Let's check original: "clearPoolStates();" does "states_.clear();
+  // free_list_.clear();". And "initialized_ = true;" was NOT reset in
+  // releaseUnusedQueues? Actually original said: "clearPoolStates();" at end.
+  // And "ensureInitialized()" at start.
+  // So manager remains initialized but empty.
+  Base::setupPoolEmpty();
+}
+
+void MpsCommandQueueManager::destroyResource(CommandQueueType &resource) {
+  if (resource != nullptr) {
+    if (ops_) {
+      ops_->destroyCommandQueue(resource);
     }
+    resource = nullptr;
   }
-  clearPoolStates();
 }
 
 } // namespace orteaf::internal::runtime::mps::manager

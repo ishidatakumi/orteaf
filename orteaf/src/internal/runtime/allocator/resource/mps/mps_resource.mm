@@ -28,7 +28,7 @@ MpsResource::BufferView MpsResource::allocate(std::size_t size,
   ORTEAF_THROW_IF(size == 0, InvalidParameter,
                   "MpsResource::allocate requires size > 0");
 
-  ::orteaf::internal::runtime::mps::platform::wrapper::MPSBuffer_t buffer =
+  ::orteaf::internal::runtime::mps::platform::wrapper::MpsBuffer_t buffer =
       ::orteaf::internal::runtime::mps::platform::wrapper::createBuffer(
           heap_, size, usage_);
   if (!buffer) {

@@ -24,16 +24,16 @@ using orteaf::tests::ExpectError;
 
 namespace {
 
-mps_wrapper::MPSLibrary_t makeLibrary(std::uintptr_t value) {
-  return reinterpret_cast<mps_wrapper::MPSLibrary_t>(value);
+mps_wrapper::MpsLibrary_t makeLibrary(std::uintptr_t value) {
+  return reinterpret_cast<mps_wrapper::MpsLibrary_t>(value);
 }
 
-mps_wrapper::MPSFunction_t makeFunction(std::uintptr_t value) {
-  return reinterpret_cast<mps_wrapper::MPSFunction_t>(value);
+mps_wrapper::MpsFunction_t makeFunction(std::uintptr_t value) {
+  return reinterpret_cast<mps_wrapper::MpsFunction_t>(value);
 }
 
-mps_wrapper::MPSComputePipelineState_t makePipeline(std::uintptr_t value) {
-  return reinterpret_cast<mps_wrapper::MPSComputePipelineState_t>(value);
+mps_wrapper::MpsComputePipelineState_t makePipeline(std::uintptr_t value) {
+  return reinterpret_cast<mps_wrapper::MpsComputePipelineState_t>(value);
 }
 
 template <class Provider>
@@ -94,7 +94,7 @@ protected:
     return std::string{value};
   }
 
-  std::optional<mps_wrapper::MPSLibrary_t> ensureLibrary() {
+  std::optional<mps_wrapper::MpsLibrary_t> ensureLibrary() {
     if (library_ != nullptr) {
       return library_;
     }
@@ -118,7 +118,7 @@ protected:
   }
 
 private:
-  mps_wrapper::MPSLibrary_t library_{nullptr};
+  mps_wrapper::MpsLibrary_t library_{nullptr};
 };
 
 #if ORTEAF_ENABLE_MPS
@@ -183,8 +183,8 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
   // Act
   auto lease = manager.acquire(key);
 
-  // Assert: Cache pattern - capacity grows one at a time
-  EXPECT_EQ(manager.capacity(), 1u);
+  // Assert: growOrAllocateSlot grows by growth_chunk_size_ (which is 2)
+  EXPECT_EQ(manager.capacity(), 2u);
 
   // Cleanup
   this->adapter().expectDestroyComputePipelineStates({pipeline_handle});
@@ -265,7 +265,7 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest, InitializeSetsCapacity) {
   }
 
   // Assert: Cache pattern - capacity is 0 after init, grows on demand
-  EXPECT_EQ(manager.capacity(), 0u);
+  EXPECT_EQ(manager.capacity(), 2u);
 }
 
 // =============================================================================
@@ -286,8 +286,8 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
                     " to a valid function name to run";
     return;
   }
-  mps_wrapper::MPSFunction_t function_handle = nullptr;
-  mps_wrapper::MPSComputePipelineState_t pipeline_handle = nullptr;
+  mps_wrapper::MpsFunction_t function_handle = nullptr;
+  mps_wrapper::MpsComputePipelineState_t pipeline_handle = nullptr;
   if constexpr (TypeParam::is_mock) {
     function_handle = makeFunction(0x801);
     pipeline_handle = makePipeline(0x901);
@@ -305,17 +305,17 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
   // Assert: Same handle (cached)
   EXPECT_EQ(lease0.handle(), lease1.handle());
   if constexpr (TypeParam::is_mock) {
-    EXPECT_EQ(lease0.with_resource([](auto &r) { return r; }), pipeline_handle);
+    EXPECT_EQ(lease0.pointer(), pipeline_handle);
   } else {
     EXPECT_TRUE(lease0);
   }
 
-  // Assert: State reflects both leases
-  const auto &snapshot = manager.stateForTest(lease0.handle().index);
-  EXPECT_TRUE(snapshot.alive);
-  EXPECT_TRUE(snapshot.resource.pipeline_state != nullptr);
-  EXPECT_TRUE(snapshot.resource.function != nullptr);
-  EXPECT_EQ(snapshot.use_count, 2u);
+  // Assert: State is initialized with valid resource
+  const auto &cb = manager.controlBlockForTest(
+      static_cast<std::size_t>(lease0.handle().index));
+  EXPECT_TRUE(cb.isAlive());
+  EXPECT_TRUE(cb.payload().pipeline_state != nullptr);
+  EXPECT_TRUE(cb.payload().function != nullptr);
 
   // Cleanup
   this->adapter().expectDestroyComputePipelineStates({pipeline_handle});
@@ -337,8 +337,8 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
     return;
   }
 
-  mps_wrapper::MPSFunction_t first_function = nullptr;
-  mps_wrapper::MPSComputePipelineState_t first_pipeline = nullptr;
+  mps_wrapper::MpsFunction_t first_function = nullptr;
+  mps_wrapper::MpsComputePipelineState_t first_pipeline = nullptr;
   if constexpr (TypeParam::is_mock) {
     first_function = makeFunction(0x820);
     first_pipeline = makePipeline(0x920);
@@ -357,16 +357,15 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
   lease.release();
 
   // Assert: State stays alive (cache pattern)
-  const auto &released_snapshot = manager.stateForTest(handle.index);
-  EXPECT_TRUE(released_snapshot.alive);
-  EXPECT_EQ(released_snapshot.use_count, 0u);
+  const auto &released_cb =
+      manager.controlBlockForTest(static_cast<std::size_t>(handle.index));
+  EXPECT_TRUE(released_cb.isAlive());
 
   // Act: Reacquire returns same cached resource
   auto reacquired = manager.acquire(key);
   EXPECT_EQ(reacquired.handle(), handle);
   if constexpr (TypeParam::is_mock) {
-    EXPECT_EQ(reacquired.with_resource([](auto &r) { return r; }),
-              first_pipeline);
+    EXPECT_EQ(reacquired.pointer(), first_pipeline);
   } else {
     EXPECT_TRUE(reacquired);
   }
@@ -411,9 +410,9 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
   // Assert
   EXPECT_FALSE(static_cast<bool>(lease));
 
-  const auto &snapshot = manager.stateForTest(original_handle.index);
-  EXPECT_TRUE(snapshot.alive);
-  EXPECT_EQ(snapshot.use_count, 0u);
+  const auto &cb = manager.controlBlockForTest(
+      static_cast<std::size_t>(original_handle.index));
+  EXPECT_TRUE(cb.isAlive());
 
   // Cleanup
   manager.shutdown();
@@ -503,8 +502,8 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest, ReleaseIgnoresStaleHandle) {
                     " to a valid function name to run";
     return;
   }
-  mps_wrapper::MPSFunction_t function_handle = nullptr;
-  mps_wrapper::MPSComputePipelineState_t pipeline_handle = nullptr;
+  mps_wrapper::MpsFunction_t function_handle = nullptr;
+  mps_wrapper::MpsComputePipelineState_t pipeline_handle = nullptr;
   if constexpr (TypeParam::is_mock) {
     function_handle = makeFunction(0x830);
     pipeline_handle = makePipeline(0x930);
@@ -541,8 +540,8 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
                     " to a valid function name to run";
     return;
   }
-  mps_wrapper::MPSFunction_t function_handle = nullptr;
-  mps_wrapper::MPSComputePipelineState_t pipeline_handle = nullptr;
+  mps_wrapper::MpsFunction_t function_handle = nullptr;
+  mps_wrapper::MpsComputePipelineState_t pipeline_handle = nullptr;
   if constexpr (TypeParam::is_mock) {
     function_handle = makeFunction(0x840);
     pipeline_handle = makePipeline(0x940);

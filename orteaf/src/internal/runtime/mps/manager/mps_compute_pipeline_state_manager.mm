@@ -10,7 +10,9 @@ void MpsComputePipelineStateManager::initialize(DeviceType device,
                                                 LibraryType library,
                                                 SlowOps *ops,
                                                 std::size_t capacity) {
-  shutdown();
+  if (isInitialized()) {
+    shutdown();
+  }
   if (device == nullptr || library == nullptr) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
@@ -28,34 +30,33 @@ void MpsComputePipelineStateManager::initialize(DeviceType device,
         "MPS compute pipeline state manager capacity exceeds maximum handle "
         "range");
   }
+
   device_ = device;
   library_ = library;
   ops_ = ops;
-  clearCacheStates();
   key_to_index_.clear();
-  if (capacity > 0) {
-    states_.reserve(capacity);
-  }
-  initialized_ = true;
+
+  // Setup empty pool (cache pattern - grows on demand)
+  setupPool(capacity);
 }
 
 void MpsComputePipelineStateManager::shutdown() {
-  if (!initialized_) {
+  if (!isInitialized()) {
     return;
   }
-  for (std::size_t i = 0; i < states_.size(); ++i) {
-    State &state = states_[i];
-    if (state.alive) {
-      destroyResource(state.resource);
-      state.alive = false;
+
+  // Destroy all created resources
+  teardownPool([this](auto &cb, auto handle) {
+    // Check if resource was created (payload has valid pipeline_state)
+    if (cb.payload().pipeline_state != nullptr) {
+      destroyResource(cb.payload());
     }
-  }
-  clearCacheStates();
+  });
+
   key_to_index_.clear();
   device_ = nullptr;
   library_ = nullptr;
   ops_ = nullptr;
-  initialized_ = false;
 }
 
 MpsComputePipelineStateManager::PipelineLease
@@ -63,46 +64,46 @@ MpsComputePipelineStateManager::acquire(const FunctionKey &key) {
   ensureInitialized();
   validateKey(key);
 
-  // Check if already cached
+  // Check cache first
   if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
-    incrementUseCount(it->second);
-    return PipelineLease{this, createHandle<FunctionHandle>(it->second),
-                         states_[it->second].resource.pipeline_state};
+    auto handle = static_cast<FunctionHandle>(it->second);
+    return PipelineLease{this, handle,
+                         getControlBlock(handle).payload().pipeline_state};
   }
 
-  // Create new entry
-  const std::size_t index = allocateSlot();
-  State &state = states_[index];
+  // Acquire new slot and create resource
+  Handle handle = acquireFresh([&](MpsPipelineResource &resource) {
+    resource.function = ops_->createFunction(library_, key.identifier);
+    if (!resource.function)
+      return false;
 
-  state.resource.function = ops_->createFunction(library_, key.identifier);
-  if (state.resource.function == nullptr) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-        "Failed to create MPS function for compute pipeline");
-  }
+    resource.pipeline_state =
+        ops_->createComputePipelineState(device_, resource.function);
+    if (!resource.pipeline_state) {
+      ops_->destroyFunction(resource.function);
+      resource.function = nullptr;
+      return false;
+    }
+    return true;
+  });
 
-  state.resource.pipeline_state =
-      ops_->createComputePipelineState(device_, state.resource.function);
-  if (state.resource.pipeline_state == nullptr) {
-    ops_->destroyFunction(state.resource.function);
-    state.resource.function = nullptr;
+  if (!handle.isValid()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "Failed to create MPS compute pipeline state");
   }
 
-  markSlotAlive(index);
-  key_to_index_.emplace(key, index);
-
-  return PipelineLease{this, createHandle<FunctionHandle>(index),
-                       state.resource.pipeline_state};
+  key_to_index_.emplace(key, static_cast<std::size_t>(handle.index));
+  return PipelineLease{this, handle,
+                       getControlBlock(handle).payload().pipeline_state};
 }
 
 void MpsComputePipelineStateManager::release(PipelineLease &lease) noexcept {
   if (!lease) {
     return;
   }
-  decrementUseCount(static_cast<std::size_t>(lease.handle().index));
+  // RawLease: no ref counting, just invalidate
+  // Resource stays in cache until shutdown
   lease.invalidate();
 }
 

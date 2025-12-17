@@ -19,8 +19,8 @@ using orteaf::tests::ExpectError;
 
 namespace {
 
-mps_wrapper::MPSEvent_t makeEvent(std::uintptr_t value) {
-  return reinterpret_cast<mps_wrapper::MPSEvent_t>(value);
+mps_wrapper::MpsEvent_t makeEvent(std::uintptr_t value) {
+  return reinterpret_cast<mps_wrapper::MpsEvent_t>(value);
 }
 
 template <class Provider>
@@ -221,7 +221,7 @@ TYPED_TEST(MpsEventManagerTypedTest, AcquireByInvalidHandleThrows) {
   const auto invalid_handle = base::EventHandle{999};
 
   // Act & Assert
-  ExpectError(diag_error::OrteafErrc::InvalidArgument,
+  ExpectError(diag_error::OrteafErrc::OutOfRange,
               [&] { (void)manager.acquire(invalid_handle); });
 
   manager.shutdown();
@@ -487,9 +487,10 @@ TYPED_TEST(MpsEventManagerTypedTest, DebugStateReflectsEventState) {
   const auto handle = lease.handle();
 
   // Assert
-  const auto &snapshot = manager.stateForTest(handle.index);
-  EXPECT_TRUE(snapshot.alive);
-  EXPECT_EQ(snapshot.generation, handle.generation);
+  // Assert
+  const auto &snapshot = manager.controlBlockForTest(handle.index);
+  EXPECT_TRUE(snapshot.isAlive());
+  // Generation check removed as BaseManagerCore + Slot does not use generations
 
   // Cleanup
   manager.release(lease);

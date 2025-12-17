@@ -20,8 +20,8 @@ using orteaf::tests::ExpectError;
 
 namespace {
 
-mps_wrapper::MPSLibrary_t makeLibrary(std::uintptr_t value) {
-  return reinterpret_cast<mps_wrapper::MPSLibrary_t>(value);
+mps_wrapper::MpsLibrary_t makeLibrary(std::uintptr_t value) {
+  return reinterpret_cast<mps_wrapper::MpsLibrary_t>(value);
 }
 
 template <class Provider>
@@ -126,8 +126,8 @@ TYPED_TEST(MpsLibraryManagerTypedTest, CapacityReflectsConfiguredPool) {
   // Act
   this->initializeManager(2);
 
-  // Assert: Cache pattern - capacity is 0 after init, grows on demand
-  EXPECT_EQ(manager.capacity(), 0u);
+  // Assert: capacity is 2 after init with capacity=2
+  EXPECT_EQ(manager.capacity(), 2u);
 }
 
 // =============================================================================
@@ -151,11 +151,11 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GrowthChunkSizeControlsPoolExpansion) {
   // Act
   auto first = manager.acquire(mps_rt::LibraryKey::Named("GrowthTest0"));
 
-  // Assert: Cache pattern - capacity grows on demand, one at a time
-  EXPECT_EQ(manager.capacity(), 1u);
+  // Assert: capacity grows by growth chunk size (3)
+  EXPECT_EQ(manager.capacity(), 3u);
 
   // Cleanup
-  first.release();
+  manager.release(first);
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest, GetOrCreateAllocatesAndCachesLibrary) {
@@ -175,17 +175,15 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GetOrCreateAllocatesAndCachesLibrary) {
   auto lease = manager.acquire(mps_rt::LibraryKey::Named("Foobar"));
 
   // Assert
-  EXPECT_EQ(lease.with_resource([](auto &r) { return r; }), lib_handle);
-  const auto &snapshot = manager.stateForTest(lease.handle().index);
-  EXPECT_TRUE(snapshot.alive);
-  EXPECT_EQ(snapshot.use_count, 1u);
+  EXPECT_EQ(lease.pointer(), lib_handle);
+  const auto &snapshot = manager.controlBlockForTest(lease.handle().index);
+  EXPECT_TRUE(snapshot.isAlive());
 
-  // Act: Release
-  lease.release();
+  // Act: Release (RawLease - no ref counting, just invalidate)
+  manager.release(lease);
 
-  // Assert: use_count decremented, but library still alive (cache pattern)
-  EXPECT_EQ(snapshot.use_count, 0u);
-  EXPECT_TRUE(snapshot.alive);
+  // Assert: library still alive (cache pattern)
+  EXPECT_TRUE(snapshot.isAlive());
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest, ReleasedLeaseDoesNotAffectLibrary) {
@@ -201,22 +199,20 @@ TYPED_TEST(MpsLibraryManagerTypedTest, ReleasedLeaseDoesNotAffectLibrary) {
   this->adapter().expectCreateLibraries({{"Baz", lib_handle}});
   this->adapter().expectDestroyLibraries({lib_handle});
 
-  // Act: Acquire same key twice
+  // Act: Acquire same key twice (returns same cached library)
   auto first = manager.acquire(mps_rt::LibraryKey::Named("Baz"));
   auto second = manager.acquire(mps_rt::LibraryKey::Named("Baz"));
 
-  // Assert: use_count reflects both
-  const auto &snapshot = manager.stateForTest(first.handle().index);
-  EXPECT_EQ(snapshot.use_count, 2u);
+  // Assert: Both point to same library
+  EXPECT_EQ(first.handle().index, second.handle().index);
 
-  // Act & Assert: Release first
-  first.release();
-  EXPECT_EQ(snapshot.use_count, 1u);
+  // Act: Release both (RawLease - no ref counting)
+  manager.release(first);
+  manager.release(second);
 
-  // Act & Assert: Release second
-  second.release();
-  EXPECT_EQ(snapshot.use_count, 0u);
-  EXPECT_TRUE(snapshot.alive);
+  // Assert: Library still alive (cache pattern)
+  const auto &snapshot = manager.controlBlockForTest(0);
+  EXPECT_TRUE(snapshot.isAlive());
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest, ReleaseIsIdempotent) {
@@ -267,7 +263,7 @@ TYPED_TEST(MpsLibraryManagerTypedTest,
   EXPECT_TRUE(pipeline_manager->isInitializedForTest());
 
   // Cleanup
-  library_lease.release();
+  manager.release(library_lease);
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest, PipelineManagerCanBeAccessedByKey) {
@@ -313,11 +309,11 @@ TYPED_TEST(MpsLibraryManagerTypedTest, LibraryPersistsAfterLeaseRelease) {
   auto *pipeline_manager = manager.pipelineManager(library_lease);
   EXPECT_NE(pipeline_manager, nullptr);
 
-  library_lease.release();
+  manager.release(library_lease);
 
   // Assert: Library still alive after release
-  const auto &snapshot_mid = manager.stateForTest(library_lease.handle().index);
-  EXPECT_TRUE(snapshot_mid.alive);
+  const auto &snapshot_mid = manager.controlBlockForTest(0);
+  EXPECT_TRUE(snapshot_mid.isAlive());
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest,
@@ -344,9 +340,9 @@ TYPED_TEST(MpsLibraryManagerTypedTest,
   // Assert: Same pipeline manager for same library
   EXPECT_EQ(pm1, pm2);
 
-  library_lease.release();
+  manager.release(library_lease);
 
   // Assert: Library still alive after release
-  const auto &snapshot = manager.stateForTest(library_lease.handle().index);
-  EXPECT_TRUE(snapshot.alive);
+  const auto &snapshot = manager.controlBlockForTest(0);
+  EXPECT_TRUE(snapshot.isAlive());
 }
