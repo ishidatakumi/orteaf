@@ -82,9 +82,9 @@ public:
   }
 
   /// @brief Release strong ownership (for reuse)
-  /// @return true if both strong (in_use) and all weak references are released,
-  ///         making the control block fully available for reuse.
-  ///         false otherwise.
+  /// @return true if released successfully, false if was not in use.
+  /// @note Generation is incremented when strong ref is released (weak refs
+  /// don't block).
   bool release() noexcept {
     bool expected = true;
     if (!in_use_.compare_exchange_strong(expected, false,
@@ -93,22 +93,19 @@ public:
       return false; // Was not in use
     }
 
-    // Check if all weak references are also released
-    if (weak_count_.load(std::memory_order_acquire) == 0) {
-      // Both strong and weak are released - increment generation
-      if constexpr (SlotT::has_generation) {
-        slot_.incrementGeneration();
-      }
-      return true;
+    // Increment generation immediately when strong is released
+    // (weak references don't prevent generation increment)
+    if constexpr (SlotT::has_generation) {
+      slot_.incrementGeneration();
     }
-    return false;
+    return true;
   }
 
   /// @brief Release and destroy the resource (non-reusable)
   /// @tparam DestroyFn Callable that takes Payload&
-  /// @return true if both strong and weak references are released and resource
-  ///         is destroyed. false if in_use was false, or weak references
-  ///         remain.
+  /// @return true if released and destroyed, false if was not in use.
+  /// @note Generation is incremented when strong ref is released (weak refs
+  /// don't block).
   template <typename DestroyFn>
     requires std::invocable<DestroyFn, Payload &>
   bool releaseAndDestroy(DestroyFn &&destroyFn) {
@@ -119,18 +116,15 @@ public:
       return false; // Was not in use
     }
 
-    // Always destroy the resource when strong owner releases
+    // Destroy the resource when strong owner releases
     slot_.destroy(std::forward<DestroyFn>(destroyFn));
 
-    // Check if all weak references are also released
-    if (weak_count_.load(std::memory_order_acquire) == 0) {
-      // Both strong and weak are released - increment generation
-      if constexpr (SlotT::has_generation) {
-        slot_.incrementGeneration();
-      }
-      return true;
+    // Increment generation immediately when strong is released
+    // (weak references don't prevent generation increment)
+    if constexpr (SlotT::has_generation) {
+      slot_.incrementGeneration();
     }
-    return false;
+    return true;
   }
 
   /// @brief Check if teardown is allowed
@@ -149,18 +143,13 @@ public:
   }
 
   /// @brief Release a weak reference
-  /// @return true if this was the last weak reference AND strong is not in use,
-  ///         meaning the control block is now fully available for reuse.
+  /// @return true if this was the last weak reference AND strong is not in use.
+  /// @note Generation is NOT updated here - it's updated when strong ref is
+  /// released.
   bool releaseWeak() noexcept {
-    const auto prev = weak_count_.fetch_sub(1, std::memory_order_acq_rel);
-    if (prev == 1 && !in_use_.load(std::memory_order_acquire)) {
-      // Last weak reference and strong is not in use - increment generation
-      if constexpr (SlotT::has_generation) {
-        slot_.incrementGeneration();
-      }
-      return true;
-    }
-    return false;
+    weak_count_.fetch_sub(1, std::memory_order_acq_rel);
+    return weak_count_.load(std::memory_order_acquire) == 0 &&
+           !in_use_.load(std::memory_order_acquire);
   }
 
   /// @brief Try to promote weak reference to strong
