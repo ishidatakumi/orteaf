@@ -79,7 +79,9 @@ public:
       if constexpr (SlotT::has_generation) {
         slot_.incrementGeneration();
       }
-      return true;
+      if (weak_count_.load(std::memory_order_acquire) == 0) {
+        return true;
+      }
     }
     return false;
   }
@@ -101,7 +103,9 @@ public:
       if constexpr (SlotT::has_generation) {
         slot_.incrementGeneration();
       }
-      return true;
+      if (weak_count_.load(std::memory_order_acquire) == 0) {
+        return true;
+      }
     }
     return false;
   }

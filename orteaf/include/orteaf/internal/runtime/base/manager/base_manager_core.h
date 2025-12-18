@@ -180,23 +180,39 @@ protected:
     return oldSize;
   }
 
+  /// @brief Check if all control blocks are safe to shutdown
+  /// @note Iterates over all blocks and calls canShutdown(). Returns true if
+  /// all are safe.
+  bool checkCanShutdown() const noexcept {
+    for (const auto &cb : control_blocks_) {
+      if (!cb.canShutdown()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /// @brief Teardown pool, calling destroyFn for each control block
   /// @tparam DestroyFn Callable: void(Payload&) - passed to Slot::destroy()
-  /// @note Safe to call when not initialized (no-op)
+  /// @note Safe to call when not initialized (no-op). Aborts if shutdown is not
+  /// allowed.
   template <typename DestroyFn>
     requires std::invocable<DestroyFn, typename ControlBlock::Payload &>
   void teardownPool(DestroyFn &&destroyFn) {
     if (!initialized_) {
       return;
     }
+
+    // Safety Check: Can we shutdown?
+    // Based on user decision: If any Strong OR Weak reference exists, abort.
+    if (!checkCanShutdown()) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          std::string(managerName()) +
+              ": shutdown aborted due to active references (Strong or Weak)");
+    }
+
     for (std::size_t i = 0; i < control_blocks_.size(); ++i) {
-      // Check if teardown is allowed (no strong references blocking)
-      if (!control_blocks_[i].canTeardown()) {
-        ::orteaf::internal::diagnostics::error::throwError(
-            ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-            std::string(managerName()) + " control block " + std::to_string(i) +
-                " is still in use");
-      }
       // Use Slot's destroy() for proper lifecycle tracking
       control_blocks_[i].destroy(std::forward<DestroyFn>(destroyFn));
     }
@@ -207,6 +223,18 @@ protected:
 
   /// @brief Teardown pool without custom destroy logic
   void teardownPool() {
+    if (!initialized_) {
+      return;
+    }
+
+    // Safety Check: Can we shutdown?
+    if (!checkCanShutdown()) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          std::string(managerName()) +
+              ": shutdown aborted due to active references (Strong or Weak)");
+    }
+
     control_blocks_.clear();
     freelist_.clear();
     initialized_ = false;
