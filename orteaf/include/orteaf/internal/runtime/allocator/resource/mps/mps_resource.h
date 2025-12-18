@@ -38,7 +38,7 @@ public:
   struct LaunchParams {
     ::orteaf::internal::base::DeviceHandle device_handle;
     ::orteaf::internal::runtime::mps::manager::MpsCommandQueueManager::
-        CommandQueueLease command_queue;
+        CommandQueueWeakLease command_queue;
   };
 
   static constexpr ::orteaf::internal::backend::Backend backend_type_static() {
