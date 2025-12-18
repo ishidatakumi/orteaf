@@ -555,7 +555,7 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
 
   // Act
   auto lease = manager.acquire(key);
-  (void)lease;
+  lease.release(); // Release before shutdown
   manager.shutdown();
 
   // Assert

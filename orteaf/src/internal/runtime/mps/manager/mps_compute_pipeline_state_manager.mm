@@ -66,8 +66,8 @@ MpsComputePipelineStateManager::acquire(const FunctionKey &key) {
   // Check cache first
   if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
     auto handle = static_cast<FunctionHandle>(it->second);
-    return PipelineLease{this, handle,
-                         getControlBlock(handle).payload().pipeline_state};
+    auto &cb = Base::acquireExisting(handle); // Increment weak reference count
+    return PipelineLease{this, handle, cb.payload().pipeline_state};
   }
 
   // Acquire new slot and create resource
@@ -101,8 +101,8 @@ void MpsComputePipelineStateManager::release(PipelineLease &lease) noexcept {
   if (!lease) {
     return;
   }
-  // RawLease: no ref counting, just invalidate
-  // Resource stays in cache until shutdown
+  // Decrement weak reference count (resource stays in cache until shutdown)
+  Base::releaseForReuse(lease.handle());
   lease.invalidate();
 }
 

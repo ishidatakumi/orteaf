@@ -104,9 +104,9 @@ public:
   PipelineManager *pipelineManager(const LibraryKey &key);
 
   std::size_t capacity() const noexcept { return Base::capacity(); }
-  
-  using Base::isAlive;
+
   using Base::growthChunkSize;
+  using Base::isAlive;
   using Base::setGrowthChunkSize;
 
 #if ORTEAF_ENABLE_TEST
@@ -116,6 +116,9 @@ public:
 #endif
 
 private:
+  friend LibraryLease;
+  using Base::acquireExisting;
+
   void validateKey(const LibraryKey &key) const;
 
   ::orteaf::internal::runtime::mps::platform::wrapper::MpsLibrary_t

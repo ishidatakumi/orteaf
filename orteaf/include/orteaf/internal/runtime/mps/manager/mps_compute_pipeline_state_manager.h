@@ -57,9 +57,9 @@ struct MpsPipelineResource {
       pipeline_state{nullptr};
 };
 
-// Slot type with initialization flag (lazy creation)
+// Slot type (no generation - Raw uses cache pattern)
 using PipelineSlot =
-    ::orteaf::internal::runtime::base::GenerationalSlot<MpsPipelineResource>;
+    ::orteaf::internal::runtime::base::RawSlot<MpsPipelineResource>;
 
 // Control block type (Raw - no ref counting needed)
 using PipelineControlBlock =
@@ -127,7 +127,8 @@ public:
 #endif
 
 private:
-  friend PipelineLease; // For release access
+  friend PipelineLease;
+  using Base::acquireExisting;
 
   void validateKey(const FunctionKey &key) const;
   void destroyResource(MpsPipelineResource &resource);
