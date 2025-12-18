@@ -21,7 +21,7 @@ public:
   using ResourceType = ResourceT;
   using ManagerType = ManagerT;
   using CompatibleCategory =
-      ::orteaf::internal::base::lease_category::WeakShared;
+      ::orteaf::internal::runtime::base::lease_category::WeakShared;
 
   WeakSharedLease() noexcept = default;
 
