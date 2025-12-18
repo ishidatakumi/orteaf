@@ -119,19 +119,38 @@ protected:
     initialized_ = true;
   }
 
-  /// @brief Expand pool by adding more control blocks
+  /// @brief Expand pool by adding more control blocks with resource creation
+  /// @tparam CreateFn Callable: bool(Payload&) - returns true on success
   /// @param additionalCount Number of control blocks to add
-  /// @param addToFreelist If true, add new handles to freelist
+  /// @param createFn Factory function to create resources
   /// @return The starting index of new control blocks
-  std::size_t expandPool(std::size_t additionalCount,
-                         bool addToFreelist = false) {
+  template <typename CreateFn>
+    requires std::invocable<CreateFn, typename ControlBlock::Payload &> &&
+             std::convertible_to<
+                 std::invoke_result_t<CreateFn,
+                                      typename ControlBlock::Payload &>,
+                 bool>
+  std::size_t expandPool(std::size_t additionalCount, CreateFn &&createFn) {
     ensureInitialized();
     std::size_t oldSize = control_blocks_.size();
     control_blocks_.resize(oldSize + additionalCount);
-    if (addToFreelist) {
-      for (std::size_t i = oldSize; i < oldSize + additionalCount; ++i) {
+    for (std::size_t i = oldSize; i < oldSize + additionalCount; ++i) {
+      if (control_blocks_[i].create(std::forward<CreateFn>(createFn))) {
         freelist_.push_back(static_cast<IndexType>(i));
       }
+    }
+    return oldSize;
+  }
+
+  /// @brief Expand pool by adding more control blocks (no resource creation)
+  /// @param additionalCount Number of control blocks to add
+  /// @return The starting index of new control blocks
+  std::size_t expandPool(std::size_t additionalCount) {
+    ensureInitialized();
+    std::size_t oldSize = control_blocks_.size();
+    control_blocks_.resize(oldSize + additionalCount);
+    for (std::size_t i = oldSize; i < oldSize + additionalCount; ++i) {
+      freelist_.push_back(static_cast<IndexType>(i));
     }
     return oldSize;
   }
