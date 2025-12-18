@@ -22,16 +22,24 @@ public:
 
   RawLease() noexcept = default;
 
-  // Copy is allowed - no control block, direct copy
+  // Copy increments weak reference count
   RawLease(const RawLease &other) noexcept
       : manager_(other.manager_), handle_(other.handle_),
-        resource_(other.resource_) {}
+        resource_(other.resource_) {
+    if (manager_ && handle_.isValid()) {
+      manager_->acquireExisting(handle_);
+    }
+  }
 
   RawLease &operator=(const RawLease &other) noexcept {
     if (this != &other) {
+      release(); // Release current before copying
       manager_ = other.manager_;
       handle_ = other.handle_;
       resource_ = other.resource_;
+      if (manager_ && handle_.isValid()) {
+        manager_->acquireExisting(handle_);
+      }
     }
     return *this;
   }

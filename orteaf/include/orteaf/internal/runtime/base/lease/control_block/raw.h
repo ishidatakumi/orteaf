@@ -16,6 +16,10 @@ namespace orteaf::internal::runtime::base {
 template <typename SlotT>
   requires SlotConcept<SlotT>
 class RawControlBlock {
+  // Raw pattern uses cache semantics - generation doesn't make sense
+  static_assert(!SlotT::has_generation,
+                "RawControlBlock cannot use slots with generation tracking");
+
 public:
   using Category = lease_category::Raw;
   using Slot = SlotT;
@@ -50,17 +54,18 @@ public:
              std::convertible_to<std::invoke_result_t<CreateFn, Payload &>,
                                  bool>
   bool acquire(CreateFn &&createFn) noexcept {
-    weak_count_.fetch_add(1, std::memory_order_relaxed);
-    return slot_.create(std::forward<CreateFn>(createFn));
+    bool success = slot_.create(std::forward<CreateFn>(createFn));
+    if (success) {
+      weak_count_.fetch_add(1, std::memory_order_relaxed);
+    }
+    return success;
   }
 
-  /// @brief Release and prepare for reuse (no-op for raw)
+  /// @brief Release and prepare for reuse (cache pattern)
+  /// @note Does NOT increment generation - resource stays valid in cache
   /// @return always true for raw resources
   bool release() noexcept {
     weak_count_.fetch_sub(1, std::memory_order_relaxed);
-    if constexpr (SlotT::has_generation) {
-      slot_.incrementGeneration();
-    }
     return true;
   }
 
@@ -85,6 +90,8 @@ public:
   /// @return Always true for Raw (no strong reference blocking)
   bool canTeardown() const noexcept { return true; }
 
+  /// @brief Check if shutdown is allowed
+  /// @note Returns true only when no references exist (for safety)
   bool canShutdown() const noexcept { return weak_count_ == 0; }
 
   // =========================================================================
