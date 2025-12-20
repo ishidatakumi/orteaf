@@ -70,9 +70,6 @@ public:
   bool canTeardown() const noexcept { return weakCount() == 0; }
   bool canShutdown() const noexcept { return weakCount() == 0; }
 
-  bool isCreated() const noexcept { return is_created_; }
-  void setCreated(bool created) noexcept { is_created_ = created; }
-
 private:
   void bindPayload(Handle handle, Payload *payload, Pool *pool) noexcept {
     payload_handle_ = handle;
@@ -90,7 +87,6 @@ private:
   Handle payload_handle_{Handle::invalid()};
   Payload *payload_ptr_{nullptr};
   Pool *payload_pool_{nullptr};
-  bool is_created_{false};
 };
 
 } // namespace orteaf::internal::runtime::base

@@ -76,9 +76,6 @@ public:
   bool canTeardown() const noexcept { return count() == 0; }
   bool canShutdown() const noexcept { return count() == 0; }
 
-  bool isCreated() const noexcept { return is_created_; }
-  void setCreated(bool created) noexcept { is_created_ = created; }
-
 private:
   void tryReleasePayload() noexcept {
     if (payload_pool_ != nullptr && payload_handle_.isValid()) {
@@ -104,7 +101,6 @@ private:
   Handle payload_handle_{Handle::invalid()};
   Payload *payload_ptr_{nullptr};
   Pool *payload_pool_{nullptr};
-  bool is_created_{false};
 };
 
 // Specialization for legacy Slot-based control blocks.
