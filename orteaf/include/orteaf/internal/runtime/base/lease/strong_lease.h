@@ -62,6 +62,20 @@ public:
   ControlBlockT *controlBlock() noexcept { return control_block_; }
   const ControlBlockT *controlBlock() const noexcept { return control_block_; }
 
+  auto payloadPtr() noexcept
+      -> decltype(std::declval<ControlBlockT *>()->payloadPtr())
+    requires requires(ControlBlockT *cb) { cb->payloadPtr(); }
+  {
+    return control_block_ ? control_block_->payloadPtr() : nullptr;
+  }
+
+  auto payloadPtr() const noexcept
+      -> decltype(std::declval<const ControlBlockT *>()->payloadPtr())
+    requires requires(const ControlBlockT *cb) { cb->payloadPtr(); }
+  {
+    return control_block_ ? control_block_->payloadPtr() : nullptr;
+  }
+
   explicit operator bool() const noexcept { return control_block_ != nullptr; }
 
   void release() noexcept {
