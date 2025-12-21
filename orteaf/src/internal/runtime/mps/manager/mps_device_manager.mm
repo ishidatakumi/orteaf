@@ -16,133 +16,137 @@ void MpsDeviceManager::initialize(SlowOps *slow_ops) {
 
   const int device_count = ops_->getDeviceCount();
   if (device_count <= 0) {
-    Base::setupPoolEmpty();
+    payload_pool_.initialize(DevicePayloadPoolTraits::Config{0});
+    control_block_pool_.initialize(DeviceControlBlockPoolTraits::Config{0});
+    initialized_ = true;
     return;
   }
 
-  // Setup pool with device count
-  Base::setupPool(static_cast<std::size_t>(device_count));
+  const auto capacity = static_cast<std::size_t>(device_count);
+  const auto payload_context = makePayloadContext();
+  const DevicePayloadPoolTraits::Request payload_request{};
+  payload_pool_.initializeAndCreate(DevicePayloadPoolTraits::Config{capacity},
+                                    payload_request, payload_context);
 
-  // Initialize devices in a separate loop since create() only gets Payload
-  for (int i = 0; i < device_count; ++i) {
-    const DeviceHandle handle{static_cast<std::uint32_t>(i)};
-    auto &cb = Base::getControlBlock(handle);
-
-    cb.acquire([this, i, handle](MpsDeviceResource &resource) {
-      const auto device = ops_->getDevice(
-          static_cast<
-              ::orteaf::internal::runtime::mps::platform::wrapper::MPSInt_t>(
-              i));
-      resource.device = device;
-
-      if (device == nullptr) {
-        resource.arch =
-            ::orteaf::internal::architecture::Architecture::MpsGeneric;
-        return false;
-      }
-
-      resource.arch = ops_->detectArchitecture(handle);
-      resource.command_queue_manager.initialize(
-          device, ops_, command_queue_initial_capacity_);
-      resource.library_manager.initialize(device, ops_,
-                                          library_initial_capacity_);
-      resource.heap_manager.initialize(device, handle,
-                                       &resource.library_manager, ops_,
-                                       heap_initial_capacity_);
-      resource.graph_manager.initialize(device, ops_, graph_initial_capacity_);
-      resource.event_pool.initialize(device, ops_, 0);
-      resource.fence_pool.initialize(device, ops_, 0);
-      return true;
-    });
-  }
-    }
+  control_block_pool_.initialize(DeviceControlBlockPoolTraits::Config{capacity});
+  initialized_ = true;
+}
 
 void MpsDeviceManager::shutdown() {
-  Base::teardownPool([this](MpsDeviceResource &payload) {
-    payload.reset(ops_);
-  });
-      ops_ = nullptr;
+  if (!initialized_) {
+    return;
+  }
+  if (control_block_pool_.available() != control_block_pool_.capacity()) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS device manager shutdown aborted due to active leases");
+  }
+
+  const DevicePayloadPoolTraits::Request payload_request{};
+  const auto payload_context = makePayloadContext();
+  for (std::size_t idx = 0; idx < payload_pool_.capacity(); ++idx) {
+    const DeviceHandle handle{static_cast<std::uint32_t>(idx)};
+    if (payload_pool_.isCreated(handle)) {
+      payload_pool_.destroy(handle, payload_request, payload_context);
+    }
+  }
+  payload_pool_.shutdown();
+  control_block_pool_.shutdown();
+  ops_ = nullptr;
+  initialized_ = false;
 }
 
 MpsDeviceManager::DeviceLease MpsDeviceManager::acquire(DeviceHandle handle) {
-      auto &cb = Base::acquireExisting(handle);
-      Base::acquireWeakRef(handle);
-      return DeviceLease{this, handle, cb.payload().device};
-}
+  ensureInitialized();
+  if (!payload_pool_.isValid(handle)) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+        "MPS device handle is invalid");
+  }
+  if (!payload_pool_.isCreated(handle)) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS device is unavailable");
+  }
+  auto *payload_ptr = payload_pool_.get(handle);
+  if (payload_ptr == nullptr) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS device payload is unavailable");
+  }
 
-void MpsDeviceManager::release(DeviceLease &lease) noexcept {
-  Base::releaseWeakRef(lease.handle());
-  lease.invalidate();
+  const DeviceControlBlockPoolTraits::Request cb_request{};
+  const DeviceControlBlockPoolTraits::Context cb_context{};
+  auto cb_ref = control_block_pool_.tryAcquire(cb_request, cb_context);
+  if (!cb_ref.valid()) {
+    growControlBlockPool();
+    cb_ref = control_block_pool_.tryAcquire(cb_request, cb_context);
+  }
+  if (!cb_ref.valid()) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
+        "MPS device manager has no available control blocks");
+  }
+
+  if (!cb_ref.payload_ptr->tryBindPayload(handle, payload_ptr,
+                                          &payload_pool_)) {
+    control_block_pool_.release(cb_ref.handle);
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS device control block binding failed");
+  }
+  return DeviceLease{cb_ref.payload_ptr, &control_block_pool_, cb_ref.handle};
 }
 
 ::orteaf::internal::architecture::Architecture
 MpsDeviceManager::getArch(DeviceHandle handle) const {
-      return ensureValidControlBlockConst(handle).payload().arch;
+  if (!initialized_) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS devices not initialized");
+  }
+  if (!payload_pool_.isValid(handle)) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+        "MPS device handle is invalid");
+  }
+  if (!payload_pool_.isCreated(handle)) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS device is unavailable");
+  }
+  return payload_pool_.get(handle)->arch;
 }
 
-MpsCommandQueueManager *
-MpsDeviceManager::commandQueueManager(DeviceHandle handle) {
-      return &ensureValidControlBlock(handle).payload().command_queue_manager;
+bool MpsDeviceManager::isAlive(DeviceHandle handle) const noexcept {
+  return initialized_ && payload_pool_.isValid(handle) &&
+         payload_pool_.isCreated(handle);
 }
 
-MpsHeapManager *MpsDeviceManager::heapManager(DeviceHandle handle) {
-      return &ensureValidControlBlock(handle).payload().heap_manager;
+void MpsDeviceManager::ensureInitialized() const {
+  if (!initialized_) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS device manager has not been initialized");
+  }
 }
 
-MpsLibraryManager *MpsDeviceManager::libraryManager(DeviceHandle handle) {
-      return &ensureValidControlBlock(handle).payload().library_manager;
+void MpsDeviceManager::growControlBlockPool() {
+  const std::size_t current = control_block_pool_.capacity();
+  const std::size_t desired = current + control_block_growth_chunk_;
+  const DeviceControlBlockPoolTraits::Request cb_request{};
+  const DeviceControlBlockPoolTraits::Context cb_context{};
+  control_block_pool_.growAndCreate(
+      DeviceControlBlockPoolTraits::Config{desired}, cb_request, cb_context);
 }
 
-MpsGraphManager *MpsDeviceManager::graphManager(DeviceHandle handle) {
-      return &ensureValidControlBlock(handle).payload().graph_manager;
+DevicePayloadPoolTraits::Context
+MpsDeviceManager::makePayloadContext() const noexcept {
+  return DevicePayloadPoolTraits::Context{
+      ops_, command_queue_initial_capacity_, heap_initial_capacity_,
+      library_initial_capacity_, graph_initial_capacity_};
 }
 
-MpsEventManager *MpsDeviceManager::eventPool(DeviceHandle handle) {
-      return &ensureValidControlBlock(handle).payload().event_pool;
-}
-
-MpsFenceManager *MpsDeviceManager::fencePool(DeviceHandle handle) {
-      return &ensureValidControlBlock(handle).payload().fence_pool;
-}
-
-MpsDeviceManager::ControlBlock &
-MpsDeviceManager::ensureValidControlBlock(DeviceHandle handle) {
-      Base::ensureInitialized();
-      if (!Base::isValidHandle(handle)) {
-        ::orteaf::internal::diagnostics::error::throwError(
-            ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
-            "MPS device handle is invalid");
-      }
-      ControlBlock &cb = Base::getControlBlock(handle);
-      if (cb.isCreated()) {
-        ::orteaf::internal::diagnostics::error::throwError(
-            ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-            "MPS device is unavailable");
-      }
-      return cb;
-}
-
-const MpsDeviceManager::ControlBlock &
-MpsDeviceManager::ensureValidControlBlockConst(DeviceHandle handle) const {
-      if (!Base::isInitialized()) {
-        ::orteaf::internal::diagnostics::error::throwError(
-            ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-            "MPS devices not initialized");
-      }
-      if (!Base::isValidHandle(handle)) {
-        ::orteaf::internal::diagnostics::error::throwError(
-            ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
-            "MPS device handle is invalid");
-      }
-      const ControlBlock &cb = Base::getControlBlock(handle);
-      if (cb.isCreated()) {
-        ::orteaf::internal::diagnostics::error::throwError(
-            ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-            "MPS device is unavailable");
-      }
-      return cb;
-}
-
-  } // namespace orteaf::internal::runtime::mps::manager
+} // namespace orteaf::internal::runtime::mps::manager
 
 #endif // ORTEAF_ENABLE_MPS
