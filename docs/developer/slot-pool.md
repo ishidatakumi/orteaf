@@ -89,6 +89,11 @@
 - 生成/破棄:
   - `emplace(handle, request, context)`（Traits::create を呼ぶ）
   - `destroy(handle, request, context)`（Traits::destroy を呼ぶ）
+
+### 例外/戻り値の方針
+- `try*` 系は `bool` を返す（失敗は通常系）。
+- `*` ラッパは `try*` に委譲し、失敗時に `throw` する。
+- `release` は二重解放などを検出しても例外を投げず、`bool` で失敗を返す。
   - 必要ならラムダ版で上書きできる
 
 ## 最小 Manager の構成案
