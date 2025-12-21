@@ -38,13 +38,15 @@
   - 最終的な安全判定は pool 側が行う。
 
 ## 取得フロー（概要）
-1. payload pool から未使用の payload を取得（handle + ptr）。
+1. payload pool から未作成の slot を reserve（handle + ptr）。
 2. control block pool から未使用の control block を取得。
 3. control block に payload 情報を格納。
 4. lease は control block への参照を保持して返る。
 
 ## isCreated と生成/破棄方針
 - isCreated は payload の中身が「構築済みか」を示す。
+- reserve は isCreated=false の slot のみ返す。
+- acquire は isCreated=true の slot のみ返す。
 - pool の Traits が生成/破棄の方針を持つ:
   - `destroy_on_release = true` の場合、release で destroy し isCreated を false に戻す。
   - `destroy_on_release = false` の場合、release では destroy せず isCreated を維持する。
@@ -80,8 +82,10 @@
 - in_use は control block 側で管理し、pool は関知しない。
 
 ## SlotPool のメソッド案
+- 予約: `reserve(request, context)` または `tryReserve(request, context)`
+  - 未作成の slot を返す（isCreated=false のみ）
 - 取得: `acquire(request, context)` または `tryAcquire(request, context)`
-  - index / generation / payload_ptr を返す小さな構造体を返却
+  - 作成済み slot を返す（isCreated=true のみ）
 - 返却: `release(handle)` または `tryRelease(handle)`
   - freelist に戻す（pool が安全チェックと destroy 方針を適用）
 - 参照: `get(handle)` / `payload(handle)`

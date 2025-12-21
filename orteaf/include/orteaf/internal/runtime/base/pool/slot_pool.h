@@ -21,7 +21,8 @@ namespace orteaf::internal::runtime::base::pool {
  *
  * Creation and destruction of payloads is separated from slot acquisition. This
  * allows the pool to manage storage reuse independently of object lifetime.
- * - acquire/tryAcquire: reserve a slot for use and return its handle + pointer.
+ * - reserve/tryReserve: reserve an uncreated slot for initialization.
+ * - acquire/tryAcquire: acquire an already-created slot for reuse.
  * - emplace/destroy: create/destroy the payload for a specific handle.
  *
  * The pool does not interpret Request/Context beyond passing them to Traits.
@@ -102,11 +103,10 @@ public:
   std::size_t available() const noexcept { return freelist_.size(); }
 
   /**
-   * @brief Acquires a slot or throws if none are available.
+   * @brief Acquires a created slot or throws if none are available.
    *
-   * acquire forwards Request/Context to the policy when creating payloads, but
-   * does not create payloads itself. It only reserves a slot and returns a
-   * SlotRef. Use emplace to initialize the payload.
+   * acquire returns only slots with isCreated=true. It does not create
+   * payloads itself.
    *
    * @param request Allocation/request details passed through for symmetry.
    * @param context Context information (backend/device, etc.).
@@ -124,7 +124,7 @@ public:
   }
 
   /**
-   * @brief Attempts to acquire a slot without throwing.
+   * @brief Attempts to acquire a created slot without throwing.
    *
    * @return SlotRef with invalid handle and null pointer if no slots available.
    */
@@ -132,13 +132,58 @@ public:
     if (freelist_.empty()) {
       return SlotRef{Handle::invalid(), nullptr};
     }
-    const index_type idx = freelist_.back();
-    freelist_.resize(freelist_.size() - 1);
-    if (created_[static_cast<std::size_t>(idx)] != 0) {
+    const std::size_t scan_count = freelist_.size();
+    for (std::size_t i = 0; i < scan_count; ++i) {
+      const index_type idx = freelist_.back();
+      freelist_.resize(freelist_.size() - 1);
+      if (created_[static_cast<std::size_t>(idx)] != 0) {
+        return SlotRef{makeHandle(idx), &payloads_[idx]};
+      }
       freelist_.pushBack(idx);
+    }
+    return SlotRef{Handle::invalid(), nullptr};
+  }
+
+  /**
+   * @brief Reserves an uncreated slot or throws if none are available.
+   *
+   * reserve returns only slots with isCreated=false. It does not create
+   * payloads itself. Use emplace to initialize the payload.
+   *
+   * @param request Allocation/request details passed through for symmetry.
+   * @param context Context information (backend/device, etc.).
+   * @return SlotRef with a valid handle and payload pointer.
+   * @throws OrteafErrc::OutOfRange if no uncreated slots are available.
+   */
+  SlotRef reserve(const Request &request, const Context &context) {
+    SlotRef ref = tryReserve(request, context);
+    if (!ref.valid()) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
+          "SlotPool is empty");
+    }
+    return ref;
+  }
+
+  /**
+   * @brief Attempts to reserve an uncreated slot without throwing.
+   *
+   * @return SlotRef with invalid handle and null pointer if none available.
+   */
+  SlotRef tryReserve(const Request &, const Context &) noexcept {
+    if (freelist_.empty()) {
       return SlotRef{Handle::invalid(), nullptr};
     }
-    return SlotRef{makeHandle(idx), &payloads_[idx]};
+    const std::size_t scan_count = freelist_.size();
+    for (std::size_t i = 0; i < scan_count; ++i) {
+      const index_type idx = freelist_.back();
+      freelist_.resize(freelist_.size() - 1);
+      if (created_[static_cast<std::size_t>(idx)] == 0) {
+        return SlotRef{makeHandle(idx), &payloads_[idx]};
+      }
+      freelist_.pushBack(idx);
+    }
+    return SlotRef{Handle::invalid(), nullptr};
   }
 
   /**
