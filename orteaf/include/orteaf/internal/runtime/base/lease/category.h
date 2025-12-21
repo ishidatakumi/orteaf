@@ -5,6 +5,9 @@ namespace orteaf::internal::runtime::base::lease_category {
 /// @brief Raw category - no reference counting, payload only
 struct Raw {};
 
+/// @brief Weak category - weak references only (no strong ownership)
+struct Weak {};
+
 /// @brief Unique category - single ownership with in_use flag
 struct Unique {};
 

@@ -3,6 +3,7 @@
 #include <atomic>
 #include <concepts>
 #include <cstdint>
+#include <type_traits>
 #include <utility>
 
 #include <orteaf/internal/runtime/base/lease/category.h>
@@ -10,13 +11,192 @@
 
 namespace orteaf::internal::runtime::base {
 
-/// @brief Shared control block - shared ownership with reference counting
-/// @details Multiple leases can share this resource. Uses atomic reference
-/// count for thread-safe sharing.
-/// canTeardown() returns true when count == 0.
-template <typename SlotT>
-  requires SlotConcept<SlotT>
+/**
+ * @brief Shared-ownership control block with handle/payload/pool binding.
+ *
+ * This control block tracks a single strong reference count and optionally
+ * holds a pointer to the payload plus its handle and owning pool. When the
+ * strong count reaches zero, the control block attempts to release the payload
+ * back to the pool via Pool::release(handle). If the pool accepts the release,
+ * the payload binding is cleared to avoid stale access.
+ *
+ * Payload binding is explicit and can only occur when no references exist.
+ * The control block does not create/destroy payloads directly; it only
+ * coordinates release to the pool. Payload lifetime rules are enforced by the
+ * manager and/or pool implementation.
+ *
+ * Thread-safety: reference counts use atomics. Payload binding methods are not
+ * synchronized and must be externally serialized.
+ *
+ * @tparam HandleT Handle type with Handle::invalid() and isValid().
+ * @tparam PayloadT Payload type stored in the pool.
+ * @tparam PoolT Pool type providing release(handle) -> bool.
+ */
+template <typename HandleT, typename PayloadT = void, typename PoolT = void>
 class SharedControlBlock {
+public:
+  using Category = lease_category::Shared;
+  using Handle = HandleT;
+  using Payload = PayloadT;
+  using Pool = PoolT;
+
+  SharedControlBlock() = default;
+  SharedControlBlock(const SharedControlBlock &) = delete;
+  SharedControlBlock &operator=(const SharedControlBlock &) = delete;
+  SharedControlBlock(SharedControlBlock &&) = default;
+  SharedControlBlock &operator=(SharedControlBlock &&) = default;
+  ~SharedControlBlock() = default;
+
+  /**
+   * @brief Returns true if payload binding is allowed.
+   *
+   * Binding is only allowed when there is no payload currently bound and the
+   * strong reference count is zero.
+   */
+  bool canBindPayload() const noexcept {
+    return payload_ptr_ == nullptr && count() == 0;
+  }
+
+  /**
+   * @brief Attempts to bind payload metadata to this control block.
+   *
+   * @param handle Handle corresponding to the payload slot.
+   * @param payload Pointer to the payload storage.
+   * @param pool Pointer to the owning pool (may be nullptr).
+   * @return True if binding succeeded.
+   */
+  bool tryBindPayload(Handle handle, Payload *payload, Pool *pool) noexcept {
+    if (!canBindPayload()) {
+      return false;
+    }
+    bindPayload(handle, payload, pool);
+    return true;
+  }
+
+  /**
+   * @brief Returns true if a payload pointer is currently bound.
+   */
+  bool hasPayload() const noexcept { return payload_ptr_ != nullptr; }
+
+  /**
+   * @brief Returns the bound payload handle (may be invalid).
+   */
+  Handle payloadHandle() const noexcept { return payload_handle_; }
+  /**
+   * @brief Returns the bound payload pointer (may be null).
+   */
+  Payload *payloadPtr() noexcept { return payload_ptr_; }
+  /**
+   * @brief Const overload of payloadPtr().
+   */
+  const Payload *payloadPtr() const noexcept { return payload_ptr_; }
+  /**
+   * @brief Returns the bound pool pointer (may be null).
+   */
+  Pool *payloadPool() noexcept { return payload_pool_; }
+  /**
+   * @brief Const overload of payloadPool().
+   */
+  const Pool *payloadPool() const noexcept { return payload_pool_; }
+
+  /**
+   * @brief Increments the strong reference count.
+   */
+  void acquire() noexcept {
+    strong_count_.fetch_add(1, std::memory_order_relaxed);
+  }
+
+  /**
+   * @brief Decrements the strong reference count.
+   *
+   * When the count reaches zero, attempts to release the payload back to the
+   * pool. Returns true if this call observed the transition to zero.
+   *
+   * @return True when this call drops the count from 1 to 0.
+   */
+  bool release() noexcept {
+    auto current = strong_count_.load(std::memory_order_acquire);
+    while (current > 0) {
+      if (strong_count_.compare_exchange_weak(current, current - 1,
+                                              std::memory_order_acq_rel,
+                                              std::memory_order_relaxed)) {
+        if (current == 1) {
+          tryReleasePayload();
+          return true;
+        }
+        return false;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * @brief Returns the current strong reference count.
+   */
+  std::uint32_t count() const noexcept {
+    return strong_count_.load(std::memory_order_acquire);
+  }
+
+  /**
+   * @brief Returns true if the control block can be torn down.
+   *
+   * For SharedControlBlock, this is equivalent to strong count == 0.
+   */
+  bool canTeardown() const noexcept { return count() == 0; }
+  /**
+   * @brief Returns true if the control block can be safely shutdown.
+   *
+   * For SharedControlBlock, this is equivalent to strong count == 0.
+   */
+  bool canShutdown() const noexcept { return count() == 0; }
+
+private:
+  /**
+   * @brief Attempts to release the payload back to the pool.
+   *
+   * If the pool is null or the handle is invalid, no action is taken. When
+   * Pool::release returns true, the payload binding is cleared.
+   */
+  void tryReleasePayload() noexcept {
+    if (payload_pool_ != nullptr && payload_handle_.isValid()) {
+      if (payload_pool_->release(payload_handle_)) {
+        clearPayload();
+      }
+    }
+  }
+
+  /**
+   * @brief Binds payload metadata without validation.
+   *
+   * Callers should ensure canBindPayload() prior to calling.
+   */
+  void bindPayload(Handle handle, Payload *payload, Pool *pool) noexcept {
+    payload_handle_ = handle;
+    payload_ptr_ = payload;
+    payload_pool_ = pool;
+  }
+
+  /**
+   * @brief Clears payload metadata to invalid/null values.
+   */
+  void clearPayload() noexcept {
+    payload_handle_ = Handle::invalid();
+    payload_ptr_ = nullptr;
+    payload_pool_ = nullptr;
+  }
+
+  std::atomic<std::uint32_t> strong_count_{0};
+  Handle payload_handle_{Handle::invalid()};
+  Payload *payload_ptr_{nullptr};
+  Pool *payload_pool_{nullptr};
+};
+
+// Specialization for legacy Slot-based control blocks.
+template <typename SlotT>
+class SharedControlBlock<SlotT, void, void> {
+  static_assert(SlotConcept<SlotT>,
+                "SharedControlBlock<SlotT> requires SlotConcept");
+
 public:
   using Category = lease_category::Shared;
   using Slot = SlotT;
@@ -41,43 +221,36 @@ public:
     return *this;
   }
 
-  // =========================================================================
-  // Lifecycle API
-  // =========================================================================
-
-  /// @brief Acquire a shared reference, creating resource if needed
-  /// @tparam CreateFn Callable that takes Payload& and returns bool
-  /// @return true if acquired and created, false if creation failed
   template <typename CreateFn>
     requires std::invocable<CreateFn, Payload &> &&
              std::convertible_to<std::invoke_result_t<CreateFn, Payload &>,
                                  bool>
   bool acquire(CreateFn &&createFn) noexcept {
-    // Try to create the resource
     if (!slot_.create(std::forward<CreateFn>(createFn))) {
-      return false; // Creation failed
+      return false;
     }
-
-    // Increment reference count
     strong_count_.fetch_add(1, std::memory_order_relaxed);
     return true;
   }
 
-  /// @brief Release a shared reference (for reuse)
-  /// @return true if this was the last reference (count goes 1->0)
   bool release() noexcept {
-    if (strong_count_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-      if constexpr (SlotT::has_generation) {
-        slot_.incrementGeneration();
+    auto current = strong_count_.load(std::memory_order_acquire);
+    while (current > 0) {
+      if (strong_count_.compare_exchange_weak(current, current - 1,
+                                              std::memory_order_acq_rel,
+                                              std::memory_order_relaxed)) {
+        if (current == 1) {
+          if constexpr (SlotT::has_generation) {
+            slot_.incrementGeneration();
+          }
+          return true;
+        }
+        return false;
       }
-      return true;
     }
     return false;
   }
 
-  /// @brief Release and destroy the resource (non-reusable)
-  /// @tparam DestroyFn Callable that takes Payload&
-  /// @return true if last reference and destroyed, false otherwise
   template <typename DestroyFn>
     requires std::invocable<DestroyFn, Payload &>
   bool releaseAndDestroy(DestroyFn &&destroyFn) {
@@ -91,53 +264,26 @@ public:
     return false;
   }
 
-  /// @brief Check if teardown is allowed
-  /// @return true if no strong references (count == 0)
   bool canTeardown() const noexcept { return count() == 0; }
-
-  /// @brief Check if shutdown is allowed
-  /// @return true if strong count is 0
   bool canShutdown() const noexcept { return count() == 0; }
 
-  // =========================================================================
-  // Shared-specific API (SharedControlBlockConcept)
-  // =========================================================================
-
-  /// @brief Get current reference count
   std::uint32_t count() const noexcept {
     return strong_count_.load(std::memory_order_acquire);
   }
 
-  // =========================================================================
-  // Payload Access
-  // =========================================================================
-
-  /// @brief Access the payload
   Payload &payload() noexcept { return slot_.get(); }
   const Payload &payload() const noexcept { return slot_.get(); }
 
-  // =========================================================================
-  // Generation (delegated to Slot)
-  // =========================================================================
-
-  /// @brief Get current generation (0 if not supported)
   auto generation() const noexcept { return slot_.generation(); }
 
-  // =========================================================================
-  // Creation State (delegated to Slot)
-  // =========================================================================
-
-  /// @brief Check if resource has been created
   bool isCreated() const noexcept { return slot_.isCreated(); }
 
-  /// @brief Create the resource by executing the factory
   template <typename Factory>
     requires std::invocable<Factory, Payload &>
   auto create(Factory &&factory) -> decltype(auto) {
     return slot_.create(std::forward<Factory>(factory));
   }
 
-  /// @brief Destroy the resource by executing the destructor
   template <typename Destructor>
     requires std::invocable<Destructor, Payload &>
   void destroy(Destructor &&destructor) {
