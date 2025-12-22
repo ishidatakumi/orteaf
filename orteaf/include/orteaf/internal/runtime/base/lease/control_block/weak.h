@@ -64,7 +64,6 @@ public:
    * weak reference count is zero.
    */
   bool canBindPayload() const noexcept {
-    printf("canBindPayload: %p %d\n", payload_ptr_, weakCount());
     return payload_ptr_ == nullptr && weakCount() == 0;
   }
 
