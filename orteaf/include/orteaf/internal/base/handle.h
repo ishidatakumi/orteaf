@@ -93,6 +93,9 @@ using GraphHandle        = Handle<GraphTag, uint32_t, uint8_t>;
 using EventHandle        = Handle<EventTag, uint32_t, uint8_t>;
 using FenceHandle        = Handle<FenceTag, uint32_t, uint8_t>;
 
+template <class Tag>
+using ControlBlockHandle = Handle<Tag, uint32_t, uint8_t>;
+
 static_assert(std::is_trivially_copyable_v<DeviceHandle>);
 static_assert(std::is_trivially_copyable_v<BufferHandle>);
 static_assert(std::is_trivially_copyable_v<BufferViewHandle>);

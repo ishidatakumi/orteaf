@@ -62,6 +62,22 @@ public:
   ControlBlockT *controlBlock() noexcept { return control_block_; }
   const ControlBlockT *controlBlock() const noexcept { return control_block_; }
 
+  auto payloadHandle() const noexcept
+      -> decltype(std::declval<const ControlBlockT *>()->payloadHandle())
+    requires requires(const ControlBlockT *cb) { cb->payloadHandle(); }
+  {
+    using PayloadHandleT =
+        decltype(std::declval<const ControlBlockT *>()->payloadHandle());
+    if (!control_block_) {
+      if constexpr (requires { PayloadHandleT::invalid(); }) {
+        return PayloadHandleT::invalid();
+      } else {
+        return PayloadHandleT{};
+      }
+    }
+    return control_block_->payloadHandle();
+  }
+
   auto payloadPtr() noexcept
       -> decltype(std::declval<ControlBlockT *>()->payloadPtr())
     requires requires(ControlBlockT *cb) { cb->payloadPtr(); }
