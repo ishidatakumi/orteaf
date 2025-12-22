@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <cstddef>
 #include <iterator>
 #include <new>
@@ -12,22 +11,14 @@
 namespace orteaf::internal::base {
 
 /**
- * @brief Segmented vector with stable element addresses on grow.
+ * @brief Segmented vector with runtime-configurable block size.
  *
- * BlockVector stores elements in fixed-size blocks allocated independently,
- * so growing the container never relocates existing elements. This is useful
- * when external code holds raw pointers into the storage.
- *
- * Design notes:
- * - Storage is contiguous within each block, not globally contiguous.
- * - Iteration is supported via a random-access iterator that walks by index.
- * - Growing never moves existing elements, but may allocate new blocks.
+ * This variant keeps stable addresses like BlockVector, but accepts the block
+ * size at runtime to avoid propagating a template parameter through layers.
  */
-template <typename T, std::size_t BlockSize = 64>
-class BlockVector {
+template <typename T>
+class RuntimeBlockVector {
 public:
-  static_assert(BlockSize > 0, "BlockSize must be > 0");
-
   class iterator {
   public:
     using iterator_category = std::random_access_iterator_tag;
@@ -94,10 +85,11 @@ public:
     }
 
   private:
-    friend class BlockVector;
-    iterator(BlockVector *owner, std::size_t index) : owner_(owner), index_(index) {}
+    friend class RuntimeBlockVector;
+    iterator(RuntimeBlockVector *owner, std::size_t index)
+        : owner_(owner), index_(index) {}
 
-    BlockVector *owner_{nullptr};
+    RuntimeBlockVector *owner_{nullptr};
     std::size_t index_{0};
   };
 
@@ -173,25 +165,32 @@ public:
     }
 
   private:
-    friend class BlockVector;
-    const_iterator(const BlockVector *owner, std::size_t index)
+    friend class RuntimeBlockVector;
+    const_iterator(const RuntimeBlockVector *owner, std::size_t index)
         : owner_(owner), index_(index) {}
 
-    const BlockVector *owner_{nullptr};
+    const RuntimeBlockVector *owner_{nullptr};
     std::size_t index_{0};
   };
 
-  BlockVector() noexcept = default;
-  BlockVector(const BlockVector &) = delete;
-  BlockVector &operator=(const BlockVector &) = delete;
-  BlockVector(BlockVector &&other) noexcept
+  explicit RuntimeBlockVector(std::size_t block_size = 64)
+      : block_size_(block_size) {
+    if (block_size_ == 0) {
+      throw std::invalid_argument("RuntimeBlockVector block size must be > 0");
+    }
+  }
+
+  RuntimeBlockVector(const RuntimeBlockVector &) = delete;
+  RuntimeBlockVector &operator=(const RuntimeBlockVector &) = delete;
+  RuntimeBlockVector(RuntimeBlockVector &&other) noexcept
       : blocks_(std::move(other.blocks_)),
         size_(other.size_),
-        capacity_(other.capacity_) {
+        capacity_(other.capacity_),
+        block_size_(other.block_size_) {
     other.size_ = 0;
     other.capacity_ = 0;
   }
-  BlockVector &operator=(BlockVector &&other) noexcept {
+  RuntimeBlockVector &operator=(RuntimeBlockVector &&other) noexcept {
     if (this == &other) {
       return *this;
     }
@@ -200,16 +199,17 @@ public:
     blocks_ = std::move(other.blocks_);
     size_ = other.size_;
     capacity_ = other.capacity_;
+    block_size_ = other.block_size_;
     other.size_ = 0;
     other.capacity_ = 0;
     return *this;
   }
-  ~BlockVector() {
+
+  ~RuntimeBlockVector() {
     destroyElements();
     releaseBlocks();
   }
 
-  /// @brief Resize to new_size with default-constructed elements.
   void resize(std::size_t new_size) {
     if (new_size < size_) {
       destroyRange(new_size, size_);
@@ -229,7 +229,6 @@ public:
     size_ = new_size;
   }
 
-  /// @brief Append a copy of value (copy-constructible only).
   void pushBack(const T &value)
     requires std::is_copy_constructible_v<T>
   {
@@ -238,10 +237,8 @@ public:
   void pushBack(const T &)
     requires (!std::is_copy_constructible_v<T>)
   = delete;
-  /// @brief Append a moved value.
   void pushBack(T &&value) { emplaceBack(static_cast<T &&>(value)); }
 
-  /// @brief Append an element constructed in-place.
   template <typename... Args>
   T &emplaceBack(Args &&...args) {
     ensureCapacityFor(size_ + 1);
@@ -251,7 +248,6 @@ public:
     return *slot;
   }
 
-  /// @brief Remove the last element if present.
   void popBack() {
     if (size_ == 0) {
       return;
@@ -261,13 +257,11 @@ public:
     size_ = last;
   }
 
-  /// @brief Destroy all elements without releasing blocks.
   void clear() {
     destroyElements();
     size_ = 0;
   }
 
-  /// @brief Reserve capacity for at least new_capacity elements.
   void reserve(std::size_t new_capacity) {
     if (new_capacity <= capacity_) {
       return;
@@ -275,53 +269,37 @@ public:
     ensureCapacityFor(new_capacity);
   }
 
-  /// @brief Returns the number of elements.
   std::size_t size() const noexcept { return size_; }
-  /// @brief Returns the total capacity across blocks.
   std::size_t capacity() const noexcept { return capacity_; }
-  /// @brief Returns true if empty.
   bool empty() const noexcept { return size_ == 0; }
+  std::size_t blockSize() const noexcept { return block_size_; }
 
-  /// @brief Unchecked element access.
   T &operator[](std::size_t idx) noexcept { return *ptrAt(idx); }
-  /// @brief Unchecked element access.
   const T &operator[](std::size_t idx) const noexcept { return *ptrAt(idx); }
 
-  /// @brief Bounds-checked element access.
   T &at(std::size_t idx) {
     if (idx >= size_) {
-      throw std::out_of_range("BlockVector::at");
+      throw std::out_of_range("RuntimeBlockVector::at");
     }
     return (*this)[idx];
   }
-  /// @brief Bounds-checked element access.
   const T &at(std::size_t idx) const {
     if (idx >= size_) {
-      throw std::out_of_range("BlockVector::at");
+      throw std::out_of_range("RuntimeBlockVector::at");
     }
     return (*this)[idx];
   }
 
-  /// @brief Access the first element.
   T &front() noexcept { return (*this)[0]; }
-  /// @brief Access the first element.
   const T &front() const noexcept { return (*this)[0]; }
-  /// @brief Access the last element.
   T &back() noexcept { return (*this)[size_ - 1]; }
-  /// @brief Access the last element.
   const T &back() const noexcept { return (*this)[size_ - 1]; }
 
-  /// @brief Returns iterator to the first element.
   iterator begin() noexcept { return iterator(this, 0); }
-  /// @brief Returns iterator to one past the last element.
   iterator end() noexcept { return iterator(this, size_); }
-  /// @brief Returns const iterator to the first element.
   const_iterator begin() const noexcept { return const_iterator(this, 0); }
-  /// @brief Returns const iterator to one past the last element.
   const_iterator end() const noexcept { return const_iterator(this, size_); }
-  /// @brief Returns const iterator to the first element.
   const_iterator cbegin() const noexcept { return const_iterator(this, 0); }
-  /// @brief Returns const iterator to one past the last element.
   const_iterator cend() const noexcept { return const_iterator(this, size_); }
 
 private:
@@ -332,15 +310,15 @@ private:
       return;
     }
     const std::size_t needed_blocks =
-        (required + BlockSize - 1) / BlockSize;
+        (required + block_size_ - 1) / block_size_;
     while (blocks_.size() < needed_blocks) {
       blocks_.pushBack(allocateBlock());
     }
-    capacity_ = blocks_.size() * BlockSize;
+    capacity_ = blocks_.size() * block_size_;
   }
 
   BlockPtr allocateBlock() {
-    return static_cast<BlockPtr>(::operator new(sizeof(T) * BlockSize));
+    return static_cast<BlockPtr>(::operator new(sizeof(T) * block_size_));
   }
 
   void releaseBlocks() {
@@ -352,14 +330,14 @@ private:
   }
 
   T *ptrAt(std::size_t idx) noexcept {
-    const std::size_t block_index = idx / BlockSize;
-    const std::size_t offset = idx % BlockSize;
+    const std::size_t block_index = idx / block_size_;
+    const std::size_t offset = idx % block_size_;
     return blocks_[block_index] + offset;
   }
 
   const T *ptrAt(std::size_t idx) const noexcept {
-    const std::size_t block_index = idx / BlockSize;
-    const std::size_t offset = idx % BlockSize;
+    const std::size_t block_index = idx / block_size_;
+    const std::size_t offset = idx % block_size_;
     return blocks_[block_index] + offset;
   }
 
@@ -374,6 +352,7 @@ private:
   ::orteaf::internal::base::HeapVector<BlockPtr> blocks_{};
   std::size_t size_{0};
   std::size_t capacity_{0};
+  std::size_t block_size_{64};
 };
 
 } // namespace orteaf::internal::base
