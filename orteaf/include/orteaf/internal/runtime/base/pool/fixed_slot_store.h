@@ -26,7 +26,7 @@ namespace orteaf::internal::runtime::base::pool {
  * Generation tracking is supported when Handle::has_generation is true. In
  * that case, emplace can update the generation value for the handle's index.
  *
- * @tparam Traits Policy type defining Payload/Handle/Request/Context/Config and
+ * @tparam Traits Policy type defining Payload/Handle/Request/Context and
  *         creation/destruction hooks.
  */
 template <typename Traits> class FixedSlotStore {
@@ -35,7 +35,11 @@ public:
   using Handle = typename Traits::Handle;
   using Request = typename Traits::Request;
   using Context = typename Traits::Context;
-  using Config = typename Traits::Config;
+
+  struct Config {
+    std::size_t capacity{0};
+    std::size_t block_size{0};
+  };
 
   /**
    * @brief Lightweight handle+pointer pair returned by acquisition calls.

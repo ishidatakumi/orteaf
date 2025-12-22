@@ -30,7 +30,7 @@ namespace orteaf::internal::runtime::base::pool {
  * This keeps pool APIs stable while allowing callers to define allocation
  * policies and initialization behavior in Traits or custom lambdas.
  *
- * @tparam Traits Policy type defining Payload/Handle/Request/Context/Config and
+ * @tparam Traits Policy type defining Payload/Handle/Request/Context and
  *         creation/destruction hooks.
  */
 template <typename Traits> class SlotPool {
@@ -39,7 +39,11 @@ public:
   using Handle = typename Traits::Handle;
   using Request = typename Traits::Request;
   using Context = typename Traits::Context;
-  using Config = typename Traits::Config;
+
+  struct Config {
+    std::size_t capacity{0};
+    std::size_t block_size{0};
+  };
 
   /**
    * @brief Lightweight handle+pointer pair returned by acquisition calls.
