@@ -26,69 +26,104 @@ void MpsFenceManager::initialize(DeviceType device, SlowOps *ops,
   }
   device_ = device;
   ops_ = ops;
-  Base::setupPool(capacity);
+
+  core_.payloadPool().initialize(FencePayloadPoolTraits::Config{capacity});
+  core_.initializeControlBlockPool(capacity);
+  core_.setInitialized(true);
 }
 
 void MpsFenceManager::shutdown() {
-  if (!Base::isInitialized()) {
+  if (!core_.isInitialized()) {
     return;
   }
-  Base::teardownPool([this](FenceType &payload) {
-    if (payload != nullptr) {
-      destroyResource(payload);
-    }
-  });
+  // Check canShutdown on all created control blocks
+  core_.checkCanShutdownOrThrow();
+
+  const FencePayloadPoolTraits::Request payload_request{};
+  const auto payload_context = makePayloadContext();
+  core_.payloadPool().shutdown(payload_request, payload_context);
+  core_.shutdownControlBlockPool();
+
   device_ = nullptr;
   ops_ = nullptr;
+  core_.setInitialized(false);
 }
 
 MpsFenceManager::FenceLease MpsFenceManager::acquire() {
-  auto handle = Base::acquireFresh([this](FenceType &payload) {
-    if (!ops_) {
-      return false;
+  core_.ensureInitialized();
+  const FencePayloadPoolTraits::Request request{};
+  const auto context = makePayloadContext();
+  auto payload_ref = core_.payloadPool().tryAcquire(request, context);
+  if (!payload_ref.valid()) {
+    auto reserved = core_.payloadPool().tryReserve(request, context);
+    if (!reserved.valid()) {
+      const auto desired =
+          core_.payloadPool().capacity() + core_.growthChunkSize();
+      growPools(desired);
+      reserved = core_.payloadPool().tryReserve(request, context);
     }
-    auto fence = ops_->createFence(device_);
-    if (fence == nullptr) {
-      return false;
+    if (!reserved.valid()) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
+          "MPS fence manager has no available slots");
     }
-    payload = fence;
-    return true;
-  });
+    FencePayloadPoolTraits::Request create_request{reserved.handle};
+    if (!core_.payloadPool().emplace(reserved.handle, create_request,
+                                     context)) {
+      core_.payloadPool().release(reserved.handle);
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          "Failed to create MPS fence");
+    }
+    payload_ref = reserved;
+  }
 
-  if (!handle.isValid()) {
+  auto cb_ref = core_.acquireControlBlock();
+  auto cb_handle = cb_ref.handle;
+  auto *cb = cb_ref.payload_ptr;
+  if (cb == nullptr) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-        "Failed to create MPS fence");
+        "MPS fence control block is unavailable");
   }
-
-  return FenceLease{this, handle,
-                    Base::getControlBlockChecked(handle).payload()};
+  return buildLease(*cb, payload_ref.handle, cb_handle);
 }
 
-MpsFenceManager::FenceLease MpsFenceManager::acquire(FenceHandle handle) {
-  auto &cb = Base::acquireExisting(handle);
-  return FenceLease{this, handle, cb.payload()};
+FencePayloadPoolTraits::Context
+MpsFenceManager::makePayloadContext() const noexcept {
+  return FencePayloadPoolTraits::Context{device_, ops_};
 }
 
-void MpsFenceManager::release(FenceLease &lease) noexcept {
-  release(lease.handle());
-  lease.invalidate();
-}
-
-void MpsFenceManager::release(FenceHandle handle) noexcept {
-  if (!Base::isValidHandle(handle)) {
+void MpsFenceManager::growPools(std::size_t desired_capacity) {
+  if (desired_capacity <= core_.payloadPool().capacity()) {
     return;
   }
-  Base::releaseForReuse(handle);
+  core_.payloadPool().grow(FencePayloadPoolTraits::Config{desired_capacity});
+  // Note: CB pool grows on demand in acquireControlBlock, no need to grow here
 }
 
-void MpsFenceManager::destroyResource(FenceType &resource) {
-  if (resource != nullptr) {
-    if (ops_) {
-      ops_->destroyFence(resource);
-    }
-    resource = nullptr;
+MpsFenceManager::FenceLease
+MpsFenceManager::buildLease(ControlBlock &cb, FenceHandle payload_handle,
+                            ControlBlockHandle cb_handle) {
+  auto *payload_ptr = core_.payloadPool().get(payload_handle);
+  if (payload_ptr == nullptr) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS fence payload is unavailable");
   }
+  if (cb.hasPayload()) {
+    if (cb.payloadHandle() != payload_handle) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          "MPS fence control block payload mismatch");
+    }
+  } else if (!cb.tryBindPayload(payload_handle, payload_ptr,
+                                &core_.payloadPool())) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "MPS fence control block binding failed");
+  }
+  return FenceLease{&cb, &core_.controlBlockPool(), cb_handle};
 }
 
 } // namespace orteaf::internal::runtime::mps::manager
