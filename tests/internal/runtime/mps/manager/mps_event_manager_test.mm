@@ -418,4 +418,136 @@ TYPED_TEST(MpsEventManagerTypedTest, DebugStateReflectsEventState) {
   }
   manager.shutdown();
 }
+
+// =============================================================================
+// Lease Copy/Move Tests with Count Verification
+// =============================================================================
+
+TYPED_TEST(MpsEventManagerTypedTest, LeaseCopyIncrementsCount) {
+  auto &manager = this->manager();
+  const auto device = this->adapter().device();
+  manager.initialize(device, this->getOps(), 1);
+
+  // Arrange
+  if constexpr (TypeParam::is_mock) {
+    this->adapter().expectCreateEvents({makeEvent(0xF00)},
+                                       ::testing::Eq(device));
+  }
+
+  // Act
+  auto lease1 = manager.acquire();
+  EXPECT_EQ(lease1.count(), 1u);
+
+  auto lease2 = lease1; // Copy
+
+  // Assert: Both valid, count incremented
+  EXPECT_TRUE(lease1);
+  EXPECT_TRUE(lease2);
+  EXPECT_EQ(lease1.count(), 2u);
+  EXPECT_EQ(lease2.count(), 2u);
+
+  // Cleanup
+  lease1.release();
+  EXPECT_EQ(lease2.count(), 1u);
+  lease2.release();
+
+  if constexpr (TypeParam::is_mock) {
+    this->adapter().expectDestroyEvents({makeEvent(0xF00)});
+  }
+  manager.shutdown();
+}
+
+TYPED_TEST(MpsEventManagerTypedTest, LeaseCopyAssignmentIncrementsCount) {
+  auto &manager = this->manager();
+  const auto device = this->adapter().device();
+  manager.initialize(device, this->getOps(), 1);
+
+  // Arrange
+  if constexpr (TypeParam::is_mock) {
+    this->adapter().expectCreateEvents({makeEvent(0xF10)},
+                                       ::testing::Eq(device));
+  }
+
+  auto lease1 = manager.acquire();
+  decltype(lease1) lease2;
+
+  // Act
+  lease2 = lease1; // Copy assignment
+
+  // Assert
+  EXPECT_EQ(lease1.count(), 2u);
+  EXPECT_EQ(lease2.count(), 2u);
+
+  // Cleanup
+  lease1.release();
+  lease2.release();
+
+  if constexpr (TypeParam::is_mock) {
+    this->adapter().expectDestroyEvents({makeEvent(0xF10)});
+  }
+  manager.shutdown();
+}
+
+TYPED_TEST(MpsEventManagerTypedTest, LeaseMoveDoesNotChangeCount) {
+  auto &manager = this->manager();
+  const auto device = this->adapter().device();
+  manager.initialize(device, this->getOps(), 1);
+
+  // Arrange
+  if constexpr (TypeParam::is_mock) {
+    this->adapter().expectCreateEvents({makeEvent(0xF20)},
+                                       ::testing::Eq(device));
+  }
+
+  auto lease1 = manager.acquire();
+  EXPECT_EQ(lease1.count(), 1u);
+
+  // Act
+  auto lease2 = std::move(lease1); // Move
+
+  // Assert: Source invalid, target valid, count unchanged
+  EXPECT_FALSE(lease1);
+  EXPECT_TRUE(lease2);
+  EXPECT_EQ(lease2.count(), 1u);
+
+  // Cleanup
+  lease2.release();
+
+  if constexpr (TypeParam::is_mock) {
+    this->adapter().expectDestroyEvents({makeEvent(0xF20)});
+  }
+  manager.shutdown();
+}
+
+TYPED_TEST(MpsEventManagerTypedTest, LeaseMoveAssignmentDoesNotChangeCount) {
+  auto &manager = this->manager();
+  const auto device = this->adapter().device();
+  manager.initialize(device, this->getOps(), 1);
+
+  // Arrange
+  if constexpr (TypeParam::is_mock) {
+    this->adapter().expectCreateEvents({makeEvent(0xF30)},
+                                       ::testing::Eq(device));
+  }
+
+  auto lease1 = manager.acquire();
+  decltype(lease1) lease2;
+
+  // Act
+  lease2 = std::move(lease1); // Move assignment
+
+  // Assert
+  EXPECT_FALSE(lease1);
+  EXPECT_TRUE(lease2);
+  EXPECT_EQ(lease2.count(), 1u);
+
+  // Cleanup
+  lease2.release();
+
+  if constexpr (TypeParam::is_mock) {
+    this->adapter().expectDestroyEvents({makeEvent(0xF30)});
+  }
+  manager.shutdown();
+}
+
 #endif

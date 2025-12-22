@@ -252,7 +252,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest, GetArchMatchesReportedArchitecture) {
       EXPECT_TRUE(resource->device != nullptr);
     } else if (expected_arch_env && *expected_arch_env != '\0' && idx == 0) {
       EXPECT_STREQ(expected_arch_env, architecture::idOf(arch).data());
-      EXPECT_STREQ(expected_arch_env, architecture::idOf(resource->arch).data());
+      EXPECT_STREQ(expected_arch_env,
+                   architecture::idOf(resource->arch).data());
     } else {
       EXPECT_FALSE(architecture::idOf(arch).empty());
       EXPECT_FALSE(architecture::idOf(resource->arch).empty());
@@ -472,8 +473,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest, ShutdownClearsDeviceState) {
   }
 }
 
-TYPED_TEST(MpsDeviceManagerTypedTest,
-           ShutdownThrowsWhenActiveLeaseExists) {
+TYPED_TEST(MpsDeviceManagerTypedTest, ShutdownThrowsWhenActiveLeaseExists) {
   auto &manager = this->manager();
 
   if constexpr (TypeParam::is_mock) {
@@ -776,3 +776,153 @@ TYPED_TEST(MpsDeviceManagerTypedTest, DirectAccessReturnsValidPointers) {
   // Cleanup
   manager.shutdown();
 }
+
+// =============================================================================
+// Lease Copy/Move Tests with WeakCount Verification
+// =============================================================================
+
+#if ORTEAF_ENABLE_TEST
+TYPED_TEST(MpsDeviceManagerTypedTest, LeaseCopyIncrementsWeakCount) {
+  auto &manager = this->manager();
+
+  // Arrange
+  const auto device0 = makeDevice(0xF00);
+  this->adapter().expectGetDeviceCount(1);
+  this->adapter().expectGetDevices({{0, device0}});
+  this->adapter().expectDetectArchitectures({
+      {base::DeviceHandle{0}, architecture::Architecture::MpsM3},
+  });
+  this->adapter().expectReleaseDevices({device0});
+
+  manager.initialize(this->getOps());
+  const auto count = manager.getDeviceCount();
+  if (count == 0u) {
+    GTEST_SKIP() << "No MPS devices available";
+  }
+
+  // Act
+  auto lease1 = manager.acquire(base::DeviceHandle{0});
+  EXPECT_EQ(lease1.weakCount(), 1u);
+
+  auto lease2 = lease1; // Copy
+
+  // Assert: Both valid, weak count incremented
+  EXPECT_TRUE(lease1);
+  EXPECT_TRUE(lease2);
+  EXPECT_EQ(lease1.weakCount(), 2u);
+  EXPECT_EQ(lease2.weakCount(), 2u);
+
+  // Cleanup
+  lease1.release();
+  EXPECT_EQ(lease2.weakCount(), 1u);
+  lease2.release();
+
+  manager.shutdown();
+}
+
+TYPED_TEST(MpsDeviceManagerTypedTest, LeaseCopyAssignmentIncrementsWeakCount) {
+  auto &manager = this->manager();
+
+  // Arrange
+  const auto device0 = makeDevice(0xF10);
+  this->adapter().expectGetDeviceCount(1);
+  this->adapter().expectGetDevices({{0, device0}});
+  this->adapter().expectDetectArchitectures({
+      {base::DeviceHandle{0}, architecture::Architecture::MpsM3},
+  });
+  this->adapter().expectReleaseDevices({device0});
+
+  manager.initialize(this->getOps());
+  const auto count = manager.getDeviceCount();
+  if (count == 0u) {
+    GTEST_SKIP() << "No MPS devices available";
+  }
+
+  auto lease1 = manager.acquire(base::DeviceHandle{0});
+  decltype(lease1) lease2;
+
+  // Act
+  lease2 = lease1; // Copy assignment
+
+  // Assert
+  EXPECT_EQ(lease1.weakCount(), 2u);
+  EXPECT_EQ(lease2.weakCount(), 2u);
+
+  // Cleanup
+  lease1.release();
+  lease2.release();
+
+  manager.shutdown();
+}
+
+TYPED_TEST(MpsDeviceManagerTypedTest, LeaseMoveDoesNotChangeWeakCount) {
+  auto &manager = this->manager();
+
+  // Arrange
+  const auto device0 = makeDevice(0xF20);
+  this->adapter().expectGetDeviceCount(1);
+  this->adapter().expectGetDevices({{0, device0}});
+  this->adapter().expectDetectArchitectures({
+      {base::DeviceHandle{0}, architecture::Architecture::MpsM3},
+  });
+  this->adapter().expectReleaseDevices({device0});
+
+  manager.initialize(this->getOps());
+  const auto count = manager.getDeviceCount();
+  if (count == 0u) {
+    GTEST_SKIP() << "No MPS devices available";
+  }
+
+  auto lease1 = manager.acquire(base::DeviceHandle{0});
+  EXPECT_EQ(lease1.weakCount(), 1u);
+
+  // Act
+  auto lease2 = std::move(lease1); // Move
+
+  // Assert: Source invalid, target valid, weak count unchanged
+  EXPECT_FALSE(lease1);
+  EXPECT_TRUE(lease2);
+  EXPECT_EQ(lease2.weakCount(), 1u);
+
+  // Cleanup
+  lease2.release();
+
+  manager.shutdown();
+}
+
+TYPED_TEST(MpsDeviceManagerTypedTest,
+           LeaseMoveAssignmentDoesNotChangeWeakCount) {
+  auto &manager = this->manager();
+
+  // Arrange
+  const auto device0 = makeDevice(0xF30);
+  this->adapter().expectGetDeviceCount(1);
+  this->adapter().expectGetDevices({{0, device0}});
+  this->adapter().expectDetectArchitectures({
+      {base::DeviceHandle{0}, architecture::Architecture::MpsM3},
+  });
+  this->adapter().expectReleaseDevices({device0});
+
+  manager.initialize(this->getOps());
+  const auto count = manager.getDeviceCount();
+  if (count == 0u) {
+    GTEST_SKIP() << "No MPS devices available";
+  }
+
+  auto lease1 = manager.acquire(base::DeviceHandle{0});
+  decltype(lease1) lease2;
+
+  // Act
+  lease2 = std::move(lease1); // Move assignment
+
+  // Assert
+  EXPECT_FALSE(lease1);
+  EXPECT_TRUE(lease2);
+  EXPECT_EQ(lease2.weakCount(), 1u);
+
+  // Cleanup
+  lease2.release();
+
+  manager.shutdown();
+}
+#endif
