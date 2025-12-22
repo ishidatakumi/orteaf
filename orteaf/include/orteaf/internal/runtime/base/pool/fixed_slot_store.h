@@ -63,35 +63,17 @@ public:
   ~FixedSlotStore() = default;
 
   /**
-   * @brief Initializes storage using Config capacity.
+   * @brief Applies configuration to the store, growing storage if needed.
    *
-   * This method resets the internal state and resizes payload storage. Unlike
-   * SlotPool, no freelist is created. All slots start in "not created" state.
+   * This method does not reset existing state. Call shutdown() first when
+   * reinitialization is required. Configuration changes are restricted to
+   * capacity growth and a fixed block size.
    *
-   * @param config Configuration containing capacity.
+   * @param config Configuration containing capacity and block size.
+   * @return The previous capacity before applying the configuration.
    * @throws OrteafErrc::InvalidArgument if capacity exceeds handle range.
    */
-  void initialize(const Config &config) {
-    shutdown();
-    grow(config);
-  }
-
-  /**
-   * @brief Initializes storage and creates payloads for all slots.
-   *
-   * This method resets the internal state, grows storage to capacity, and
-   * creates payloads for all slots using Traits::create.
-   *
-   * @param config Configuration containing capacity.
-   * @param request Request details forwarded to Traits::create.
-   * @param context Context details forwarded to Traits::create.
-   * @return True if all payloads were created successfully.
-   */
-  bool initializeAndCreate(const Config &config, const Request &request,
-                           const Context &context) {
-    shutdown();
-    return growAndCreate(config, request, context);
-  }
+  std::size_t configure(const Config &config) { return applyConfig(config); }
 
   /**
    * @brief Returns the number of slots in the store.
@@ -123,33 +105,35 @@ public:
   }
 
   /**
-   * @brief Grows storage to the specified capacity without creating payloads.
+   * @brief Creates payloads for all slots in the store.
    *
-   * New slots are appended in "not created" state.
-   *
-   * @param config Configuration containing the new capacity.
-   * @throws OrteafErrc::InvalidArgument if capacity exceeds handle range.
-   */
-  void grow(const Config &config) { growStorage(config); }
-
-  /**
-   * @brief Grows storage and creates payloads for new slots.
-   *
-   * New slots are created using Traits::create. Returns false if any create
-   * fails.
-   *
-   * @param config Configuration containing the new capacity.
    * @param request Request details forwarded to Traits::create.
    * @param context Context details forwarded to Traits::create.
-   * @return True if all new payloads were created successfully.
-   * @throws OrteafErrc::InvalidArgument if capacity exceeds handle range.
+   * @return True if all payloads were created successfully.
    */
-  bool growAndCreate(const Config &config, const Request &request,
-                     const Context &context) {
-    const std::size_t old_capacity = growStorage(config);
-    const std::size_t new_capacity = payloads_.size();
+  bool createAll(const Request &request, const Context &context) {
+    return createRange(0, payloads_.size(), request, context);
+  }
+
+  /**
+   * @brief Creates payloads for a slot range [start, end).
+   *
+   * @param start Inclusive start index.
+   * @param end Exclusive end index.
+   * @param request Request details forwarded to Traits::create.
+   * @param context Context details forwarded to Traits::create.
+   * @return True if all payloads were created successfully.
+   * @throws OrteafErrc::InvalidArgument if range is invalid.
+   */
+  bool createRange(std::size_t start, std::size_t end,
+                   const Request &request, const Context &context) {
+    if (start > end || end > payloads_.size()) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+          "FixedSlotStore create range is out of bounds");
+    }
     bool all_created = true;
-    for (std::size_t idx = old_capacity; idx < new_capacity; ++idx) {
+    for (std::size_t idx = start; idx < end; ++idx) {
       Request slot_request = request;
       setHandleIfPresent(slot_request,
                          makeHandle(static_cast<index_type>(idx)));
@@ -411,12 +395,27 @@ private:
     return Handle{idx};
   }
 
-  std::size_t growStorage(const Config &config) {
+  std::size_t applyConfig(const Config &config) {
     const std::size_t capacity = config.capacity;
     if (capacity > static_cast<std::size_t>(Handle::invalid_index())) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
           "FixedSlotStore capacity exceeds handle range");
+    }
+    const std::size_t desired_block_size = config.block_size;
+    if (desired_block_size == 0 && capacity != 0) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+          "FixedSlotStore requires non-zero block size when capacity > 0");
+    }
+    if (desired_block_size == 0) {
+      if (payloads_.blockSize() != 0) {
+        ::orteaf::internal::diagnostics::error::throwError(
+            ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+            "FixedSlotStore block size cannot be reset to zero");
+      }
+    } else if (payloads_.blockSize() != desired_block_size) {
+      payloads_.resizeBlocks(desired_block_size);
     }
     const std::size_t old_capacity = payloads_.size();
     if (capacity <= old_capacity) {

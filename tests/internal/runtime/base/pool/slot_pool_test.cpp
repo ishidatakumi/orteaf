@@ -22,6 +22,7 @@ struct DummyTraits {
   struct Context {};
   struct Config {
     std::size_t capacity{0};
+    std::size_t block_size{0};
   };
 
   static bool create(Payload &payload, const Request &, const Context &) {
@@ -41,6 +42,7 @@ struct DestroyOnReleaseTraits {
   struct Context {};
   struct Config {
     std::size_t capacity{0};
+    std::size_t block_size{0};
   };
   static constexpr bool destroy_on_release = true;
 
@@ -60,13 +62,13 @@ using DestroyOnReleasePool =
 
 Pool makePool(std::size_t capacity) {
   Pool pool;
-  pool.initialize(typename DummyTraits::Config{capacity});
+  pool.configure(typename DummyTraits::Config{capacity, capacity});
   return pool;
 }
 
 DestroyOnReleasePool makeDestroyOnReleasePool(std::size_t capacity) {
   DestroyOnReleasePool pool;
-  pool.initialize(typename DestroyOnReleaseTraits::Config{capacity});
+  pool.configure(typename DestroyOnReleaseTraits::Config{capacity, capacity});
   return pool;
 }
 
@@ -270,7 +272,7 @@ TEST(SlotPool, GrowAddsUncreatedSlots) {
   DummyTraits::Request req{};
   DummyTraits::Context ctx{};
 
-  pool.grow(typename DummyTraits::Config{3});
+  pool.configure(typename DummyTraits::Config{3, 3});
 
   EXPECT_EQ(pool.capacity(), 3u);
   EXPECT_EQ(pool.available(), 3u);
@@ -289,7 +291,9 @@ TEST(SlotPool, GrowAndCreateCreatesNewSlots) {
   EXPECT_TRUE(pool.emplace(reserved.handle, req, ctx));
   EXPECT_TRUE(pool.release(reserved.handle));
 
-  EXPECT_TRUE(pool.growAndCreate(typename DummyTraits::Config{3}, req, ctx));
+  const std::size_t old_capacity =
+      pool.configure(typename DummyTraits::Config{3, 3});
+  EXPECT_TRUE(pool.createRange(old_capacity, pool.capacity(), req, ctx));
   EXPECT_FALSE(pool.tryReserve(req, ctx).valid());
 
   auto ref = pool.acquire(req, ctx);
@@ -325,7 +329,8 @@ TEST(SlotPool, InitializeAndCreateCreatesAllSlots) {
   DummyTraits::Request req{};
   DummyTraits::Context ctx{};
 
-  EXPECT_TRUE(pool.initializeAndCreate(typename DummyTraits::Config{2}, req, ctx));
+  pool.configure(typename DummyTraits::Config{2, 2});
+  EXPECT_TRUE(pool.createAll(req, ctx));
   EXPECT_EQ(pool.capacity(), 2u);
   EXPECT_EQ(pool.available(), 2u);
   EXPECT_FALSE(pool.tryReserve(req, ctx).valid());
