@@ -14,8 +14,9 @@ namespace orteaf::internal::runtime::base::pool {
  * @brief Fixed array storage without freelist reuse.
  *
  * FixedSlotStore provides a pool-like API but does not reuse slots via a
- * freelist. Slots are addressed directly by handle index, and acquire/tryAcquire
- * simply validate that the requested slot is already created.
+ * freelist. Slots are addressed directly by handle index, and
+ * acquire/tryAcquire simply validate that the requested slot is already
+ * created.
  *
  * This is useful for payloads whose lifetime is tied to external systems
  * (device objects, global buffers, etc.) where pool reuse is unnecessary or
@@ -97,9 +98,24 @@ public:
   std::size_t capacity() const noexcept { return payloads_.size(); }
 
   /**
-   * @brief Releases all storage and resets internal state.
+   * @brief Destroys all created payloads and releases storage.
+   *
+   * This method iterates over all slots and calls Traits::destroy for any
+   * slot marked as created before clearing internal storage. Callers should
+   * verify canShutdown at the manager layer before calling this method.
+   *
+   * @param request Request details forwarded to Traits::destroy.
+   * @param context Context details forwarded to Traits::destroy.
    */
-  void shutdown() noexcept {
+  void shutdown(const Request &request = {},
+                const Context &context = {}) noexcept {
+    // Destroy all created payloads before clearing storage
+    for (std::size_t idx = 0; idx < payloads_.size(); ++idx) {
+      if (created_[idx] != 0) {
+        Handle handle = makeHandle(static_cast<index_type>(idx));
+        destroy(handle, request, context);
+      }
+    }
     payloads_.clear();
     generations_.clear();
     created_.clear();
@@ -113,9 +129,7 @@ public:
    * @param config Configuration containing the new capacity.
    * @throws OrteafErrc::InvalidArgument if capacity exceeds handle range.
    */
-  void grow(const Config &config) {
-    growStorage(config);
-  }
+  void grow(const Config &config) { growStorage(config); }
 
   /**
    * @brief Grows storage and creates payloads for new slots.
@@ -136,7 +150,8 @@ public:
     bool all_created = true;
     for (std::size_t idx = old_capacity; idx < new_capacity; ++idx) {
       Request slot_request = request;
-      setHandleIfPresent(slot_request, makeHandle(static_cast<index_type>(idx)));
+      setHandleIfPresent(slot_request,
+                         makeHandle(static_cast<index_type>(idx)));
       if (!emplace(makeHandle(static_cast<index_type>(idx)), slot_request,
                    context)) {
         all_created = false;
@@ -263,7 +278,6 @@ public:
     return created_[static_cast<std::size_t>(handle.index)] != 0;
   }
 
-
   /**
    * @brief Creates a payload using Traits::create at a specific handle.
    *
@@ -299,7 +313,7 @@ public:
    */
   template <typename CreateFn>
     requires std::invocable<CreateFn, Payload &, const Request &,
-                             const Context &> &&
+                            const Context &> &&
              std::convertible_to<
                  std::invoke_result_t<CreateFn, Payload &, const Request &,
                                       const Context &>,
@@ -350,7 +364,7 @@ public:
    */
   template <typename DestroyFn>
     requires std::invocable<DestroyFn, Payload &, const Request &,
-                             const Context &>
+                            const Context &>
   bool destroy(Handle handle, const Request &request, const Context &context,
                DestroyFn &&destroyFn) {
     if (!isValid(handle) || !isCreated(handle)) {
@@ -358,8 +372,8 @@ public:
     }
     auto &payload = payloads_[static_cast<std::size_t>(handle.index)];
     if constexpr (std::convertible_to<
-                      std::invoke_result_t<DestroyFn, Payload &, const Request &,
-                                           const Context &>,
+                      std::invoke_result_t<DestroyFn, Payload &,
+                                           const Request &, const Context &>,
                       bool>) {
       if (!std::forward<DestroyFn>(destroyFn)(payload, request, context)) {
         return false;
@@ -374,8 +388,8 @@ public:
 private:
   using index_type = typename Handle::index_type;
   using generation_storage_t =
-      std::conditional_t<Handle::has_generation, typename Handle::generation_type,
-                         std::uint8_t>;
+      std::conditional_t<Handle::has_generation,
+                         typename Handle::generation_type, std::uint8_t>;
   static constexpr bool destroy_on_release_ = [] {
     if constexpr (requires { Traits::destroy_on_release; }) {
       return static_cast<bool>(Traits::destroy_on_release);
