@@ -37,7 +37,12 @@ protected:
 
   void initializeManager(std::size_t capacity = 0) {
     const auto device = this->adapter().device();
-    manager().initialize(device, this->getOps(), capacity);
+    mps_rt::MpsLibraryManager::Config config{};
+    config.device = device;
+    config.ops = this->getOps();
+    config.payload_capacity = capacity;
+    config.control_block_capacity = capacity;
+    manager().configure(config);
   }
 
   void onPreManagerTearDown() override { manager().shutdown(); }
@@ -60,23 +65,44 @@ TYPED_TEST_SUITE(MpsLibraryManagerTypedTest, ProviderTypes);
 
 TYPED_TEST(MpsLibraryManagerTypedTest, GrowthChunkSizeCanBeAdjusted) {
   auto &manager = this->manager();
+  const auto device = this->adapter().device();
 
   // Assert: Default is 1
-  EXPECT_EQ(manager.growthChunkSize(), 1u);
+  EXPECT_EQ(manager.payloadGrowthChunkSizeForTest(), 1u);
+  EXPECT_EQ(manager.controlBlockGrowthChunkSizeForTest(), 1u);
 
   // Act
-  manager.setGrowthChunkSize(3);
+  mps_rt::MpsLibraryManager::Config config{};
+  config.device = device;
+  config.ops = this->getOps();
+  config.payload_growth_chunk_size = 3;
+  config.control_block_growth_chunk_size = 4;
+  manager.configure(config);
 
   // Assert
-  EXPECT_EQ(manager.growthChunkSize(), 3u);
+  EXPECT_EQ(manager.payloadGrowthChunkSizeForTest(), 3u);
+  EXPECT_EQ(manager.controlBlockGrowthChunkSizeForTest(), 4u);
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest, GrowthChunkSizeRejectsZero) {
   auto &manager = this->manager();
+  const auto device = this->adapter().device();
 
   // Act & Assert: Zero is invalid
-  ExpectError(diag_error::OrteafErrc::InvalidArgument,
-              [&] { manager.setGrowthChunkSize(0); });
+  ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] {
+    mps_rt::MpsLibraryManager::Config config{};
+    config.device = device;
+    config.ops = this->getOps();
+    config.payload_growth_chunk_size = 0;
+    manager.configure(config);
+  });
+  ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] {
+    mps_rt::MpsLibraryManager::Config config{};
+    config.device = device;
+    config.ops = this->getOps();
+    config.control_block_growth_chunk_size = 0;
+    manager.configure(config);
+  });
 }
 
 // =============================================================================
@@ -96,8 +122,14 @@ TYPED_TEST(MpsLibraryManagerTypedTest, InitializeRejectsNullDevice) {
   auto &manager = this->manager();
 
   // Act & Assert
-  ExpectError(diag_error::OrteafErrc::InvalidArgument,
-              [&] { manager.initialize(nullptr, this->getOps(), 1); });
+  ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] {
+    mps_rt::MpsLibraryManager::Config config{};
+    config.device = nullptr;
+    config.ops = this->getOps();
+    config.payload_capacity = 1;
+    config.control_block_capacity = 1;
+    manager.configure(config);
+  });
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest, InitializeRejectsNullOps) {
@@ -105,8 +137,14 @@ TYPED_TEST(MpsLibraryManagerTypedTest, InitializeRejectsNullOps) {
   const auto device = this->adapter().device();
 
   // Act & Assert
-  ExpectError(diag_error::OrteafErrc::InvalidArgument,
-              [&] { manager.initialize(device, nullptr, 1); });
+  ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] {
+    mps_rt::MpsLibraryManager::Config config{};
+    config.device = device;
+    config.ops = nullptr;
+    config.payload_capacity = 1;
+    config.control_block_capacity = 1;
+    manager.configure(config);
+  });
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest, InitializeRejectsCapacityAboveLimit) {
@@ -115,8 +153,12 @@ TYPED_TEST(MpsLibraryManagerTypedTest, InitializeRejectsCapacityAboveLimit) {
 
   // Act & Assert
   ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] {
-    manager.initialize(device, this->getOps(),
-                       std::numeric_limits<std::size_t>::max());
+    mps_rt::MpsLibraryManager::Config config{};
+    config.device = device;
+    config.ops = this->getOps();
+    config.payload_capacity = std::numeric_limits<std::size_t>::max();
+    config.control_block_capacity = std::numeric_limits<std::size_t>::max();
+    manager.configure(config);
   });
 }
 
@@ -127,7 +169,7 @@ TYPED_TEST(MpsLibraryManagerTypedTest, CapacityReflectsConfiguredPool) {
   this->initializeManager(2);
 
   // Assert: capacity is 2 after init with capacity=2
-  EXPECT_EQ(manager.capacity(), 2u);
+  EXPECT_EQ(manager.payloadPoolSizeForTest(), 2u);
 }
 
 // =============================================================================
@@ -142,8 +184,11 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GrowthChunkSizeControlsPoolExpansion) {
   auto &manager = this->manager();
 
   // Arrange
-  manager.setGrowthChunkSize(3);
-  this->initializeManager();
+  mps_rt::MpsLibraryManager::Config config{};
+  config.device = this->adapter().device();
+  config.ops = this->getOps();
+  config.payload_growth_chunk_size = 3;
+  manager.configure(config);
   const auto lib_handle = makeLibrary(0x800);
   this->adapter().expectCreateLibraries({{"GrowthTest0", lib_handle}});
   this->adapter().expectDestroyLibraries({lib_handle});
@@ -152,7 +197,7 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GrowthChunkSizeControlsPoolExpansion) {
   auto first = manager.acquire(mps_rt::LibraryKey::Named("GrowthTest0"));
 
   // Assert: capacity grows by growth chunk size (3)
-  EXPECT_EQ(manager.capacity(), 3u);
+  EXPECT_EQ(manager.payloadPoolSizeForTest(), 3u);
 
   // Cleanup
   manager.release(first);
@@ -175,15 +220,19 @@ TYPED_TEST(MpsLibraryManagerTypedTest, GetOrCreateAllocatesAndCachesLibrary) {
   auto lease = manager.acquire(mps_rt::LibraryKey::Named("Foobar"));
 
   // Assert
-  EXPECT_EQ(lease.pointer(), lib_handle);
-  const auto &snapshot = manager.controlBlockForTest(lease.handle().index);
-  EXPECT_TRUE(snapshot.isCreated());
+  auto *payload = lease.payloadPtr();
+  ASSERT_NE(payload, nullptr);
+  EXPECT_EQ(payload->library, lib_handle);
+
+  // Save handle before release (release clears control block's payload handle)
+  const auto saved_handle = lease.payloadHandle();
+  EXPECT_TRUE(manager.payloadCreatedForTest(saved_handle));
 
   // Act: Release (RawLease - no ref counting, just invalidate)
   manager.release(lease);
 
-  // Assert: library still alive (cache pattern)
-  EXPECT_TRUE(snapshot.isCreated());
+  // Assert: library still alive (cache pattern) - use saved handle
+  EXPECT_TRUE(manager.payloadCreatedForTest(saved_handle));
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest, ReleasedLeaseDoesNotAffectLibrary) {
@@ -204,15 +253,17 @@ TYPED_TEST(MpsLibraryManagerTypedTest, ReleasedLeaseDoesNotAffectLibrary) {
   auto second = manager.acquire(mps_rt::LibraryKey::Named("Baz"));
 
   // Assert: Both point to same library
-  EXPECT_EQ(first.handle().index, second.handle().index);
+  EXPECT_EQ(first.payloadHandle().index, second.payloadHandle().index);
+
+  // Save handle before release (release clears control block's payload handle)
+  const auto saved_handle = first.payloadHandle();
 
   // Act: Release both (RawLease - no ref counting)
   manager.release(first);
   manager.release(second);
 
-  // Assert: Library still alive (cache pattern)
-  const auto &snapshot = manager.controlBlockForTest(0);
-  EXPECT_TRUE(snapshot.isCreated());
+  // Assert: Library still alive (cache pattern) - use saved handle
+  EXPECT_TRUE(manager.payloadCreatedForTest(saved_handle));
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest, ReleaseIsIdempotent) {
@@ -256,7 +307,9 @@ TYPED_TEST(MpsLibraryManagerTypedTest,
 
   // Act
   auto library_lease = manager.acquire(mps_rt::LibraryKey::Named("TestLib"));
-  auto *pipeline_manager = manager.pipelineManager(library_lease);
+  auto *library_resource = library_lease.payloadPtr();
+  ASSERT_NE(library_resource, nullptr);
+  auto *pipeline_manager = &library_resource->pipeline_manager;
 
   // Assert
   EXPECT_NE(pipeline_manager, nullptr);
@@ -282,11 +335,14 @@ TYPED_TEST(MpsLibraryManagerTypedTest, PipelineManagerCanBeAccessedByKey) {
   this->adapter().expectDestroyLibraries({lib_handle});
 
   // Act: Access directly by key
-  auto *pipeline_manager = manager.pipelineManager(key);
+  auto library_lease = manager.acquire(key);
+  auto *library_resource = library_lease.payloadPtr();
+  ASSERT_NE(library_resource, nullptr);
+  auto *pipeline_manager = &library_resource->pipeline_manager;
 
   // Assert: Library was created for the pipeline manager
   EXPECT_NE(pipeline_manager, nullptr);
-  EXPECT_EQ(manager.capacity(), 1u);
+  EXPECT_EQ(manager.payloadPoolSizeForTest(), 1u);
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest, LibraryPersistsAfterLeaseRelease) {
@@ -306,14 +362,18 @@ TYPED_TEST(MpsLibraryManagerTypedTest, LibraryPersistsAfterLeaseRelease) {
 
   // Act
   auto library_lease = manager.acquire(key);
-  auto *pipeline_manager = manager.pipelineManager(library_lease);
+  auto *library_resource = library_lease.payloadPtr();
+  ASSERT_NE(library_resource, nullptr);
+  auto *pipeline_manager = &library_resource->pipeline_manager;
   EXPECT_NE(pipeline_manager, nullptr);
+
+  // Save handle before release (release clears control block's payload handle)
+  const auto saved_handle = library_lease.payloadHandle();
 
   manager.release(library_lease);
 
-  // Assert: Library still alive after release
-  const auto &snapshot_mid = manager.controlBlockForTest(0);
-  EXPECT_TRUE(snapshot_mid.isCreated());
+  // Assert: Library still alive after release - use saved handle
+  EXPECT_TRUE(manager.payloadCreatedForTest(saved_handle));
 }
 
 TYPED_TEST(MpsLibraryManagerTypedTest,
@@ -334,15 +394,22 @@ TYPED_TEST(MpsLibraryManagerTypedTest,
 
   // Act
   auto library_lease = manager.acquire(key);
-  auto *pm1 = manager.pipelineManager(key);
-  auto *pm2 = manager.pipelineManager(library_lease);
+  auto library_lease_again = manager.acquire(key);
+  auto *resource_first = library_lease.payloadPtr();
+  auto *resource_again = library_lease_again.payloadPtr();
+  ASSERT_NE(resource_first, nullptr);
+  ASSERT_NE(resource_again, nullptr);
+  auto *pm1 = &resource_first->pipeline_manager;
+  auto *pm2 = &resource_again->pipeline_manager;
 
   // Assert: Same pipeline manager for same library
   EXPECT_EQ(pm1, pm2);
 
+  // Save handle before release (release clears control block's payload handle)
+  const auto saved_handle = library_lease.payloadHandle();
+
   manager.release(library_lease);
 
-  // Assert: Library still alive after release
-  const auto &snapshot = manager.controlBlockForTest(0);
-  EXPECT_TRUE(snapshot.isCreated());
+  // Assert: Library still alive after release - use saved handle
+  EXPECT_TRUE(manager.payloadCreatedForTest(saved_handle));
 }

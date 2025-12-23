@@ -152,7 +152,12 @@ protected:
     }
 
     // Initialize library manager (required by MpsResource)
-    lib_manager_.initialize(device_, &ops_, 16);
+    mps_rt::MpsLibraryManager::Config lib_config{};
+    lib_config.device = device_;
+    lib_config.ops = &ops_;
+    lib_config.payload_capacity = 16;
+    lib_config.control_block_capacity = 16;
+    lib_manager_.configure(lib_config);
 
     setup_successful_ = true;
   }

@@ -9,11 +9,10 @@
 #include <unordered_map>
 
 #include "orteaf/internal/base/handle.h"
-#include "orteaf/internal/base/lease.h"
-#include "orteaf/internal/runtime/base/lease/control_block/raw.h"
-#include "orteaf/internal/runtime/base/lease/raw_lease.h"
-#include "orteaf/internal/runtime/base/lease/slot.h"
-#include "orteaf/internal/runtime/base/manager/base_manager_core.h"
+#include "orteaf/internal/runtime/base/lease/control_block/weak.h"
+#include "orteaf/internal/runtime/base/lease/weak_lease.h"
+#include "orteaf/internal/runtime/base/manager/base_pool_manager_core.h"
+#include "orteaf/internal/runtime/base/pool/fixed_slot_store.h"
 #include "orteaf/internal/runtime/mps/manager/mps_compute_pipeline_state_manager.h"
 #include "orteaf/internal/runtime/mps/platform/wrapper/mps_device.h"
 #include "orteaf/internal/runtime/mps/platform/wrapper/mps_library.h"
@@ -56,32 +55,83 @@ struct MpsLibraryResource {
   MpsComputePipelineStateManager pipeline_manager{};
 };
 
-// ControlBlock type using RawControlBlock with RawSlot
-using LibraryControlBlock = ::orteaf::internal::runtime::base::RawControlBlock<
-    ::orteaf::internal::runtime::base::RawSlot<MpsLibraryResource>>;
-
-// Traits for BaseManagerCore
-struct MpsLibraryManagerTraits {
-  using ControlBlock = LibraryControlBlock;
+// Payload pool
+struct LibraryPayloadPoolTraits {
+  using Payload = MpsLibraryResource;
   using Handle = ::orteaf::internal::base::LibraryHandle;
+  using DeviceType =
+      ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t;
+  using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
+
+  struct Request {
+    LibraryKey key{};
+  };
+
+  struct Context {
+    DeviceType device{nullptr};
+    SlowOps *ops{nullptr};
+    MpsComputePipelineStateManager::Config pipeline_config{};
+  };
+
+  static bool create(Payload &payload, const Request &request,
+                     const Context &context) {
+    if (context.ops == nullptr || context.device == nullptr) {
+      return false;
+    }
+    payload.library =
+        context.ops->createLibraryWithName(context.device, request.key.identifier);
+    if (payload.library == nullptr) {
+      return false;
+    }
+    auto pipeline_config = context.pipeline_config;
+    pipeline_config.device = context.device;
+    pipeline_config.library = payload.library;
+    pipeline_config.ops = context.ops;
+    payload.pipeline_manager.configure(pipeline_config);
+    return true;
+  }
+
+  static void destroy(Payload &payload, const Request &,
+                      const Context &context) {
+    payload.pipeline_manager.shutdown();
+    if (payload.library != nullptr && context.ops != nullptr) {
+      context.ops->destroyLibrary(payload.library);
+      payload.library = nullptr;
+    }
+  }
+};
+
+using LibraryPayloadPool =
+    ::orteaf::internal::runtime::base::pool::FixedSlotStore<
+        LibraryPayloadPoolTraits>;
+
+// ControlBlock type using WeakControlBlock
+using LibraryControlBlock = ::orteaf::internal::runtime::base::WeakControlBlock<
+    ::orteaf::internal::base::LibraryHandle, MpsLibraryResource,
+    LibraryPayloadPool>;
+
+// Traits for BasePoolManagerCore
+struct MpsLibraryManagerTraits {
+  using PayloadPool = LibraryPayloadPool;
+  using ControlBlock = LibraryControlBlock;
+  struct ControlBlockTag {};
+  using PayloadHandle = ::orteaf::internal::base::LibraryHandle;
   static constexpr const char *Name = "MPS library manager";
 };
 
-class MpsLibraryManager
-    : public ::orteaf::internal::runtime::base::BaseManagerCore<
-          MpsLibraryManagerTraits> {
+class MpsLibraryManager {
 public:
-  using Base = ::orteaf::internal::runtime::base::BaseManagerCore<
+  using Core = ::orteaf::internal::runtime::base::BasePoolManagerCore<
       MpsLibraryManagerTraits>;
   using SlowOps = ::orteaf::internal::runtime::mps::platform::MpsSlowOps;
   using DeviceType =
       ::orteaf::internal::runtime::mps::platform::wrapper::MpsDevice_t;
   using PipelineManager = MpsComputePipelineStateManager;
   using LibraryHandle = ::orteaf::internal::base::LibraryHandle;
-  using Handle = LibraryHandle;
-  using LibraryLease = ::orteaf::internal::runtime::base::RawLease<
-      LibraryHandle,
-      ::orteaf::internal::runtime::mps::platform::wrapper::MpsLibrary_t,
+  using ControlBlockHandle = Core::ControlBlockHandle;
+  using ControlBlockPool = Core::ControlBlockPool;
+  using LibraryLease = ::orteaf::internal::runtime::base::WeakLease<
+      ControlBlockHandle, LibraryControlBlock, ControlBlockPool,
       MpsLibraryManager>;
 
   MpsLibraryManager() = default;
@@ -91,44 +141,71 @@ public:
   MpsLibraryManager &operator=(MpsLibraryManager &&) = default;
   ~MpsLibraryManager() = default;
 
-  void initialize(DeviceType device, SlowOps *ops, std::size_t capacity);
+  struct Config {
+    DeviceType device{nullptr};
+    SlowOps *ops{nullptr};
+    std::size_t payload_capacity{0};
+    std::size_t control_block_capacity{0};
+    std::size_t payload_block_size{0};
+    std::size_t control_block_block_size{1};
+    std::size_t payload_growth_chunk_size{1};
+    std::size_t control_block_growth_chunk_size{1};
+    MpsComputePipelineStateManager::Config pipeline_config{};
+  };
+
+  void configure(const Config &config);
   void shutdown();
 
   LibraryLease acquire(const LibraryKey &key);
   LibraryLease acquire(LibraryHandle handle);
 
-  void release(LibraryLease &lease) noexcept;
-
-  // Direct access to PipelineManager (no Lease pattern)
-  PipelineManager *pipelineManager(const LibraryLease &lease);
-  PipelineManager *pipelineManager(const LibraryKey &key);
-
-  std::size_t capacity() const noexcept { return Base::capacity(); }
-
-  using Base::growthChunkSize;
-  using Base::isAlive;
-  using Base::setGrowthChunkSize;
+  void release(LibraryLease &lease) noexcept { lease.release(); }
 
 #if ORTEAF_ENABLE_TEST
-  using Base::controlBlockForTest;
-  using Base::freeListSizeForTest;
-  using Base::isInitializedForTest;
+  bool isInitializedForTest() const noexcept { return core_.isInitialized(); }
+  std::size_t payloadPoolSizeForTest() const noexcept {
+    return core_.payloadPool().size();
+  }
+  std::size_t payloadPoolCapacityForTest() const noexcept {
+    return core_.payloadPool().capacity();
+  }
+  std::size_t controlBlockPoolSizeForTest() const noexcept {
+    return core_.controlBlockPoolSizeForTest();
+  }
+  std::size_t controlBlockPoolCapacityForTest() const noexcept {
+    return core_.controlBlockPoolCapacityForTest();
+  }
+  bool isAliveForTest(LibraryHandle handle) const noexcept {
+    return core_.isAlive(handle);
+  }
+  std::size_t payloadGrowthChunkSizeForTest() const noexcept {
+    return payload_growth_chunk_size_;
+  }
+  std::size_t controlBlockGrowthChunkSizeForTest() const noexcept {
+    return core_.growthChunkSize();
+  }
+  bool payloadCreatedForTest(LibraryHandle handle) const noexcept {
+    return core_.payloadPool().isCreated(handle);
+  }
+  const MpsLibraryResource *payloadForTest(LibraryHandle handle) const noexcept {
+    return core_.payloadPool().get(handle);
+  }
 #endif
 
 private:
   friend LibraryLease;
-  using Base::acquireExisting;
 
   void validateKey(const LibraryKey &key) const;
-
-  ::orteaf::internal::runtime::mps::platform::wrapper::MpsLibrary_t
-  createLibrary(const LibraryKey &key);
-
-  void destroyResource(MpsLibraryResource &resource);
+  LibraryLease buildLease(LibraryHandle handle, MpsLibraryResource *payload_ptr);
+  LibraryPayloadPoolTraits::Context makePayloadContext() const noexcept;
 
   std::unordered_map<LibraryKey, std::size_t, LibraryKeyHasher> key_to_index_{};
   DeviceType device_{nullptr};
   SlowOps *ops_{nullptr};
+  std::size_t payload_block_size_{0};
+  std::size_t payload_growth_chunk_size_{1};
+  MpsComputePipelineStateManager::Config pipeline_config_{};
+  Core core_{};
 };
 
 } // namespace orteaf::internal::runtime::mps::manager
