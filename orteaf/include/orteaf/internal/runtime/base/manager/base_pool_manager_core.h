@@ -133,15 +133,15 @@ public:
    * 一つでもcanShutdown() == falseのCBがあれば例外をスロー
    */
   void checkCanShutdownOrThrow() const {
-    control_block_pool_.forEachCreated(
-        [&](std::size_t, const ControlBlock &cb) {
-          if (!cb.canShutdown()) {
-            ::orteaf::internal::diagnostics::error::throwError(
-                ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-                std::string(managerName()) +
-                    " shutdown aborted due to active leases");
-          }
-        });
+    control_block_pool_.forEachCreated([&](std::size_t,
+                                           const ControlBlock &cb) {
+      if (!cb.canShutdown()) {
+        ::orteaf::internal::diagnostics::error::throwError(
+            ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+            std::string(managerName()) +
+                " shutdown aborted due to active leases");
+      }
+    });
   }
 
   /**
@@ -153,14 +153,12 @@ public:
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
           std::string(managerName()) + " control block size is not set");
     }
-    const std::size_t desired =
-        control_block_pool_.size() + growth_chunk_size_;
+    const std::size_t desired = control_block_pool_.size() + growth_chunk_size_;
     typename ControlBlockPoolTraits::Request request{};
     typename ControlBlockPoolTraits::Context context{};
     const std::size_t old_capacity = control_block_pool_.resize(desired);
-    control_block_pool_.createRange(old_capacity,
-                                    control_block_pool_.size(), request,
-                                    context);
+    control_block_pool_.createRange(old_capacity, control_block_pool_.size(),
+                                    request, context);
   }
 
   /**
@@ -172,10 +170,10 @@ public:
   typename ControlBlockPool::SlotRef acquireControlBlock() {
     typename ControlBlockPoolTraits::Request request{};
     typename ControlBlockPoolTraits::Context context{};
-    auto ref = control_block_pool_.tryAcquire(request, context);
+    auto ref = control_block_pool_.tryAcquireCreated(request, context);
     if (!ref.valid()) {
       growControlBlockPool();
-      ref = control_block_pool_.tryAcquire(request, context);
+      ref = control_block_pool_.tryAcquireCreated(request, context);
     }
     if (!ref.valid()) {
       ::orteaf::internal::diagnostics::error::throwError(
@@ -292,10 +290,12 @@ public:
       std::size_t grow_by, const Request &request, const Context &context)
     requires requires(PayloadPool &pool, const Request &req,
                       const Context &ctx) {
-      { pool.tryAcquire(req, ctx) } -> std::same_as<typename PayloadPool::SlotRef>;
+      {
+        pool.tryAcquireCreated(req, ctx)
+      } -> std::same_as<typename PayloadPool::SlotRef>;
     }
   {
-    auto ref = payload_pool_.tryAcquire(request, context);
+    auto ref = payload_pool_.tryAcquireCreated(request, context);
     if (ref.valid()) {
       return ref;
     }
@@ -304,7 +304,7 @@ public:
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
           std::string(managerName()) + " failed to create payloads");
     }
-    return payload_pool_.tryAcquire(request, context);
+    return payload_pool_.tryAcquireCreated(request, context);
   }
 
   /**
@@ -320,15 +320,17 @@ public:
       std::size_t grow_by, const Request &request, const Context &context)
     requires requires(PayloadPool &pool, const Request &req,
                       const Context &ctx) {
-      { pool.tryReserve(req, ctx) } -> std::same_as<typename PayloadPool::SlotRef>;
+      {
+        pool.tryReserveUncreated(req, ctx)
+      } -> std::same_as<typename PayloadPool::SlotRef>;
     }
   {
-    auto ref = payload_pool_.tryReserve(request, context);
+    auto ref = payload_pool_.tryReserveUncreated(request, context);
     if (ref.valid() || grow_by == 0) {
       return ref;
     }
     growPayloadPoolBy(grow_by);
-    return payload_pool_.tryReserve(request, context);
+    return payload_pool_.tryReserveUncreated(request, context);
   }
 
   // ===========================================================================
@@ -381,12 +383,10 @@ private:
     control_block_block_size_ = block_size;
     typename ControlBlockPoolTraits::Request request{};
     typename ControlBlockPoolTraits::Context context{};
-    const std::size_t old_capacity =
-        control_block_pool_.configure(typename ControlBlockPool::Config{
-            capacity, block_size});
-    if (!control_block_pool_.createRange(old_capacity,
-                                         control_block_pool_.size(),
-                                         request, context)) {
+    const std::size_t old_capacity = control_block_pool_.configure(
+        typename ControlBlockPool::Config{capacity, block_size});
+    if (!control_block_pool_.createRange(
+            old_capacity, control_block_pool_.size(), request, context)) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
           std::string(managerName()) + " failed to initialize control blocks");
