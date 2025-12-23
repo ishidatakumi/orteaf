@@ -51,6 +51,13 @@ void MpsCommandQueueManager::configure(const Config &config) {
 
   core_.payloadPool().configure(CommandQueuePayloadPool::Config{
       config.capacity, config.payload_block_size});
+  const CommandQueuePayloadPoolTraits::Request payload_request{};
+  const CommandQueuePayloadPoolTraits::Context payload_context{device_, ops_};
+  if (!core_.payloadPool().createAll(payload_request, payload_context)) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+        "Failed to create MPS command queues");
+  }
   core_.configure(MpsCommandQueueManager::Core::Config{
       /*control_block_capacity=*/config.capacity,
       /*control_block_block_size=*/config.control_block_block_size,

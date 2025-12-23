@@ -98,7 +98,12 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, InitializeSetsCapacity) {
   auto &manager = this->manager();
   const auto device = this->adapter().device();
 
-  // Act (no createCommandQueue expected - lazy creation)
+  this->adapter().expectCreateCommandQueues(
+      {makeQueue(0x100), makeQueue(0x101)});
+  this->adapter().expectDestroyCommandQueues(
+      {makeQueue(0x100), makeQueue(0x101)});
+
+  // Act
   manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
                                                            this->getOps(),
                                                            2,
@@ -140,7 +145,12 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, CapacityReflectsPoolSize) {
   // Before init
   EXPECT_EQ(manager.capacity(), 0u);
 
-  // Act (lazy creation - no createCommandQueue expected until acquire)
+  this->adapter().expectCreateCommandQueues(
+      {makeQueue(0x200), makeQueue(0x201), makeQueue(0x202)});
+  this->adapter().expectDestroyCommandQueues(
+      {makeQueue(0x200), makeQueue(0x201), makeQueue(0x202)});
+
+  // Act
   manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
                                                            this->getOps(),
                                                            3,
@@ -175,6 +185,10 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
   const auto device = this->adapter().device();
 
   // Arrange
+  this->adapter().expectCreateCommandQueues(
+      {makeQueue(0x300), makeQueue(0x301)});
+  this->adapter().expectDestroyCommandQueues(
+      {makeQueue(0x300), makeQueue(0x301)});
   manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
                                                            this->getOps(),
                                                            2,
@@ -182,9 +196,6 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
                                                            2,
                                                            1,
                                                            1});
-
-  // Expect queue creation on acquire (lazy creation)
-  this->adapter().expectCreateCommandQueues({makeQueue(0x100)});
 
   {
     // Act
@@ -196,7 +207,6 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
   } // lease released here
 
   // Cleanup
-  this->adapter().expectDestroyCommandQueues({makeQueue(0x100)});
   manager.shutdown();
 }
 
@@ -216,10 +226,9 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, AcquireGrowsPoolWhenNeeded) {
 
   printf("AcquireGrowsPoolWhenNeeded 1\n");
 
-  // Expect both queue creations upfront (mock requires all expectations set
-  // together)
+  // Expect both queue creations upfront (initial + growth)
   this->adapter().expectCreateCommandQueues(
-      {makeQueue(0x300), makeQueue(0x301)});
+      {makeQueue(0x400), makeQueue(0x401)});
 
   {
     printf("AcquireGrowsPoolWhenNeeded 2\n");
@@ -239,7 +248,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, AcquireGrowsPoolWhenNeeded) {
 
   // Cleanup
   this->adapter().expectDestroyCommandQueues(
-      {makeQueue(0x300), makeQueue(0x301)});
+      {makeQueue(0x400), makeQueue(0x401)});
 
   manager.shutdown();
 }
@@ -253,6 +262,8 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, AcquireByHandleReturnsLease) {
   const auto device = this->adapter().device();
 
   // Arrange
+  this->adapter().expectCreateCommandQueues({makeQueue(0x500)});
+  this->adapter().expectDestroyCommandQueues({makeQueue(0x500)});
   manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
                                                            this->getOps(),
                                                            1,
@@ -260,7 +271,6 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, AcquireByHandleReturnsLease) {
                                                            1,
                                                            1,
                                                            1});
-  this->adapter().expectCreateCommandQueues({makeQueue(0x400)});
 
   mps_rt::MpsCommandQueueManager::CommandQueueHandle handle{};
   {
@@ -276,7 +286,6 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, AcquireByHandleReturnsLease) {
   } // leases released here
 
   // Cleanup
-  this->adapter().expectDestroyCommandQueues({makeQueue(0x400)});
   manager.shutdown();
 }
 
