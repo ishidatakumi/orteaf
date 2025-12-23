@@ -10,8 +10,8 @@
 #include <utility>
 
 #include "orteaf/internal/base/handle.h"
-#include "orteaf/internal/runtime/base/lease/control_block/shared.h"
-#include "orteaf/internal/runtime/base/lease/strong_lease.h"
+#include "orteaf/internal/runtime/base/lease/control_block/weak.h"
+#include "orteaf/internal/runtime/base/lease/weak_lease.h"
 #include "orteaf/internal/runtime/base/manager/base_pool_manager_core.h"
 #include "orteaf/internal/runtime/base/pool/fixed_slot_store.h"
 #include "orteaf/internal/runtime/mps/platform/mps_slow_ops.h"
@@ -117,7 +117,7 @@ using PipelinePayloadPool =
 
 struct PipelineControlBlockTag {};
 
-using PipelineControlBlock = ::orteaf::internal::runtime::base::SharedControlBlock<
+using PipelineControlBlock = ::orteaf::internal::runtime::base::WeakControlBlock<
     ::orteaf::internal::base::FunctionHandle, MpsPipelineResource,
     PipelinePayloadPool>;
 
@@ -144,7 +144,7 @@ public:
       MpsComputePipelineState_t;
   using ControlBlockHandle = Core::ControlBlockHandle;
   using ControlBlockPool = Core::ControlBlockPool;
-  using PipelineLease = ::orteaf::internal::runtime::base::StrongLease<
+  using PipelineLease = ::orteaf::internal::runtime::base::WeakLease<
       ControlBlockHandle, PipelineControlBlock, ControlBlockPool,
       MpsComputePipelineStateManager>;
 
