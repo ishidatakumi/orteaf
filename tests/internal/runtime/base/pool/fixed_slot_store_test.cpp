@@ -8,7 +8,8 @@
 namespace {
 
 struct StoreTag {};
-using StoreHandle = ::orteaf::internal::base::Handle<StoreTag, std::uint32_t, std::uint8_t>;
+using StoreHandle =
+    ::orteaf::internal::base::Handle<StoreTag, std::uint32_t, std::uint8_t>;
 
 struct DummyPayload {
   int value{0};
@@ -51,9 +52,11 @@ struct DestroyOnReleaseTraits {
   }
 };
 
-using Store = ::orteaf::internal::runtime::base::pool::FixedSlotStore<DummyTraits>;
+using Store =
+    ::orteaf::internal::runtime::base::pool::FixedSlotStore<DummyTraits>;
 using DestroyOnReleaseStore =
-    ::orteaf::internal::runtime::base::pool::FixedSlotStore<DestroyOnReleaseTraits>;
+    ::orteaf::internal::runtime::base::pool::FixedSlotStore<
+        DestroyOnReleaseTraits>;
 
 Store makeStore(std::size_t capacity) {
   Store store;
@@ -113,13 +116,13 @@ TEST(FixedSlotStore, EmplaceLambdaOverridesTraitsCreate) {
   DummyTraits::Context ctx{};
   DummyTraits::Request req{StoreHandle{0, 0}};
 
-  EXPECT_TRUE(store.emplace(req.handle, req, ctx,
-                            [](DummyPayload &payload,
-                               const DummyTraits::Request &,
-                               const DummyTraits::Context &) {
-                              payload.value = 7;
-                              return true;
-                            }));
+  EXPECT_TRUE(
+      store.emplace(req.handle, req, ctx,
+                    [](DummyPayload &payload, const DummyTraits::Request &,
+                       const DummyTraits::Context &) {
+                      payload.value = 7;
+                      return true;
+                    }));
   EXPECT_EQ(store.get(req.handle)->value, 7);
 }
 
@@ -129,13 +132,13 @@ TEST(FixedSlotStore, DestroyLambdaOverridesTraitsDestroy) {
   DummyTraits::Request req{StoreHandle{0, 0}};
 
   EXPECT_TRUE(store.emplace(req.handle, req, ctx));
-  EXPECT_TRUE(store.destroy(req.handle, req, ctx,
-                            [](DummyPayload &payload,
-                               const DummyTraits::Request &,
-                               const DummyTraits::Context &) {
-                              payload.value = -1;
-                              return true;
-                            }));
+  EXPECT_TRUE(
+      store.destroy(req.handle, req, ctx,
+                    [](DummyPayload &payload, const DummyTraits::Request &,
+                       const DummyTraits::Context &) {
+                      payload.value = -1;
+                      return true;
+                    }));
   EXPECT_FALSE(store.isCreated(req.handle));
   EXPECT_EQ(store.get(req.handle), nullptr);
 }
@@ -174,14 +177,19 @@ TEST(FixedSlotStore, GrowAddsUncreatedSlots) {
 TEST(FixedSlotStore, GrowAndCreateCreatesNewSlots) {
   auto store = makeStore(1);
   DummyTraits::Context ctx{};
-  DummyTraits::Request req{StoreHandle{0, 0}};
+  DummyTraits::Request req{};
 
+  // First create slot 0
+  EXPECT_TRUE(store.emplace(StoreHandle{0, 0}, req, ctx));
+
+  // Then grow and create new slots
   const std::size_t old_capacity =
       store.configure(typename Store::Config{2, 2});
   EXPECT_TRUE(store.createRange(old_capacity, store.size(), req, ctx));
 
-  DummyTraits::Request req_new{StoreHandle{1, 0}};
-  auto ref = store.acquireCreated(req_new, ctx);
+  // Now we have 2 created slots (0 and 1)
+  // tryAcquireCreated returns one of the created slots (index 0)
+  auto ref = store.tryAcquireCreated(req, ctx);
   EXPECT_TRUE(ref.valid());
   EXPECT_EQ(ref.payload_ptr->value, 123);
 }
@@ -203,12 +211,13 @@ TEST(FixedSlotStore, ResizeGrowsSlots) {
 TEST(FixedSlotStore, InitializeAndCreateCreatesAllSlots) {
   DestroyOnReleaseStore store;
   DestroyOnReleaseTraits::Context ctx{};
-  DestroyOnReleaseTraits::Request req{StoreHandle{0, 0}};
+  DestroyOnReleaseTraits::Request req{};
 
   store.configure(typename DestroyOnReleaseStore::Config{2, 2});
   EXPECT_TRUE(store.createAll(req, ctx));
-  DestroyOnReleaseTraits::Request req_new{StoreHandle{1, 0}};
-  auto ref = store.acquireCreated(req_new, ctx);
+
+  // tryAcquireCreated returns one of the created slots
+  auto ref = store.tryAcquireCreated(req, ctx);
   EXPECT_TRUE(ref.valid());
   EXPECT_EQ(ref.payload_ptr->value, 55);
 }

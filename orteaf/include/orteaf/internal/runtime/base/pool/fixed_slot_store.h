@@ -127,6 +127,7 @@ public:
     payloads_.clear();
     generations_.clear();
     created_.clear();
+    next_uncreated_index_ = 0;
   }
 
   /**
@@ -192,18 +193,23 @@ public:
   }
 
   /**
-   * @brief Attempts to acquire a created slot by scanning the store.
+   * @brief Attempts to acquire a created slot.
+   *
+   * Returns the first created slot (index 0) if any slots have been created.
+   * O(1) complexity.
    *
    * @return SlotRef with invalid handle and null pointer if not available.
    */
   SlotRef tryAcquireCreated(const Request &, const Context &) noexcept {
-    for (std::size_t idx = 0; idx < size(); ++idx) {
-      if (created_[idx] != 0) {
-        Handle handle = makeHandle(static_cast<index_type>(idx));
-        return SlotRef{handle, &payloads_[idx]};
-      }
+    if (next_uncreated_index_ == 0) {
+      return SlotRef{Handle::invalid(), nullptr};
     }
-    return SlotRef{Handle::invalid(), nullptr};
+    // Verify the first slot is actually created (safety check)
+    if (created_[0] == 0) {
+      return SlotRef{Handle::invalid(), nullptr};
+    }
+    Handle handle = makeHandle(0);
+    return SlotRef{handle, &payloads_[0]};
   }
 
   /**
@@ -225,18 +231,23 @@ public:
   }
 
   /**
-   * @brief Attempts to reserve an uncreated slot by scanning the store.
+   * @brief Attempts to reserve an uncreated slot.
+   *
+   * Returns the next uncreated slot at next_uncreated_index_.
+   * O(1) complexity.
    *
    * @return SlotRef with invalid handle and null pointer if none available.
    */
   SlotRef tryReserveUncreated(const Request &, const Context &) noexcept {
-    for (std::size_t idx = 0; idx < size(); ++idx) {
-      if (created_[idx] == 0) {
-        Handle handle = makeHandle(static_cast<index_type>(idx));
-        return SlotRef{handle, &payloads_[idx]};
-      }
+    if (next_uncreated_index_ >= size()) {
+      return SlotRef{Handle::invalid(), nullptr};
     }
-    return SlotRef{Handle::invalid(), nullptr};
+    // Verify the slot is actually uncreated (safety check)
+    if (created_[next_uncreated_index_] != 0) {
+      return SlotRef{Handle::invalid(), nullptr};
+    }
+    Handle handle = makeHandle(static_cast<index_type>(next_uncreated_index_));
+    return SlotRef{handle, &payloads_[next_uncreated_index_]};
   }
 
   /**
@@ -346,6 +357,12 @@ public:
     const bool created = Traits::create(payload, request, context);
     if (created) {
       setCreated(handle, true);
+      // Keep next_uncreated_index_ pointing past all created slots
+      // (Advance only if we created at the current index)
+      while (next_uncreated_index_ < size() &&
+             created_[next_uncreated_index_] != 0) {
+        ++next_uncreated_index_;
+      }
     }
     return created;
   }
@@ -380,6 +397,11 @@ public:
         std::forward<CreateFn>(createFn)(payload, request, context);
     if (created) {
       setCreated(handle, true);
+      // Keep next_uncreated_index_ pointing past all created slots
+      while (next_uncreated_index_ < size() &&
+             created_[next_uncreated_index_] != 0) {
+        ++next_uncreated_index_;
+      }
     }
     return created;
   }
@@ -520,6 +542,7 @@ private:
   ::orteaf::internal::base::RuntimeBlockVector<Payload> payloads_{};
   ::orteaf::internal::base::HeapVector<generation_storage_t> generations_{};
   ::orteaf::internal::base::HeapVector<std::uint8_t> created_{};
+  std::size_t next_uncreated_index_{0};
 };
 
 } // namespace orteaf::internal::runtime::base::pool
