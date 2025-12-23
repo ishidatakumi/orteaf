@@ -280,6 +280,58 @@ public:
                                      context);
   }
 
+  /**
+   * @brief Payload Pool から作成済みスロットを取得（必要なら拡張＋作成）
+   *
+   * @param grow_by 追加で確保するスロット数
+   * @param request Payload作成に渡すリクエスト
+   * @param context Payload作成に渡すコンテキスト
+   * @return 取得できなければ invalid な SlotRef
+   */
+  template <typename Request, typename Context>
+  typename PayloadPool::SlotRef acquirePayloadOrGrowAndCreate(
+      std::size_t grow_by, const Request &request, const Context &context)
+    requires requires(PayloadPool &pool, const Request &req,
+                      const Context &ctx) {
+      { pool.tryAcquire(req, ctx) } -> std::same_as<typename PayloadPool::SlotRef>;
+    }
+  {
+    auto ref = payload_pool_.tryAcquire(request, context);
+    if (ref.valid()) {
+      return ref;
+    }
+    if (!growPayloadPoolByAndCreate(grow_by, request, context)) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          std::string(managerName()) + " failed to create payloads");
+    }
+    return payload_pool_.tryAcquire(request, context);
+  }
+
+  /**
+   * @brief 未作成スロットを予約（必要なら拡張）
+   *
+   * @param grow_by 追加で確保するスロット数
+   * @param request 予約に使うリクエスト
+   * @param context 予約に使うコンテキスト
+   * @return 取得できなければ invalid な SlotRef
+   */
+  template <typename Request, typename Context>
+  typename PayloadPool::SlotRef reserveUncreatedPayloadOrGrow(
+      std::size_t grow_by, const Request &request, const Context &context)
+    requires requires(PayloadPool &pool, const Request &req,
+                      const Context &ctx) {
+      { pool.tryReserve(req, ctx) } -> std::same_as<typename PayloadPool::SlotRef>;
+    }
+  {
+    auto ref = payload_pool_.tryReserve(request, context);
+    if (ref.valid() || grow_by == 0) {
+      return ref;
+    }
+    growPayloadPoolBy(grow_by);
+    return payload_pool_.tryReserve(request, context);
+  }
+
   // ===========================================================================
   // isAlive Helper
   // ===========================================================================
