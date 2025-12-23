@@ -103,14 +103,12 @@ struct DevicePayloadPoolTraits {
 
   struct Context {
     SlowOps *ops{nullptr};
-    std::size_t command_queue_initial_capacity{0};
+    MpsCommandQueueManager::Config command_queue_config{};
+    MpsEventManager::Config event_config{};
+    MpsFenceManager::Config fence_config{};
     std::size_t heap_initial_capacity{0};
     std::size_t library_initial_capacity{0};
     std::size_t graph_initial_capacity{0};
-  };
-
-  struct Config {
-    std::size_t capacity{0};
   };
 
   static bool create(Payload &payload, const Request &request,
@@ -128,8 +126,10 @@ struct DevicePayloadPoolTraits {
       return false;
     }
     payload.arch = context.ops->detectArchitecture(request.handle);
-    payload.command_queue_manager.initialize(
-        device, context.ops, context.command_queue_initial_capacity);
+    auto command_queue_config = context.command_queue_config;
+    command_queue_config.device = device;
+    command_queue_config.ops = context.ops;
+    payload.command_queue_manager.configure(command_queue_config);
     payload.library_manager.initialize(device, context.ops,
                                        context.library_initial_capacity);
     payload.heap_manager.initialize(device, request.handle,
@@ -137,8 +137,14 @@ struct DevicePayloadPoolTraits {
                                     context.heap_initial_capacity);
     payload.graph_manager.initialize(device, context.ops,
                                      context.graph_initial_capacity);
-    payload.event_pool.initialize(device, context.ops, 0);
-    payload.fence_pool.initialize(device, context.ops, 0);
+    auto event_config = context.event_config;
+    event_config.device = device;
+    event_config.ops = context.ops;
+    payload.event_pool.configure(event_config);
+    auto fence_config = context.fence_config;
+    fence_config.device = device;
+    fence_config.ops = context.ops;
+    payload.fence_pool.configure(fence_config);
     return true;
   }
 
@@ -194,6 +200,20 @@ public:
   using DeviceLease = ::orteaf::internal::runtime::base::WeakLease<
       ControlBlockHandle, ControlBlock, ControlBlockPool, MpsDeviceManager>;
 
+  struct Config {
+    SlowOps *ops{nullptr};
+    std::size_t payload_size{0};
+    std::size_t heap_initial_capacity{0};
+    std::size_t library_initial_capacity{0};
+    std::size_t graph_initial_capacity{0};
+    std::size_t control_block_size{0};
+    std::size_t control_block_block_size{0};
+    std::size_t control_block_growth_chunk_size{1};
+    MpsCommandQueueManager::Config command_queue_config{};
+    MpsEventManager::Config event_config{};
+    MpsFenceManager::Config fence_config{};
+  };
+
   MpsDeviceManager() = default;
   MpsDeviceManager(const MpsDeviceManager &) = delete;
   MpsDeviceManager &operator=(const MpsDeviceManager &) = delete;
@@ -202,53 +222,15 @@ public:
   ~MpsDeviceManager() = default;
 
   // =========================================================================
-  // Configuration (call before initialize)
-  // =========================================================================
-  void setCommandQueueInitialCapacity(std::size_t capacity) {
-    command_queue_initial_capacity_ = capacity;
-  }
-  std::size_t commandQueueInitialCapacity() const noexcept {
-    return command_queue_initial_capacity_;
-  }
-
-  void setHeapInitialCapacity(std::size_t capacity) {
-    heap_initial_capacity_ = capacity;
-  }
-  std::size_t heapInitialCapacity() const noexcept {
-    return heap_initial_capacity_;
-  }
-
-  void setLibraryInitialCapacity(std::size_t capacity) {
-    library_initial_capacity_ = capacity;
-  }
-  std::size_t libraryInitialCapacity() const noexcept {
-    return library_initial_capacity_;
-  }
-
-  void setGraphInitialCapacity(std::size_t capacity) {
-    graph_initial_capacity_ = capacity;
-  }
-  std::size_t graphInitialCapacity() const noexcept {
-    return graph_initial_capacity_;
-  }
-
-  void setControlBlockGrowthChunkSize(std::size_t size) {
-    core_.setGrowthChunkSize(size);
-  }
-  std::size_t controlBlockGrowthChunkSize() const noexcept {
-    return core_.growthChunkSize();
-  }
-
-  // =========================================================================
   // Lifecycle
   // =========================================================================
-  void initialize(SlowOps *slow_ops);
+  void configure(const Config &config);
   void shutdown();
 
   // =========================================================================
   // Device access
   // =========================================================================
-  std::size_t getDeviceCount() const { return core_.payloadPool().capacity(); }
+  std::size_t getDeviceCount() const { return core_.payloadPool().size(); }
 
   DeviceLease acquire(DeviceHandle handle);
   void release(DeviceLease &lease) noexcept { lease.release(); }
@@ -258,7 +240,7 @@ public:
 
   bool isInitialized() const noexcept { return core_.isInitialized(); }
   std::size_t capacity() const noexcept {
-    return core_.payloadPool().capacity();
+    return core_.payloadPool().size();
   }
   bool isAlive(DeviceHandle handle) const noexcept {
     return core_.isAlive(handle);
@@ -271,13 +253,7 @@ public:
 #endif
 
 private:
-  DevicePayloadPoolTraits::Context makePayloadContext() const noexcept;
-
   SlowOps *ops_{nullptr};
-  std::size_t command_queue_initial_capacity_{0};
-  std::size_t heap_initial_capacity_{0};
-  std::size_t library_initial_capacity_{0};
-  std::size_t graph_initial_capacity_{0};
   Core core_{};
 };
 

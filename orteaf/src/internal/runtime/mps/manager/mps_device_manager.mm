@@ -4,32 +4,83 @@
 
 namespace orteaf::internal::runtime::mps::manager {
 
-void MpsDeviceManager::initialize(SlowOps *slow_ops) {
+void MpsDeviceManager::configure(const Config &config) {
   shutdown();
 
-  if (slow_ops == nullptr) {
+  if (config.ops == nullptr) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "MPS device manager requires valid ops");
   }
-  ops_ = slow_ops;
+  ops_ = config.ops;
+  core_.setGrowthChunkSize(config.control_block_growth_chunk_size);
 
   const int device_count = ops_->getDeviceCount();
+  const std::size_t device_count_size =
+      device_count <= 0 ? 0u : static_cast<std::size_t>(device_count);
+  const std::size_t payload_size =
+      config.payload_size != 0 ? config.payload_size : device_count_size;
+  if (payload_size != device_count_size) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+        "MPS device manager payload size does not match device count");
+  }
+  const std::size_t control_block_size =
+      config.control_block_size != 0 ? config.control_block_size : payload_size;
+  const std::size_t control_block_block_size =
+      config.control_block_block_size != 0
+          ? config.control_block_block_size
+          : (control_block_size == 0 ? 1u : control_block_size);
+
+  auto command_queue_config = config.command_queue_config;
+  if (command_queue_config.capacity != 0 &&
+      command_queue_config.payload_block_size == 0) {
+    command_queue_config.payload_block_size = command_queue_config.capacity;
+  }
+  if (command_queue_config.control_block_block_size == 0) {
+    command_queue_config.control_block_block_size =
+        command_queue_config.capacity == 0 ? 1u : command_queue_config.capacity;
+  }
+  auto event_config = config.event_config;
+  if (event_config.capacity != 0 && event_config.payload_block_size == 0) {
+    event_config.payload_block_size = event_config.capacity;
+  }
+  if (event_config.control_block_block_size == 0) {
+    event_config.control_block_block_size =
+        event_config.capacity == 0 ? 1u : event_config.capacity;
+  }
+  auto fence_config = config.fence_config;
+  if (fence_config.capacity != 0 && fence_config.payload_block_size == 0) {
+    fence_config.payload_block_size = fence_config.capacity;
+  }
+  if (fence_config.control_block_block_size == 0) {
+    fence_config.control_block_block_size =
+        fence_config.capacity == 0 ? 1u : fence_config.capacity;
+  }
   if (device_count <= 0) {
-    core_.payloadPool().initialize(DevicePayloadPoolTraits::Config{0});
-    core_.initializeControlBlockPool(0);
+    core_.payloadPool().configure(DevicePayloadPool::Config{0, 0});
+    core_.configure(MpsDeviceManager::Core::Config{
+        /*control_block_capacity=*/0,
+        /*control_block_block_size=*/control_block_block_size,
+        /*growth_chunk_size=*/core_.growthChunkSize()});
     core_.setInitialized(true);
     return;
   }
 
-  const auto capacity = static_cast<std::size_t>(device_count);
-  const auto payload_context = makePayloadContext();
+  const auto capacity = device_count_size;
+  const auto payload_context = DevicePayloadPoolTraits::Context{
+      ops_, command_queue_config, event_config, fence_config,
+      config.heap_initial_capacity, config.library_initial_capacity,
+      config.graph_initial_capacity};
   const DevicePayloadPoolTraits::Request payload_request{};
-  core_.payloadPool().initializeAndCreate(
-      DevicePayloadPoolTraits::Config{capacity}, payload_request,
-      payload_context);
+  core_.payloadPool().configure(
+      DevicePayloadPool::Config{capacity, capacity});
+  core_.payloadPool().createAll(payload_request, payload_context);
 
-  core_.initializeControlBlockPool(capacity);
+  core_.configure(MpsDeviceManager::Core::Config{
+      /*control_block_capacity=*/control_block_size,
+      /*control_block_block_size=*/control_block_block_size,
+      /*growth_chunk_size=*/core_.growthChunkSize()});
   core_.setInitialized(true);
 }
 
@@ -41,7 +92,9 @@ void MpsDeviceManager::shutdown() {
   core_.checkCanShutdownOrThrow();
 
   const DevicePayloadPoolTraits::Request payload_request{};
-  const auto payload_context = makePayloadContext();
+  const auto payload_context = DevicePayloadPoolTraits::Context{
+      ops_, MpsCommandQueueManager::Config{}, MpsEventManager::Config{},
+      MpsFenceManager::Config{}, 0, 0, 0};
   core_.payloadPool().shutdown(payload_request, payload_context);
   core_.shutdownControlBlockPool();
   ops_ = nullptr;
@@ -97,13 +150,6 @@ MpsDeviceManager::getArch(DeviceHandle handle) const {
         "MPS device is unavailable");
   }
   return core_.payloadPool().get(handle)->arch;
-}
-
-DevicePayloadPoolTraits::Context
-MpsDeviceManager::makePayloadContext() const noexcept {
-  return DevicePayloadPoolTraits::Context{
-      ops_, command_queue_initial_capacity_, heap_initial_capacity_,
-      library_initial_capacity_, graph_initial_capacity_};
 }
 
 } // namespace orteaf::internal::runtime::mps::manager
