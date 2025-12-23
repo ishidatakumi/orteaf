@@ -18,11 +18,22 @@ void MpsGraphManager::configure(const Config &config) {
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "MPS graph manager requires valid ops");
   }
-  if (config.capacity >
+  const std::size_t payload_capacity =
+      config.payload_capacity != 0 ? config.payload_capacity : 0u;
+  const std::size_t control_block_capacity =
+      config.control_block_capacity != 0 ? config.control_block_capacity
+                                         : payload_capacity;
+  if (payload_capacity >
       static_cast<std::size_t>(GraphHandle::invalid_index())) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "MPS graph manager capacity exceeds maximum handle range");
+  }
+  if (control_block_capacity >
+      static_cast<std::size_t>(Core::ControlBlockHandle::invalid_index())) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+        "MPS graph manager control block capacity exceeds maximum handle range");
   }
   if (config.payload_growth_chunk_size == 0) {
     ::orteaf::internal::diagnostics::error::throwError(
@@ -37,11 +48,13 @@ void MpsGraphManager::configure(const Config &config) {
 
   std::size_t payload_block_size = config.payload_block_size;
   if (payload_block_size == 0) {
-    payload_block_size = config.capacity == 0 ? 1u : config.capacity;
+    payload_block_size =
+        payload_capacity == 0 ? 1u : payload_capacity;
   }
   std::size_t control_block_block_size = config.control_block_block_size;
   if (control_block_block_size == 0) {
-    control_block_block_size = config.capacity == 0 ? 1u : config.capacity;
+    control_block_block_size =
+        control_block_capacity == 0 ? 1u : control_block_capacity;
   }
 
   device_ = config.device;
@@ -52,9 +65,9 @@ void MpsGraphManager::configure(const Config &config) {
   next_index_ = 0;
 
   core_.payloadPool().configure(
-      GraphPayloadPool::Config{config.capacity, payload_block_size_});
+      GraphPayloadPool::Config{payload_capacity, payload_block_size_});
   core_.configure(MpsGraphManager::Core::Config{
-      /*control_block_capacity=*/config.capacity,
+      /*control_block_capacity=*/control_block_capacity,
       /*control_block_block_size=*/control_block_block_size,
       /*growth_chunk_size=*/config.control_block_growth_chunk_size});
   core_.setInitialized(true);

@@ -33,37 +33,54 @@ void MpsDeviceManager::configure(const Config &config) {
           : (control_block_size == 0 ? 1u : control_block_size);
 
   auto command_queue_config = config.command_queue_config;
-  if (command_queue_config.capacity != 0 &&
+  if (command_queue_config.payload_capacity != 0 &&
       command_queue_config.payload_block_size == 0) {
-    command_queue_config.payload_block_size = command_queue_config.capacity;
+    command_queue_config.payload_block_size =
+        command_queue_config.payload_capacity;
   }
+  const auto command_queue_cb_capacity =
+      command_queue_config.control_block_capacity != 0
+          ? command_queue_config.control_block_capacity
+          : command_queue_config.payload_capacity;
   if (command_queue_config.control_block_block_size == 0) {
     command_queue_config.control_block_block_size =
-        command_queue_config.capacity == 0 ? 1u : command_queue_config.capacity;
+        command_queue_cb_capacity == 0 ? 1u : command_queue_cb_capacity;
   }
   auto event_config = config.event_config;
-  if (event_config.capacity != 0 && event_config.payload_block_size == 0) {
-    event_config.payload_block_size = event_config.capacity;
+  if (event_config.payload_capacity != 0 &&
+      event_config.payload_block_size == 0) {
+    event_config.payload_block_size = event_config.payload_capacity;
   }
+  const auto event_cb_capacity =
+      event_config.control_block_capacity != 0
+          ? event_config.control_block_capacity
+          : event_config.payload_capacity;
   if (event_config.control_block_block_size == 0) {
     event_config.control_block_block_size =
-        event_config.capacity == 0 ? 1u : event_config.capacity;
+        event_cb_capacity == 0 ? 1u : event_cb_capacity;
   }
   auto fence_config = config.fence_config;
-  if (fence_config.capacity != 0 && fence_config.payload_block_size == 0) {
-    fence_config.payload_block_size = fence_config.capacity;
+  if (fence_config.payload_capacity != 0 &&
+      fence_config.payload_block_size == 0) {
+    fence_config.payload_block_size = fence_config.payload_capacity;
   }
+  const auto fence_cb_capacity =
+      fence_config.control_block_capacity != 0
+          ? fence_config.control_block_capacity
+          : fence_config.payload_capacity;
   if (fence_config.control_block_block_size == 0) {
     fence_config.control_block_block_size =
-        fence_config.capacity == 0 ? 1u : fence_config.capacity;
+        fence_cb_capacity == 0 ? 1u : fence_cb_capacity;
   }
   auto graph_config = config.graph_config;
-  if (graph_config.capacity != 0 && graph_config.payload_block_size == 0) {
-    graph_config.payload_block_size = graph_config.capacity;
+  if (graph_config.payload_capacity != 0 &&
+      graph_config.payload_block_size == 0) {
+    graph_config.payload_block_size = graph_config.payload_capacity;
   }
   if (graph_config.control_block_block_size == 0) {
     graph_config.control_block_block_size =
-        graph_config.capacity == 0 ? 1u : graph_config.capacity;
+        graph_config.payload_capacity == 0 ? 1u
+                                           : graph_config.payload_capacity;
   }
   if (device_count <= 0) {
     core_.payloadPool().configure(DevicePayloadPool::Config{0, 0});

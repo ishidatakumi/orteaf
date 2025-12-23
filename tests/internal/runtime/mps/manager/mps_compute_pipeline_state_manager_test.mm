@@ -70,7 +70,8 @@ protected:
       config.device = device;
       config.library = *library;
       config.ops = this->getOps();
-      config.capacity = capacity;
+      config.payload_capacity = capacity;
+      config.control_block_capacity = capacity;
       manager().configure(config);
       return true;
     }
@@ -269,7 +270,8 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
     config.device = nullptr;
     config.library = *maybe_library;
     config.ops = this->getOps();
-    config.capacity = 1;
+    config.payload_capacity = 1;
+    config.control_block_capacity = 1;
     manager.configure(config);
   });
 }
@@ -285,7 +287,8 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
     config.device = device;
     config.library = nullptr;
     config.ops = this->getOps();
-    config.capacity = 1;
+    config.payload_capacity = 1;
+    config.control_block_capacity = 1;
     manager.configure(config);
   });
 }
@@ -305,7 +308,9 @@ TYPED_TEST(MpsComputePipelineStateManagerTypedTest,
     config.device = device;
     config.library = *maybe_library;
     config.ops = this->getOps();
-    config.capacity = std::numeric_limits<std::size_t>::max();
+    config.payload_capacity = std::numeric_limits<std::size_t>::max();
+    config.control_block_capacity =
+        std::numeric_limits<std::size_t>::max();
     manager.configure(config);
   });
 }

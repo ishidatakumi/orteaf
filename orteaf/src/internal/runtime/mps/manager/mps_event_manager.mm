@@ -18,12 +18,24 @@ void MpsEventManager::configure(const Config &config) {
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "MPS event manager requires valid ops");
   }
-  if (config.capacity > static_cast<std::size_t>(EventHandle::invalid_index())) {
+  const std::size_t payload_capacity =
+      config.payload_capacity != 0 ? config.payload_capacity : 0u;
+  const std::size_t control_block_capacity =
+      config.control_block_capacity != 0 ? config.control_block_capacity
+                                         : payload_capacity;
+  if (payload_capacity >
+      static_cast<std::size_t>(EventHandle::invalid_index())) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "MPS event manager capacity exceeds maximum handle range");
   }
-  if (config.capacity != 0 && config.payload_block_size == 0) {
+  if (control_block_capacity >
+      static_cast<std::size_t>(Core::ControlBlockHandle::invalid_index())) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+        "MPS event manager control block capacity exceeds maximum handle range");
+  }
+  if (payload_capacity != 0 && config.payload_block_size == 0) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "MPS event manager requires non-zero payload block size");
@@ -49,7 +61,7 @@ void MpsEventManager::configure(const Config &config) {
   payload_growth_chunk_size_ = config.payload_growth_chunk_size;
 
   core_.payloadPool().configure(
-      EventPayloadPool::Config{config.capacity, config.payload_block_size});
+      EventPayloadPool::Config{payload_capacity, config.payload_block_size});
   const EventPayloadPoolTraits::Request payload_request{};
   const auto payload_context = makePayloadContext();
   if (!core_.payloadPool().createAll(payload_request, payload_context)) {
@@ -58,7 +70,7 @@ void MpsEventManager::configure(const Config &config) {
         "Failed to create MPS events");
   }
   core_.configure(MpsEventManager::Core::Config{
-      /*control_block_capacity=*/config.capacity,
+      /*control_block_capacity=*/control_block_capacity,
       /*control_block_block_size=*/config.control_block_block_size,
       /*growth_chunk_size=*/config.control_block_growth_chunk_size});
   core_.setInitialized(true);

@@ -66,8 +66,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, GrowthChunkSizeCanBeAdjusted) {
   this->adapter().expectDestroyCommandQueues({makeQueue(0x050)});
 
   // Act
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{
-      device, this->getOps(), 1, 1, 1, 4, 5});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 1, 1, 1, 1, 4, 5});
 
   // Assert
   EXPECT_EQ(manager.payloadGrowthChunkSizeForTest(), 4u);
@@ -83,13 +82,11 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, GrowthChunkSizeRejectsZero) {
   // Act & Assert
   ExpectError(diag_error::OrteafErrc::InvalidArgument,
               [&] {
-                manager.configure(mps_rt::MpsCommandQueueManager::Config{
-                    device, this->getOps(), 1, 1, 1, 0, 1});
+                manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 1, 1, 1, 1, 0, 1});
               });
   ExpectError(diag_error::OrteafErrc::InvalidArgument,
               [&] {
-                manager.configure(mps_rt::MpsCommandQueueManager::Config{
-                    device, this->getOps(), 1, 1, 1, 1, 0});
+                manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 0});
               });
 }
 
@@ -107,13 +104,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, InitializeSetsCapacity) {
       {makeQueue(0x100), makeQueue(0x101)});
 
   // Act
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
-                                                           this->getOps(),
-                                                           2,
-                                                           2,
-                                                           2,
-                                                           1,
-                                                           1});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 2, 2, 2, 2, 1, 1});
 
   // Assert
   EXPECT_EQ(manager.payloadPoolSizeForTest(), 2u);
@@ -130,14 +121,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
 
   // Act & Assert
   ExpectError(diag_error::OrteafErrc::InvalidArgument, [&] {
-    manager.configure(mps_rt::MpsCommandQueueManager::Config{
-        device,
-        this->getOps(),
-        std::numeric_limits<std::size_t>::max(),
-        std::numeric_limits<std::size_t>::max(),
-        std::numeric_limits<std::size_t>::max(),
-        1,
-        1});
+    manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), std::numeric_limits<std::size_t>::max(), std::numeric_limits<std::size_t>::max(), std::numeric_limits<std::size_t>::max(), std::numeric_limits<std::size_t>::max(), 1, 1});
   });
 }
 
@@ -154,13 +138,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, CapacityReflectsPoolSize) {
       {makeQueue(0x200), makeQueue(0x201), makeQueue(0x202)});
 
   // Act
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
-                                                           this->getOps(),
-                                                           3,
-                                                           3,
-                                                           3,
-                                                           1,
-                                                           1});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 3, 3, 3, 3, 1, 1});
 
   // Assert
   EXPECT_EQ(manager.payloadPoolSizeForTest(), 3u);
@@ -192,13 +170,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
       {makeQueue(0x300), makeQueue(0x301)});
   this->adapter().expectDestroyCommandQueues(
       {makeQueue(0x300), makeQueue(0x301)});
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
-                                                           this->getOps(),
-                                                           2,
-                                                           2,
-                                                           2,
-                                                           1,
-                                                           1});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 2, 2, 2, 2, 1, 1});
 
   {
     // Act
@@ -221,13 +193,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, AcquireGrowsPoolWhenNeeded) {
   // Arrange - start with capacity 1
   this->adapter().expectCreateCommandQueues(
       {makeQueue(0x400), makeQueue(0x401)});
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
-                                                           this->getOps(),
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   printf("AcquireGrowsPoolWhenNeeded 1\n");
 
@@ -265,13 +231,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, AcquireByHandleReturnsLease) {
   // Arrange
   this->adapter().expectCreateCommandQueues({makeQueue(0x500)});
   this->adapter().expectDestroyCommandQueues({makeQueue(0x500)});
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
-                                                           this->getOps(),
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   mps_rt::MpsCommandQueueManager::CommandQueueHandle handle{};
   {
@@ -296,13 +256,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, AcquireByInvalidHandleFails) {
 
   // Arrange
   this->adapter().expectCreateCommandQueues({makeQueue(0x730)});
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
-                                                           this->getOps(),
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Act & Assert
   using Handle = mps_rt::MpsCommandQueueManager::CommandQueueHandle;
@@ -324,13 +278,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, LeaseDestructionAllowsShutdown) {
 
   // Arrange
   this->adapter().expectCreateCommandQueues({makeQueue(0x500)});
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
-                                                           this->getOps(),
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Act: Lease goes out of scope
   {
@@ -349,13 +297,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, LeaseCopyIncrementsWeakCount) {
 
   // Arrange
   this->adapter().expectCreateCommandQueues({makeQueue(0x510)});
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
-                                                           this->getOps(),
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   {
     // Act
@@ -378,13 +320,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, LeaseMoveDoesNotChangeWeakCount) {
 
   // Arrange
   this->adapter().expectCreateCommandQueues({makeQueue(0x520)});
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
-                                                           this->getOps(),
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   {
     // Act
@@ -411,13 +347,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, IsAliveReturnsTrueForValidHandle) {
 
   // Arrange
   this->adapter().expectCreateCommandQueues({makeQueue(0x700)});
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
-                                                           this->getOps(),
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   mps_rt::MpsCommandQueueManager::CommandQueueHandle handle{};
   {
@@ -440,13 +370,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest,
 
   // Arrange
   this->adapter().expectCreateCommandQueues({makeQueue(0x710)});
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
-                                                           this->getOps(),
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Assert
   using Handle = mps_rt::MpsCommandQueueManager::CommandQueueHandle;
@@ -464,13 +388,7 @@ TYPED_TEST(MpsCommandQueueManagerTypedTest, ControlBlockPoolCapacityForTest) {
 
   // Arrange
   this->adapter().expectCreateCommandQueues({makeQueue(0x720)});
-  manager.configure(mps_rt::MpsCommandQueueManager::Config{device,
-                                                           this->getOps(),
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1,
-                                                           1});
+  manager.configure(mps_rt::MpsCommandQueueManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Assert
   EXPECT_GE(manager.controlBlockPoolCapacityForTest(), 1u);

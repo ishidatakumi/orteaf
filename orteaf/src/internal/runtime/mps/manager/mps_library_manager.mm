@@ -70,8 +70,7 @@ MpsLibraryManager::acquire(const LibraryKey &key) {
       return false;
 
     resource.pipeline_manager.configure(
-        MpsComputePipelineStateManager::Config{device_, resource.library, ops_,
-                                               0, 0, 1, 1, 1});
+        MpsComputePipelineStateManager::Config{device_, resource.library, ops_, 0, 0, 0, 1, 1, 1});
     return true;
   });
 
@@ -125,8 +124,7 @@ MpsLibraryManager::pipelineManager(const LibraryKey &key) {
       return false;
 
     resource.pipeline_manager.configure(
-        MpsComputePipelineStateManager::Config{device_, resource.library, ops_,
-                                               0, 0, 1, 1, 1});
+        MpsComputePipelineStateManager::Config{device_, resource.library, ops_, 0, 0, 0, 1, 1, 1});
     return true;
   });
 

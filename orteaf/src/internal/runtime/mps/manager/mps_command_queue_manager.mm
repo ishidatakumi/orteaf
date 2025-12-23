@@ -18,13 +18,24 @@ void MpsCommandQueueManager::configure(const Config &config) {
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "MPS command queue manager requires valid ops");
   }
-  if (config.capacity >
+  const std::size_t payload_capacity =
+      config.payload_capacity != 0 ? config.payload_capacity : 0u;
+  const std::size_t control_block_capacity =
+      config.control_block_capacity != 0 ? config.control_block_capacity
+                                         : payload_capacity;
+  if (payload_capacity >
       static_cast<std::size_t>(CommandQueueHandle::invalid_index())) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "MPS command queue manager capacity exceeds maximum handle range");
   }
-  if (config.capacity != 0 && config.payload_block_size == 0) {
+  if (control_block_capacity >
+      static_cast<std::size_t>(Core::ControlBlockHandle::invalid_index())) {
+    ::orteaf::internal::diagnostics::error::throwError(
+        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+        "MPS command queue manager control block capacity exceeds maximum handle range");
+  }
+  if (payload_capacity != 0 && config.payload_block_size == 0) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "MPS command queue manager requires non-zero payload block size");
@@ -50,7 +61,7 @@ void MpsCommandQueueManager::configure(const Config &config) {
   payload_growth_chunk_size_ = config.payload_growth_chunk_size;
 
   core_.payloadPool().configure(CommandQueuePayloadPool::Config{
-      config.capacity, config.payload_block_size});
+      payload_capacity, config.payload_block_size});
   const CommandQueuePayloadPoolTraits::Request payload_request{};
   const CommandQueuePayloadPoolTraits::Context payload_context{device_, ops_};
   if (!core_.payloadPool().createAll(payload_request, payload_context)) {
@@ -59,7 +70,7 @@ void MpsCommandQueueManager::configure(const Config &config) {
         "Failed to create MPS command queues");
   }
   core_.configure(MpsCommandQueueManager::Core::Config{
-      /*control_block_capacity=*/config.capacity,
+      /*control_block_capacity=*/control_block_capacity,
       /*control_block_block_size=*/config.control_block_block_size,
       /*growth_chunk_size=*/config.control_block_growth_chunk_size});
   core_.setInitialized(true);

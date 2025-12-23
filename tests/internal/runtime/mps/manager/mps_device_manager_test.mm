@@ -552,7 +552,8 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
 
   // Arrange
   auto config = makeConfig(this->getOps());
-  config.command_queue_config.capacity = kCapacity;
+  config.command_queue_config.payload_capacity = kCapacity;
+  config.command_queue_config.control_block_capacity = kCapacity;
 
   const auto device0 = makeDevice(0x500);
   const auto device1 = makeDevice(0x600);

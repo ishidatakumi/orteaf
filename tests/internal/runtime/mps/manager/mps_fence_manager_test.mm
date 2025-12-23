@@ -54,7 +54,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, InitializeRejectsNullDevice) {
 
   // Act & Assert
   ExpectError(diag_error::OrteafErrc::InvalidArgument,
-              [&] { manager.configure(mps_rt::MpsFenceManager::Config{nullptr, this->getOps(), 1, 1, 1, 1, 1}); });
+              [&] { manager.configure(mps_rt::MpsFenceManager::Config{nullptr, this->getOps(), 1, 1, 1, 1, 1, 1}); });
 }
 
 TYPED_TEST(MpsFenceManagerTypedTest, InitializeRejectsNullOps) {
@@ -63,7 +63,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, InitializeRejectsNullOps) {
 
   // Act & Assert
   ExpectError(diag_error::OrteafErrc::InvalidArgument,
-              [&] { manager.configure(mps_rt::MpsFenceManager::Config{device, nullptr, 1, 1, 1, 1, 1}); });
+              [&] { manager.configure(mps_rt::MpsFenceManager::Config{device, nullptr, 1, 1, 1, 1, 1, 1}); });
 }
 
 TYPED_TEST(MpsFenceManagerTypedTest, InitializeRejectsExcessiveCapacity) {
@@ -74,7 +74,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, InitializeRejectsExcessiveCapacity) {
 
   // Act & Assert
   ExpectError(diag_error::OrteafErrc::InvalidArgument,
-              [&] { manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), excessive, excessive, excessive, 1, 1}); });
+              [&] { manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), excessive, excessive, excessive, excessive, 1, 1}); });
 }
 
 TYPED_TEST(MpsFenceManagerTypedTest, OperationsBeforeInitializationThrow) {
@@ -93,7 +93,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, InitializeEagerlyCreatesFences) {
     this->adapter().expectCreateFences({makeFence(0x100), makeFence(0x101)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 2, 2, 2, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 2, 2, 2, 2, 1, 1});
 
   // Act: First acquire uses existing fence
   auto first = manager.acquire();
@@ -121,7 +121,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, InitializeWithZeroCapacitySucceeds) {
   if constexpr (TypeParam::is_mock) {
     this->adapter().expectCreateFences({}, ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 0, 1, 1, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 0, 0, 1, 1, 1, 1});
 
   // Act: Should grow on demand
   if constexpr (TypeParam::is_mock) {
@@ -152,7 +152,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, AcquireReturnsValidLease) {
     this->adapter().expectCreateFences({makeFence(0x300)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Arrange
   // Act
@@ -182,7 +182,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, FenceRecyclingReusesSlots) {
     this->adapter().expectCreateFences({makeFence(0x800)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Arrange
   // Act
@@ -210,7 +210,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, MovedFromLeaseIsInactive) {
     this->adapter().expectCreateFences({makeFence(0x900)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Arrange
   // Act
@@ -236,7 +236,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, DestructionReturnsFenceToPool) {
     this->adapter().expectCreateFences({makeFence(0xA00)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Arrange
   std::uint32_t index;
@@ -271,7 +271,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, ShutdownReleasesInitializedFences) {
         {makeFence(0xB00), makeFence(0xB01), makeFence(0xB02)},
         ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 3, 3, 3, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 3, 3, 3, 3, 1, 1});
 
   // Arrange: Acquire two fences
   auto lease1 = manager.acquire();
@@ -304,7 +304,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, MultipleShutdownsAreIdempotent) {
     this->adapter().expectCreateFences({makeFence(0xC00)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Act & Assert
   if constexpr (TypeParam::is_mock) {
@@ -324,7 +324,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, ReinitializeResetsPreviousState) {
     this->adapter().expectCreateFences({makeFence(0xD00)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   auto first_lease = manager.acquire();
   first_lease.release();
@@ -337,7 +337,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, ReinitializeResetsPreviousState) {
     this->adapter().expectCreateFences({makeFence(0xD10), makeFence(0xD11)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 2, 2, 2, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 2, 2, 2, 2, 1, 1});
 
   // Assert: New fences available
   auto new_lease = manager.acquire();
@@ -363,7 +363,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, DebugStateReflectsFenceState) {
     this->adapter().expectCreateFences({makeFence(0xE00)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Arrange
   // Act
@@ -392,7 +392,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, LeaseCopyIncrementsCount) {
     this->adapter().expectCreateFences({makeFence(0xF00)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Arrange
   // Act
@@ -425,7 +425,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, LeaseCopyAssignmentIncrementsCount) {
     this->adapter().expectCreateFences({makeFence(0xF10)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Arrange
   auto lease1 = manager.acquire();
@@ -455,7 +455,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, LeaseMoveDoesNotChangeCount) {
     this->adapter().expectCreateFences({makeFence(0xF20)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Arrange
   auto lease1 = manager.acquire();
@@ -485,7 +485,7 @@ TYPED_TEST(MpsFenceManagerTypedTest, LeaseMoveAssignmentDoesNotChangeCount) {
     this->adapter().expectCreateFences({makeFence(0xF30)},
                                        ::testing::Eq(device));
   }
-  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1});
+  manager.configure(mps_rt::MpsFenceManager::Config{device, this->getOps(), 1, 1, 1, 1, 1, 1});
 
   // Arrange
   auto lease1 = manager.acquire();
