@@ -19,11 +19,7 @@
 #include <orteaf/internal/execution/mps/platform/wrapper/mps_function.h>
 #include <orteaf/internal/execution/mps/platform/wrapper/mps_heap.h>
 #include <orteaf/internal/execution/mps/platform/wrapper/mps_library.h>
-<<<<<<<< HEAD:tests/internal/execution/mps/manager/testing/execution_mock_expectations.h
 #include <tests/internal/execution/mps/manager/testing/execution_mock.h>
-========
-#include <tests/internal/execution/mps/manager/testing/backend_mock.h>
->>>>>>>> 63ca5d9 (refactor: migrate internal runtime MPS and CUDA platform components to execution directory.):tests/internal/execution/mps/manager/testing/backend_mock_expectations.h
 
 namespace orteaf::tests::execution::mps {
 
@@ -77,11 +73,7 @@ struct ExecutionMockExpectations {
   }
 
   static void expectCreateCommandQueues(
-<<<<<<<< HEAD:tests/internal/execution/mps/manager/testing/execution_mock_expectations.h
       MpsExecutionOpsMock &mock,
-========
-      MpsBackendOpsMock &mock,
->>>>>>>> 63ca5d9 (refactor: migrate internal runtime MPS and CUDA platform components to execution directory.):tests/internal/execution/mps/manager/testing/backend_mock_expectations.h
       std::initializer_list<::orteaf::internal::execution::mps::platform::
                                 wrapper::MpsCommandQueue_t>
           handles,
@@ -113,11 +105,7 @@ struct ExecutionMockExpectations {
   }
 
   static void expectDestroyCommandQueues(
-<<<<<<<< HEAD:tests/internal/execution/mps/manager/testing/execution_mock_expectations.h
       MpsExecutionOpsMock &mock,
-========
-      MpsBackendOpsMock &mock,
->>>>>>>> 63ca5d9 (refactor: migrate internal runtime MPS and CUDA platform components to execution directory.):tests/internal/execution/mps/manager/testing/backend_mock_expectations.h
       std::initializer_list<::orteaf::internal::execution::mps::platform::
                                 wrapper::MpsCommandQueue_t>
           handles) {
@@ -131,11 +119,7 @@ struct ExecutionMockExpectations {
   }
 
   static void expectDestroyCommandQueuesInOrder(
-<<<<<<<< HEAD:tests/internal/execution/mps/manager/testing/execution_mock_expectations.h
       MpsExecutionOpsMock &mock,
-========
-      MpsBackendOpsMock &mock,
->>>>>>>> 63ca5d9 (refactor: migrate internal runtime MPS and CUDA platform components to execution directory.):tests/internal/execution/mps/manager/testing/backend_mock_expectations.h
       std::initializer_list<::orteaf::internal::execution::mps::platform::
                                 wrapper::MpsCommandQueue_t>
           handles) {
@@ -421,11 +405,7 @@ struct ExecutionMockExpectations {
   }
 
   static void expectDestroyComputePipelineStates(
-<<<<<<<< HEAD:tests/internal/execution/mps/manager/testing/execution_mock_expectations.h
       MpsExecutionOpsMock &mock,
-========
-      MpsBackendOpsMock &mock,
->>>>>>>> 63ca5d9 (refactor: migrate internal runtime MPS and CUDA platform components to execution directory.):tests/internal/execution/mps/manager/testing/backend_mock_expectations.h
       std::initializer_list<::orteaf::internal::execution::mps::platform::
                                 wrapper::MpsComputePipelineState_t>
           handles) {
@@ -512,11 +492,7 @@ struct ExecutionMockExpectations {
   }
 
   static void expectCreateHeapDescriptors(
-<<<<<<<< HEAD:tests/internal/execution/mps/manager/testing/execution_mock_expectations.h
       MpsExecutionOpsMock &mock,
-========
-      MpsBackendOpsMock &mock,
->>>>>>>> 63ca5d9 (refactor: migrate internal runtime MPS and CUDA platform components to execution directory.):tests/internal/execution/mps/manager/testing/backend_mock_expectations.h
       std::initializer_list<::orteaf::internal::execution::mps::platform::
                                 wrapper::MpsHeapDescriptor_t>
           handles) {
@@ -543,11 +519,7 @@ struct ExecutionMockExpectations {
   }
 
   static void expectDestroyHeapDescriptors(
-<<<<<<<< HEAD:tests/internal/execution/mps/manager/testing/execution_mock_expectations.h
       MpsExecutionOpsMock &mock,
-========
-      MpsBackendOpsMock &mock,
->>>>>>>> 63ca5d9 (refactor: migrate internal runtime MPS and CUDA platform components to execution directory.):tests/internal/execution/mps/manager/testing/backend_mock_expectations.h
       std::initializer_list<::orteaf::internal::execution::mps::platform::
                                 wrapper::MpsHeapDescriptor_t>
           handles) {

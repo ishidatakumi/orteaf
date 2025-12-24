@@ -69,11 +69,7 @@ namespace {
 struct TestCommandQueueLease {
   using Manager =
       ::orteaf::internal::execution::mps::manager::MpsCommandQueueManager;
-<<<<<<< HEAD
   using MockOps = ::orteaf::tests::execution::mps::MpsExecutionOpsMock;
-=======
-  using MockOps = ::orteaf::tests::execution::mps::MpsBackendOpsMock;
->>>>>>> 63ca5d9 (refactor: migrate internal runtime MPS and CUDA platform components to execution directory.)
   using Queue =
       ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandQueue_t;
   using Device =

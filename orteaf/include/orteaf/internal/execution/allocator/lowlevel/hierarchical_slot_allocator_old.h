@@ -15,7 +15,7 @@
 #include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/diagnostics/error/error_macros.h"
 #include "orteaf/internal/diagnostics/log/log.h"
-#include "orteaf/internal/runtime/base/backend_traits.h"
+#include "orteaf/internal/execution/base/execution_traits.h"
 
 namespace orteaf::internal::execution::allocator::policies {
 
@@ -133,9 +133,9 @@ public:
   // Type aliases
   // ========================================================================
   using BufferView =
-      typename ::orteaf::internal::runtime::base::BackendTraits<B>::BufferView;
+      typename ::orteaf::internal::execution::base::ExecutionTraits<B>::BufferView;
   using HeapRegion =
-      typename ::orteaf::internal::runtime::base::BackendTraits<B>::HeapRegion;
+      typename ::orteaf::internal::execution::base::ExecutionTraits<B>::HeapRegion;
 
   enum class State : uint8_t { Free, InUse, Split };
 
