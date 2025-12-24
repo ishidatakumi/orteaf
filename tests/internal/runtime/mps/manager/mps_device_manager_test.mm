@@ -624,7 +624,7 @@ TYPED_TEST(MpsDeviceManagerTypedTest,
     const auto device = manager.acquire(handle);
     auto *resource = device.payloadPtr();
     ASSERT_NE(resource, nullptr);
-    EXPECT_EQ(resource->heap_manager.payloadPoolCapacityForTest(), kCapacity);
+    EXPECT_EQ(resource->heap_manager.payloadPoolSizeForTest(), kCapacity);
   }
 
   // Cleanup
