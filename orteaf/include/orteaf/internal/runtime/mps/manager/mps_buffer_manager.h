@@ -17,7 +17,7 @@
 #include "orteaf/internal/runtime/allocator/policies/reuse/deferred_reuse_policy.h"
 #include "orteaf/internal/runtime/allocator/policies/threading/threading_policies.h"
 #include "orteaf/internal/runtime/allocator/pool/segregate_pool.h"
-#include "orteaf/internal/runtime/base/lease/control_block/weak_shared.h"
+#include "orteaf/internal/runtime/base/lease/control_block/shared.h"
 #include "orteaf/internal/runtime/base/lease/strong_lease.h"
 #include "orteaf/internal/runtime/base/lease/weak_lease.h"
 #include "orteaf/internal/runtime/base/manager/base_pool_manager_core.h"
@@ -116,11 +116,11 @@ using BufferPayloadPoolT = ::orteaf::internal::runtime::base::pool::SlotPool<
     BufferPayloadPoolTraitsT<ResourceT>>;
 
 // ============================================================================
-// ControlBlock type using WeakSharedControlBlock
+// ControlBlock type using SharedControlBlock
 // ============================================================================
 template <typename ResourceT>
 using BufferControlBlockT =
-    ::orteaf::internal::runtime::base::WeakSharedControlBlock<
+    ::orteaf::internal::runtime::base::SharedControlBlock<
         ::orteaf::internal::base::BufferHandle,
         ::orteaf::internal::runtime::allocator::Buffer,
         BufferPayloadPoolT<ResourceT>>;

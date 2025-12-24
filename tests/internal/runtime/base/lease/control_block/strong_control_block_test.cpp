@@ -1,4 +1,4 @@
-#include "orteaf/internal/runtime/base/lease/control_block/weak_shared.h"
+#include "orteaf/internal/runtime/base/lease/control_block/strong.h"
 
 #include <gtest/gtest.h>
 
@@ -25,13 +25,13 @@ struct DummyPool {
   }
 };
 
-using WeakSharedCB = ::orteaf::internal::runtime::base::WeakSharedControlBlock<
+using StrongCB = ::orteaf::internal::runtime::base::StrongControlBlock<
     PayloadHandle, DummyPayload, DummyPool>;
 
-TEST(WeakSharedControlBlock, BindPayloadStoresHandlePtrAndPool) {
+TEST(StrongControlBlock, BindPayloadStoresHandlePtrAndPool) {
   DummyPool pool{};
   DummyPayload payload{};
-  WeakSharedCB cb;
+  StrongCB cb;
   const PayloadHandle handle{1, 2};
 
   EXPECT_TRUE(cb.tryBindPayload(handle, &payload, &pool));
@@ -42,38 +42,31 @@ TEST(WeakSharedControlBlock, BindPayloadStoresHandlePtrAndPool) {
   EXPECT_EQ(cb.payloadPool(), &pool);
 }
 
-TEST(WeakSharedControlBlock, StrongAndWeakCountsBehave) {
-  WeakSharedCB cb;
+TEST(StrongControlBlock, StrongCountIncrementsAndReleaseSignalsLast) {
+  StrongCB cb;
 
+  EXPECT_EQ(cb.count(), 0u);
   cb.acquire();
   cb.acquire();
-  cb.acquireWeak();
-  cb.acquireWeak();
-
   EXPECT_EQ(cb.count(), 2u);
-  EXPECT_EQ(cb.weakCount(), 2u);
 
   EXPECT_FALSE(cb.release());
   EXPECT_TRUE(cb.release());
-  EXPECT_FALSE(cb.releaseWeak());
-  EXPECT_TRUE(cb.releaseWeak());
+  EXPECT_EQ(cb.count(), 0u);
+}
+
+TEST(StrongControlBlock, ReleaseDoesNotUnderflow) {
+  StrongCB cb;
 
   EXPECT_EQ(cb.count(), 0u);
-  EXPECT_EQ(cb.weakCount(), 0u);
+  EXPECT_FALSE(cb.release());
+  EXPECT_EQ(cb.count(), 0u);
 }
 
-TEST(WeakSharedControlBlock, ReleaseWeakDoesNotUnderflow) {
-  WeakSharedCB cb;
-
-  EXPECT_EQ(cb.weakCount(), 0u);
-  EXPECT_FALSE(cb.releaseWeak());
-  EXPECT_EQ(cb.weakCount(), 0u);
-}
-
-TEST(WeakSharedControlBlock, ReleaseCallsPoolOnLastStrongRef) {
+TEST(StrongControlBlock, ReleaseCallsPoolOnLastStrongRef) {
   DummyPool pool{};
   DummyPayload payload{};
-  WeakSharedCB cb;
+  StrongCB cb;
   const PayloadHandle handle{1, 2};
 
   EXPECT_TRUE(cb.tryBindPayload(handle, &payload, &pool));
@@ -89,18 +82,10 @@ TEST(WeakSharedControlBlock, ReleaseCallsPoolOnLastStrongRef) {
   EXPECT_FALSE(cb.hasPayload());
 }
 
-TEST(WeakSharedControlBlock, ReleaseDoesNotUnderflow) {
-  WeakSharedCB cb;
-
-  EXPECT_EQ(cb.count(), 0u);
-  EXPECT_FALSE(cb.release());
-  EXPECT_EQ(cb.count(), 0u);
-}
-
-TEST(WeakSharedControlBlock, ReleaseSkipsPoolWhenNull) {
+TEST(StrongControlBlock, ReleaseSkipsPoolWhenNull) {
   DummyPool pool{};
   DummyPayload payload{};
-  WeakSharedCB cb;
+  StrongCB cb;
   const PayloadHandle handle{1, 2};
 
   EXPECT_TRUE(cb.tryBindPayload(handle, &payload, nullptr));
@@ -110,37 +95,25 @@ TEST(WeakSharedControlBlock, ReleaseSkipsPoolWhenNull) {
   EXPECT_EQ(pool.release_calls, 0u);
 }
 
-TEST(WeakSharedControlBlock, TryPromoteDependsOnStrongCount) {
-  WeakSharedCB cb;
-
-  EXPECT_FALSE(cb.tryPromote());
-
-  cb.acquire();
-  EXPECT_TRUE(cb.tryPromote());
-  EXPECT_EQ(cb.count(), 2u);
-}
-
-TEST(WeakSharedControlBlock, TryBindPayloadFailsWhenReferencesRemain) {
+TEST(StrongControlBlock, TryBindPayloadFailsWhenReferencesRemain) {
   DummyPool pool{};
   DummyPayload payload{};
-  WeakSharedCB cb;
-  const PayloadHandle handle{7, 8};
+  StrongCB cb;
+  const PayloadHandle handle{5, 6};
 
   cb.acquire();
-  cb.acquireWeak();
   EXPECT_FALSE(cb.tryBindPayload(handle, &payload, &pool));
   EXPECT_FALSE(cb.hasPayload());
 
   EXPECT_TRUE(cb.release());
-  EXPECT_TRUE(cb.releaseWeak());
   EXPECT_TRUE(cb.tryBindPayload(handle, &payload, &pool));
   EXPECT_TRUE(cb.hasPayload());
 }
 
-TEST(WeakSharedControlBlock, TryBindPayloadFailsWhenAlreadyBound) {
+TEST(StrongControlBlock, TryBindPayloadFailsWhenAlreadyBound) {
   DummyPool pool{};
   DummyPayload payload{};
-  WeakSharedCB cb;
+  StrongCB cb;
   const PayloadHandle handle{3, 4};
 
   EXPECT_TRUE(cb.tryBindPayload(handle, &payload, &pool));

@@ -63,8 +63,8 @@ public:
   using PoolType = PoolT;
   /// @brief Manager type that creates leases.
   using ManagerType = ManagerT;
-  /// @brief Category tag indicating this is a weak-shared lease.
-  using CompatibleCategory = lease_category::WeakShared;
+  /// @brief Category tag indicating this lease is compatible with shared leases.
+  using CompatibleCategory = lease_category::Shared;
   /// @brief The corresponding strong lease type for promotion.
   using StrongLeaseType = StrongLease<HandleT, ControlBlockT, PoolT, ManagerT>;
 

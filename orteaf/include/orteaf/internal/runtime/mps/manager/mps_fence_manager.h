@@ -6,7 +6,7 @@
 #include <cstdint>
 
 #include "orteaf/internal/base/handle.h"
-#include "orteaf/internal/runtime/base/lease/control_block/shared.h"
+#include "orteaf/internal/runtime/base/lease/control_block/strong.h"
 #include "orteaf/internal/runtime/base/lease/strong_lease.h"
 #include "orteaf/internal/runtime/base/manager/base_pool_manager_core.h"
 #include "orteaf/internal/runtime/base/pool/slot_pool.h"
@@ -67,7 +67,7 @@ using FencePayloadPool =
 
 struct FenceControlBlockTag {};
 
-using FenceControlBlock = ::orteaf::internal::runtime::base::SharedControlBlock<
+using FenceControlBlock = ::orteaf::internal::runtime::base::StrongControlBlock<
     ::orteaf::internal::base::FenceHandle,
     ::orteaf::internal::runtime::mps::platform::wrapper::MpsFence_t,
     FencePayloadPool>;

@@ -11,7 +11,7 @@ Poolの破棄(`shutdown()`)は、リソース管理における最も危険な�
 
 1.  **Safety Checkの分離**:
     *   **`canTeardown()`**: リソース(Payload)を破棄して良いか判定する。
-        *   基準: **Strong Reference Count == 0** (Unique/Shared)
+        *   基準: **Strong Reference Count == 0** (Unique/Strong)
         *   用途: `release()` や `releaseAndDestroy()` 時の判定。
     *   **`canShutdown()`**: マネージャ(Pool)自体を破棄して良いか判定する。
         *   基準: **Total Reference Count (Strong + Weak) == 0**
@@ -44,9 +44,9 @@ Poolの破棄(`shutdown()`)は、リソース管理における最も危険な�
     *   Weak Countを減らす。
     *   もし Strong Count == 0 (既にPayload破棄済み) かつ Weak Count == 0 になれば、ここでFreelistに戻る。
 
-## Shared Lockable Resource Model (CommandQueue)
+## Strong Lockable Resource Model (CommandQueue)
 
-CommandQueueのように「複数の場所で参照を持ちたい(Shared)が、操作時には排他制御したい(Lock)」ケースのために、**LockableSharedControlBlock** を導入する。
+CommandQueueのように「複数の場所で参照を持ちたい(Strong)が、操作時には排他制御したい(Lock)」ケースのために、**LockableSharedControlBlock** を導入する。
 
 ### 構造案 (LockableSharedControlBlock)
 

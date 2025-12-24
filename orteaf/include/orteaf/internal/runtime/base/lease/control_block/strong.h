@@ -11,11 +11,13 @@
 namespace orteaf::internal::runtime::base {
 
 /**
- * @brief Shared + weak control block with handle/payload/pool binding.
+ * @brief Strong-ownership control block with handle/payload/pool binding.
  *
- * This control block tracks both strong and weak reference counts. When the
- * strong count reaches zero, it attempts to release the payload back to the
- * pool. The control block can only be shut down when both counts reach zero.
+ * This control block tracks a single strong reference count and optionally
+ * holds a pointer to the payload plus its handle and owning pool. When the
+ * strong count reaches zero, the control block attempts to release the payload
+ * back to the pool via Pool::release(handle). If the pool accepts the release,
+ * the payload binding is cleared to avoid stale access.
  *
  * Payload binding is explicit and can only occur when no references exist.
  * The control block does not create/destroy payloads directly; it only
@@ -30,47 +32,43 @@ namespace orteaf::internal::runtime::base {
  * @tparam PoolT Pool type providing release(handle) -> bool.
  */
 template <typename HandleT, typename PayloadT, typename PoolT>
-class SharedControlBlock {
+class StrongControlBlock {
 public:
-  using Category = lease_category::Shared;
+  using Category = lease_category::Strong;
   using Handle = HandleT;
   using Payload = PayloadT;
   using Pool = PoolT;
 
-  SharedControlBlock() = default;
-  SharedControlBlock(const SharedControlBlock &) = delete;
-  SharedControlBlock &operator=(const SharedControlBlock &) = delete;
-  SharedControlBlock(SharedControlBlock &&other) noexcept {
+  StrongControlBlock() = default;
+  StrongControlBlock(const StrongControlBlock &) = delete;
+  StrongControlBlock &operator=(const StrongControlBlock &) = delete;
+  StrongControlBlock(StrongControlBlock &&other) noexcept {
     strong_count_.store(other.strong_count_.load(std::memory_order_relaxed),
                         std::memory_order_relaxed);
-    weak_count_.store(other.weak_count_.load(std::memory_order_relaxed),
-                      std::memory_order_relaxed);
     payload_handle_ = other.payload_handle_;
     payload_ptr_ = other.payload_ptr_;
     payload_pool_ = other.payload_pool_;
   }
-  SharedControlBlock &operator=(SharedControlBlock &&other) noexcept {
+  StrongControlBlock &operator=(StrongControlBlock &&other) noexcept {
     if (this != &other) {
       strong_count_.store(other.strong_count_.load(std::memory_order_relaxed),
                           std::memory_order_relaxed);
-      weak_count_.store(other.weak_count_.load(std::memory_order_relaxed),
-                        std::memory_order_relaxed);
       payload_handle_ = other.payload_handle_;
       payload_ptr_ = other.payload_ptr_;
       payload_pool_ = other.payload_pool_;
     }
     return *this;
   }
-  ~SharedControlBlock() = default;
+  ~StrongControlBlock() = default;
 
   /**
    * @brief Returns true if payload binding is allowed.
    *
-   * Binding is only allowed when there is no payload currently bound and both
-   * strong and weak reference counts are zero.
+   * Binding is only allowed when there is no payload currently bound and the
+   * strong reference count is zero.
    */
   bool canBindPayload() const noexcept {
-    return payload_ptr_ == nullptr && count() == 0 && weakCount() == 0;
+    return payload_ptr_ == nullptr && count() == 0;
   }
 
   /**
@@ -154,73 +152,17 @@ public:
   }
 
   /**
-   * @brief Increments the weak reference count.
-   */
-  void acquireWeak() noexcept {
-    weak_count_.fetch_add(1, std::memory_order_relaxed);
-  }
-
-  /**
-   * @brief Decrements the weak reference count.
-   *
-   * @return True if this call observed the transition from 1 to 0.
-   */
-  bool releaseWeak() noexcept {
-    auto current = weak_count_.load(std::memory_order_acquire);
-    while (current > 0) {
-      if (weak_count_.compare_exchange_weak(current, current - 1,
-                                            std::memory_order_acq_rel,
-                                            std::memory_order_relaxed)) {
-        if (current == 1) {
-          if (canShutdown()) {
-            clearPayload();
-          }
-          return true;
-        }
-        return false;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * @brief Returns the current weak reference count.
-   */
-  std::uint32_t weakCount() const noexcept {
-    return weak_count_.load(std::memory_order_acquire);
-  }
-
-  /**
-   * @brief Attempts to promote a weak reference to a strong reference.
-   *
-   * Promotion succeeds only if the strong count is non-zero at the time of
-   * the CAS loop. This does not validate payload creation; that is managed by
-   * higher-level systems.
-   */
-  bool tryPromote() noexcept {
-    std::uint32_t current = strong_count_.load(std::memory_order_acquire);
-    while (current > 0) {
-      if (strong_count_.compare_exchange_weak(current, current + 1,
-                                              std::memory_order_acquire,
-                                              std::memory_order_relaxed)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
    * @brief Returns true if the control block can be torn down.
    *
-   * For SharedControlBlock, this is equivalent to strong count == 0.
+   * For StrongControlBlock, this is equivalent to strong count == 0.
    */
   bool canTeardown() const noexcept { return count() == 0; }
   /**
    * @brief Returns true if the control block can be safely shutdown.
    *
-   * Requires both strong and weak counts to be zero.
+   * For StrongControlBlock, this is equivalent to strong count == 0.
    */
-  bool canShutdown() const noexcept { return count() == 0 && weakCount() == 0; }
+  bool canShutdown() const noexcept { return count() == 0; }
 
 private:
   /**
@@ -263,7 +205,6 @@ private:
   }
 
   std::atomic<std::uint32_t> strong_count_{0};
-  std::atomic<std::uint32_t> weak_count_{0};
   Handle payload_handle_{Handle::invalid()};
   Payload *payload_ptr_{nullptr};
   Pool *payload_pool_{nullptr};

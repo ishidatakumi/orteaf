@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "orteaf/internal/base/handle.h"
-#include "orteaf/internal/runtime/base/lease/control_block/shared.h"
+#include "orteaf/internal/runtime/base/lease/control_block/strong.h"
 #include "orteaf/internal/runtime/base/lease/strong_lease.h"
 #include "orteaf/internal/runtime/base/manager/base_pool_manager_core.h"
 #include "orteaf/internal/runtime/base/pool/fixed_slot_store.h"
@@ -148,7 +148,7 @@ using GraphPayloadPool =
 
 struct GraphControlBlockTag {};
 
-using GraphControlBlock = ::orteaf::internal::runtime::base::SharedControlBlock<
+using GraphControlBlock = ::orteaf::internal::runtime::base::StrongControlBlock<
     ::orteaf::internal::base::GraphHandle, MpsGraphResource, GraphPayloadPool>;
 
 // =============================================================================

@@ -2,22 +2,13 @@
 
 namespace orteaf::internal::runtime::base::lease_category {
 
-/// @brief Raw category - no reference counting, payload only
-struct Raw {};
-
 /// @brief Weak category - weak references only (no strong ownership)
 struct Weak {};
 
-/// @brief Unique category - single ownership with in_use flag
-struct Unique {};
+/// @brief Strong category - shared ownership with strong count
+struct Strong {};
 
-/// @brief Shared category - shared ownership with strong count
+/// @brief Shared category - shared ownership with weak reference support
 struct Shared {};
-
-/// @brief WeakUnique category - unique ownership with weak reference support
-struct WeakUnique {};
-
-/// @brief WeakShared category - shared ownership with weak reference support
-struct WeakShared {};
 
 } // namespace orteaf::internal::runtime::base::lease_category

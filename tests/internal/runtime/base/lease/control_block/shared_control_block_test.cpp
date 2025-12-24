@@ -42,25 +42,32 @@ TEST(SharedControlBlock, BindPayloadStoresHandlePtrAndPool) {
   EXPECT_EQ(cb.payloadPool(), &pool);
 }
 
-TEST(SharedControlBlock, StrongCountIncrementsAndReleaseSignalsLast) {
+TEST(SharedControlBlock, StrongAndWeakCountsBehave) {
   SharedCB cb;
 
-  EXPECT_EQ(cb.count(), 0u);
   cb.acquire();
   cb.acquire();
+  cb.acquireWeak();
+  cb.acquireWeak();
+
   EXPECT_EQ(cb.count(), 2u);
+  EXPECT_EQ(cb.weakCount(), 2u);
 
   EXPECT_FALSE(cb.release());
   EXPECT_TRUE(cb.release());
+  EXPECT_FALSE(cb.releaseWeak());
+  EXPECT_TRUE(cb.releaseWeak());
+
   EXPECT_EQ(cb.count(), 0u);
+  EXPECT_EQ(cb.weakCount(), 0u);
 }
 
-TEST(SharedControlBlock, ReleaseDoesNotUnderflow) {
+TEST(SharedControlBlock, ReleaseWeakDoesNotUnderflow) {
   SharedCB cb;
 
-  EXPECT_EQ(cb.count(), 0u);
-  EXPECT_FALSE(cb.release());
-  EXPECT_EQ(cb.count(), 0u);
+  EXPECT_EQ(cb.weakCount(), 0u);
+  EXPECT_FALSE(cb.releaseWeak());
+  EXPECT_EQ(cb.weakCount(), 0u);
 }
 
 TEST(SharedControlBlock, ReleaseCallsPoolOnLastStrongRef) {
@@ -82,6 +89,14 @@ TEST(SharedControlBlock, ReleaseCallsPoolOnLastStrongRef) {
   EXPECT_FALSE(cb.hasPayload());
 }
 
+TEST(SharedControlBlock, ReleaseDoesNotUnderflow) {
+  SharedCB cb;
+
+  EXPECT_EQ(cb.count(), 0u);
+  EXPECT_FALSE(cb.release());
+  EXPECT_EQ(cb.count(), 0u);
+}
+
 TEST(SharedControlBlock, ReleaseSkipsPoolWhenNull) {
   DummyPool pool{};
   DummyPayload payload{};
@@ -95,17 +110,29 @@ TEST(SharedControlBlock, ReleaseSkipsPoolWhenNull) {
   EXPECT_EQ(pool.release_calls, 0u);
 }
 
+TEST(SharedControlBlock, TryPromoteDependsOnStrongCount) {
+  SharedCB cb;
+
+  EXPECT_FALSE(cb.tryPromote());
+
+  cb.acquire();
+  EXPECT_TRUE(cb.tryPromote());
+  EXPECT_EQ(cb.count(), 2u);
+}
+
 TEST(SharedControlBlock, TryBindPayloadFailsWhenReferencesRemain) {
   DummyPool pool{};
   DummyPayload payload{};
   SharedCB cb;
-  const PayloadHandle handle{5, 6};
+  const PayloadHandle handle{7, 8};
 
   cb.acquire();
+  cb.acquireWeak();
   EXPECT_FALSE(cb.tryBindPayload(handle, &payload, &pool));
   EXPECT_FALSE(cb.hasPayload());
 
   EXPECT_TRUE(cb.release());
+  EXPECT_TRUE(cb.releaseWeak());
   EXPECT_TRUE(cb.tryBindPayload(handle, &payload, &pool));
   EXPECT_TRUE(cb.hasPayload());
 }

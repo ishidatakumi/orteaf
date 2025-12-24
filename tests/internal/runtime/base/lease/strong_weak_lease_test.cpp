@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "orteaf/internal/base/handle.h"
-#include "orteaf/internal/runtime/base/lease/control_block/weak_shared.h"
+#include "orteaf/internal/runtime/base/lease/control_block/shared.h"
 
 namespace {
 
@@ -25,7 +25,7 @@ struct DummyPool {
   std::size_t release_calls{0};
 };
 
-using ControlBlock = ::orteaf::internal::runtime::base::WeakSharedControlBlock<
+using ControlBlock = ::orteaf::internal::runtime::base::SharedControlBlock<
     ControlBlockHandle, int, DummyPool>;
 
 struct DummyManager {
