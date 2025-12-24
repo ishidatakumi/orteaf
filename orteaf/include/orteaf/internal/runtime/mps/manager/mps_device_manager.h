@@ -130,16 +130,23 @@ struct DevicePayloadPoolTraits {
     command_queue_config.device = device;
     command_queue_config.ops = context.ops;
     payload.command_queue_manager.configure(command_queue_config);
-    // Configure library manager (payload/control capacities share initial value).
+    // Configure library manager (payload/control capacities share initial
+    // value).
     MpsLibraryManager::Config library_config{};
     library_config.device = device;
     library_config.ops = context.ops;
     library_config.payload_capacity = context.library_initial_capacity;
     library_config.control_block_capacity = context.library_initial_capacity;
     payload.library_manager.configure(library_config);
-    payload.heap_manager.initialize(device, request.handle,
-                                    &payload.library_manager, context.ops,
-                                    context.heap_initial_capacity);
+    // Configure heap manager
+    MpsHeapManager::Config heap_config{};
+    heap_config.device = device;
+    heap_config.device_handle = request.handle;
+    heap_config.library_manager = &payload.library_manager;
+    heap_config.ops = context.ops;
+    heap_config.payload_capacity = context.heap_initial_capacity;
+    heap_config.control_block_capacity = context.heap_initial_capacity;
+    payload.heap_manager.configure(heap_config);
     auto graph_config = context.graph_config;
     graph_config.device = device;
     graph_config.ops = context.ops;
