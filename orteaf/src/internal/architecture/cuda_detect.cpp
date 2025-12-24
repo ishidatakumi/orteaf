@@ -2,7 +2,7 @@
 
 #include "orteaf/internal/backend/backend.h"
 #include "orteaf/internal/diagnostics/error/error.h"
-#include "orteaf/internal/runtime/cuda/platform/wrapper/cuda_device.h"
+#include "orteaf/internal/execution/cuda/platform/wrapper/cuda_device.h"
 
 #include <algorithm>
 #include <cctype>
@@ -80,8 +80,8 @@ Architecture detectCudaArchitecture(int compute_capability,
 Architecture detectCudaArchitectureForDeviceId(
     ::orteaf::internal::base::DeviceHandle device_id) {
 #if ORTEAF_ENABLE_CUDA
-  using runtime::cuda::platform::wrapper::ComputeCapability;
-  using runtime::cuda::platform::wrapper::CudaDevice_t;
+  using execution::cuda::platform::wrapper::ComputeCapability;
+  using execution::cuda::platform::wrapper::CudaDevice_t;
   using diagnostics::error::OrteafErrc;
 
   const std::uint32_t device_index = static_cast<std::uint32_t>(device_id);
@@ -89,19 +89,19 @@ Architecture detectCudaArchitectureForDeviceId(
       diagnostics::error::makeErrorCode(OrteafErrc::BackendUnavailable);
 
   try {
-    int count = runtime::cuda::platform::wrapper::getDeviceCount();
+    int count = execution::cuda::platform::wrapper::getDeviceCount();
     if (count <= 0 || device_index >= static_cast<std::uint32_t>(count)) {
       return Architecture::CudaGeneric;
     }
 
-    CudaDevice_t device = runtime::cuda::platform::wrapper::getDevice(device_index);
+    CudaDevice_t device = execution::cuda::platform::wrapper::getDevice(device_index);
     if (!device) {
       return Architecture::CudaGeneric;
     }
 
-    ComputeCapability capability = runtime::cuda::platform::wrapper::getComputeCapability(device);
+    ComputeCapability capability = execution::cuda::platform::wrapper::getComputeCapability(device);
     const int cc_value = capability.major * 10 + capability.minor;
-    std::string vendor = runtime::cuda::platform::wrapper::getDeviceVendor(device);
+    std::string vendor = execution::cuda::platform::wrapper::getDeviceVendor(device);
     if (vendor.empty()) {
       vendor = "nvidia";
     }

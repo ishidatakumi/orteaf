@@ -1,0 +1,90 @@
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <utility>
+
+#include <orteaf/internal/backend/backend.h>
+#include <orteaf/internal/execution/cpu/resource/cpu_buffer_view.h>
+#include <orteaf/internal/execution/cpu/resource/cpu_heap_region.h>
+#include <orteaf/internal/execution/cpu/resource/cpu_tokens.h>
+#if ORTEAF_ENABLE_CUDA
+#include <orteaf/internal/execution/cuda/platform/wrapper/cuda_device.h>
+#include <orteaf/internal/execution/cuda/platform/wrapper/cuda_stream.h>
+#include <orteaf/internal/execution/cuda/resource/cuda_buffer_view.h>
+#include <orteaf/internal/execution/cuda/resource/cuda_tokens.h>
+#endif
+
+#if ORTEAF_ENABLE_MPS
+#include <orteaf/internal/execution/mps/platform/wrapper/mps_command_queue.h>
+#include <orteaf/internal/execution/mps/platform/wrapper/mps_device.h>
+#include <orteaf/internal/execution/mps/resource/mps_buffer_view.h>
+#include <orteaf/internal/execution/mps/resource/mps_fence_token.h>
+#include <orteaf/internal/execution/mps/resource/mps_heap_region.h>
+#include <orteaf/internal/execution/mps/resource/mps_reuse_token.h>
+#endif
+
+namespace orteaf::internal::execution::base {
+
+template <::orteaf::internal::backend::Backend B> struct BackendTraits;
+
+// CPU
+template <> struct BackendTraits<::orteaf::internal::backend::Backend::Cpu> {
+  using BufferView = ::orteaf::internal::execution::cpu::resource::CpuBufferView;
+  using HeapRegion = ::orteaf::internal::execution::cpu::resource::CpuHeapRegion;
+  using Stream = void *; // placeholder; adjust when stream type is defined
+  using Device = int; // placeholder; adjust when device abstraction is defined
+  using Context =
+      int; // placeholder; adjust when context abstraction is defined
+  using FenceToken = ::orteaf::internal::execution::cpu::resource::FenceToken;
+  using ReuseToken = ::orteaf::internal::execution::cpu::resource::ReuseToken;
+  struct KernelLaunchParams {
+    Stream stream{nullptr};
+    Device device{};
+  };
+};
+
+// CUDA
+#if ORTEAF_ENABLE_CUDA
+template <> struct BackendTraits<::orteaf::internal::backend::Backend::Cuda> {
+  using BufferView =
+      ::orteaf::internal::execution::cuda::resource::CudaBufferView;
+  using HeapRegion = ::orteaf::internal::execution::cuda::resource::
+      CudaBufferView; // TODO: replace with dedicated region type
+  using Stream = ::orteaf::internal::execution::cuda::platform::wrapper::
+      CudaStream_t; // CUDA stream handle
+  using Device = ::orteaf::internal::execution::cuda::platform::wrapper::
+      CudaDevice_t;    // opaque CUDA device handle
+  using Context = int; // placeholder until context abstraction exists
+  using FenceToken = ::orteaf::internal::execution::cuda::resource::
+      FenceToken; // placeholder fence token until CUDA token is defined
+  using ReuseToken = ::orteaf::internal::execution::cuda::resource::
+      ReuseToken; // placeholder reuse token until CUDA token is defined
+  struct KernelLaunchParams {
+    Device device{};
+    Stream stream{};
+  };
+};
+#endif // ORTEAF_ENABLE_CUDA
+
+// MPS
+#if ORTEAF_ENABLE_MPS
+template <> struct BackendTraits<::orteaf::internal::backend::Backend::Mps> {
+  using BufferView = ::orteaf::internal::execution::mps::resource::MpsBufferView;
+  using HeapRegion = ::orteaf::internal::execution::mps::resource::MpsHeapRegion;
+  using Context = int; // placeholder until context abstraction exists
+  using Stream = ::orteaf::internal::execution::mps::platform::wrapper::
+      MpsCommandQueue_t; // command queue as stream token
+  using Device = ::orteaf::internal::execution::mps::platform::wrapper::
+      MpsDevice_t; // opaque Metal device handle
+  using FenceToken = ::orteaf::internal::execution::mps::resource::MpsFenceToken;
+  using ReuseToken = ::orteaf::internal::execution::mps::resource::MpsReuseToken;
+  struct KernelLaunchParams {
+    Device device{nullptr};
+    Stream command_queue{nullptr};
+  };
+};
+#endif // ORTEAF_ENABLE_MPS
+
+} // namespace orteaf::internal::execution::base

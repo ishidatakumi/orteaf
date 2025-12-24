@@ -134,7 +134,7 @@ function(orteaf_add_metal_kernel_binaries)
             "${GENERATED_SOURCE_CANONICAL}"
     )
 
-    set(ORTEAF_METAL_EMBED_SOURCE "${CMAKE_SOURCE_DIR}/orteaf/src/internal/runtime/mps/platform/wrapper/metal_kernel_embed_registry.mm" PARENT_SCOPE)
+    set(ORTEAF_METAL_EMBED_SOURCE "${CMAKE_SOURCE_DIR}/orteaf/src/internal/execution/mps/platform/wrapper/metal_kernel_embed_registry.mm" PARENT_SCOPE)
     set(ORTEAF_METAL_EMBED_HEADER "${GENERATED_SOURCE_CANONICAL}" PARENT_SCOPE)
     set(ORTEAF_METAL_EMBED_OBJECTS "${EMBEDDED_OBJECTS}" PARENT_SCOPE)
     set(ORTEAF_METAL_GENERATED_LIBS "${ALL_METALLIBS}" PARENT_SCOPE)
