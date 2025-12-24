@@ -64,7 +64,7 @@ public:
   using PoolType = PoolT;
   /// @brief Manager type that creates leases.
   using ManagerType = ManagerT;
-  /// @brief Category tag indicating this is a shared (strong) lease.
+  /// @brief Category tag indicating this is a strong lease.
   using CompatibleCategory = lease_category::Strong;
 
   /**
