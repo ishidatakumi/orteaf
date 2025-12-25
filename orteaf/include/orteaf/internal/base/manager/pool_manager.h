@@ -155,73 +155,6 @@ public:
   }
 
   /**
-   * @brief ControlBlock Pool を growth_chunk_size_ 分拡張
-   */
-  void growControlBlockPool() {
-    if (control_block_block_size_ == 0) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          std::string(managerName()) + " control block size is not set");
-    }
-    const std::size_t desired = control_block_pool_.size() + growth_chunk_size_;
-    typename ControlBlockPoolTraits::Request request{};
-    typename ControlBlockPoolTraits::Context context{};
-    const std::size_t old_capacity = control_block_pool_.resize(desired);
-    control_block_pool_.createRange(old_capacity, control_block_pool_.size(),
-                                    request, context);
-  }
-
-  /**
-   * @brief ControlBlockを取得（なければgrowして再取得）
-   *
-   * @return ControlBlockHandle
-   * @throws OutOfRange grow後も取得できない場合
-   */
-  ControlBlockHandle acquireControlBlock() {
-    auto handle = control_block_pool_.tryAcquireCreated();
-    if (!handle.isValid()) {
-      growControlBlockPool();
-      handle = control_block_pool_.tryAcquireCreated();
-    }
-    if (!handle.isValid()) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
-          std::string(managerName()) + " has no available control blocks");
-    }
-    return handle;
-  }
-
-  /**
-   * @brief Get control block pointer from handle
-   *
-   * @param handle ControlBlock handle
-   * @return Pointer to ControlBlock, or nullptr if invalid
-   */
-  ControlBlock *getControlBlock(ControlBlockHandle handle) noexcept {
-    return control_block_pool_.get(handle);
-  }
-
-  /**
-   * @brief Get control block pointer from handle (const version)
-   *
-   * @param handle ControlBlock handle
-   * @return Const pointer to ControlBlock, or nullptr if invalid
-   */
-  const ControlBlock *
-  getControlBlock(ControlBlockHandle handle) const noexcept {
-    return control_block_pool_.get(handle);
-  }
-
-  /**
-   * @brief ControlBlockをプールに返却
-   *
-   * @param handle 返却するCBのHandle
-   */
-  void releaseControlBlock(ControlBlockHandle handle) noexcept {
-    control_block_pool_.release(handle);
-  }
-
-  /**
    * @brief ControlBlock Poolをshutdown
    */
   void shutdownControlBlockPool() { control_block_pool_.shutdown(); }
@@ -250,21 +183,58 @@ public:
   }
 
   // ===========================================================================
-  // Accessors
+  // Payload Pool Operations
   // ===========================================================================
 
   /**
-   * @brief ControlBlock Pool for lease construction only.
+   * @brief Payload Poolを設定
    */
-  ControlBlockPool *controlBlockPoolForLease() noexcept {
-    return &control_block_pool_;
+  template <typename Config>
+  void configurePayloadPool(const Config &config)
+    requires requires(PayloadPool &pool, const Config &cfg) {
+      pool.configure(cfg);
+    }
+  {
+    payload_pool_.configure(config);
   }
 
   /**
-   * @brief Payload Poolへのアクセス
+   * @brief Payload Poolをshutdown
    */
-  PayloadPool &payloadPool() noexcept { return payload_pool_; }
-  const PayloadPool &payloadPool() const noexcept { return payload_pool_; }
+  template <typename Request, typename Context>
+  void shutdownPayloadPool(const Request &request, const Context &context)
+    requires requires(PayloadPool &pool, const Request &req,
+                      const Context &ctx) { pool.shutdown(req, ctx); }
+  {
+    payload_pool_.shutdown(request, context);
+  }
+
+  /**
+   * @brief Payload Poolの全作成
+   */
+  template <typename Request, typename Context>
+  bool createAllPayloads(const Request &request, const Context &context)
+    requires requires(PayloadPool &pool, const Request &req,
+                      const Context &ctx) {
+      { pool.createAll(req, ctx) } -> std::convertible_to<bool>;
+    }
+  {
+    return payload_pool_.createAll(request, context);
+  }
+
+  /**
+   * @brief Payloadを指定ハンドルに作成
+   */
+  template <typename Request, typename Context>
+  bool emplacePayload(PayloadHandle handle, const Request &request,
+                      const Context &context)
+    requires requires(PayloadPool &pool, PayloadHandle h, const Request &req,
+                      const Context &ctx) {
+      { pool.emplace(h, req, ctx) } -> std::convertible_to<bool>;
+    }
+  {
+    return payload_pool_.emplace(handle, request, context);
+  }
 
   /**
    * @brief Payload Pool を指定量だけ拡張
@@ -506,6 +476,39 @@ public:
   // Test Support
   // ===========================================================================
 
+  std::size_t payloadPoolSizeForTest() const noexcept
+    requires requires(const PayloadPool &pool) { pool.size(); }
+  {
+    return payload_pool_.size();
+  }
+
+  std::size_t payloadPoolCapacityForTest() const noexcept
+    requires requires(const PayloadPool &pool) { pool.capacity(); }
+  {
+    return payload_pool_.capacity();
+  }
+
+  std::size_t payloadPoolAvailableForTest() const noexcept
+    requires requires(const PayloadPool &pool) { pool.available(); }
+  {
+    return payload_pool_.available();
+  }
+
+  bool payloadCreatedForTest(PayloadHandle handle) const noexcept
+    requires requires(const PayloadPool &pool, PayloadHandle h) {
+      pool.isCreated(h);
+    }
+  {
+    return payload_pool_.isCreated(handle);
+  }
+
+  auto payloadForTest(PayloadHandle handle) const noexcept
+      -> decltype(std::declval<const PayloadPool &>().get(handle))
+    requires requires(const PayloadPool &pool, PayloadHandle h) { pool.get(h); }
+  {
+    return payload_pool_.get(handle);
+  }
+
   std::size_t controlBlockPoolSizeForTest() const noexcept {
     return control_block_pool_.size();
   }
@@ -517,9 +520,81 @@ public:
   std::size_t controlBlockPoolAvailableForTest() const noexcept {
     return control_block_pool_.available();
   }
+
+  const ControlBlock *controlBlockForTest(ControlBlockHandle handle) const
+    noexcept {
+    return control_block_pool_.get(handle);
+  }
 #endif
 
 private:
+  /**
+   * @brief ControlBlock Pool を growth_chunk_size_ 分拡張
+   */
+  void growControlBlockPool() {
+    if (control_block_block_size_ == 0) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          std::string(managerName()) + " control block size is not set");
+    }
+    const std::size_t desired = control_block_pool_.size() + growth_chunk_size_;
+    typename ControlBlockPoolTraits::Request request{};
+    typename ControlBlockPoolTraits::Context context{};
+    const std::size_t old_capacity = control_block_pool_.resize(desired);
+    control_block_pool_.createRange(old_capacity, control_block_pool_.size(),
+                                    request, context);
+  }
+
+  /**
+   * @brief ControlBlockを取得（なければgrowして再取得）
+   *
+   * @return ControlBlockHandle
+   * @throws OutOfRange grow後も取得できない場合
+   */
+  ControlBlockHandle acquireControlBlock() {
+    auto handle = control_block_pool_.tryAcquireCreated();
+    if (!handle.isValid()) {
+      growControlBlockPool();
+      handle = control_block_pool_.tryAcquireCreated();
+    }
+    if (!handle.isValid()) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
+          std::string(managerName()) + " has no available control blocks");
+    }
+    return handle;
+  }
+
+  /**
+   * @brief Get control block pointer from handle
+   *
+   * @param handle ControlBlock handle
+   * @return Pointer to ControlBlock, or nullptr if invalid
+   */
+  ControlBlock *getControlBlock(ControlBlockHandle handle) noexcept {
+    return control_block_pool_.get(handle);
+  }
+
+  /**
+   * @brief Get control block pointer from handle (const version)
+   *
+   * @param handle ControlBlock handle
+   * @return Const pointer to ControlBlock, or nullptr if invalid
+   */
+  const ControlBlock *
+  getControlBlock(ControlBlockHandle handle) const noexcept {
+    return control_block_pool_.get(handle);
+  }
+
+  /**
+   * @brief ControlBlockをプールに返却
+   *
+   * @param handle 返却するCBのHandle
+   */
+  void releaseControlBlock(ControlBlockHandle handle) noexcept {
+    control_block_pool_.release(handle);
+  }
+
   void applyControlBlockConfig(const Config &config) {
     const std::size_t capacity = config.control_block_capacity;
     const std::size_t block_size = config.control_block_block_size;
