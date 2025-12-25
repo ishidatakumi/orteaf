@@ -51,10 +51,9 @@ void MpsDeviceManager::configure(const Config &config) {
       event_config.payload_block_size == 0) {
     event_config.payload_block_size = event_config.payload_capacity;
   }
-  const auto event_cb_capacity =
-      event_config.control_block_capacity != 0
-          ? event_config.control_block_capacity
-          : event_config.payload_capacity;
+  const auto event_cb_capacity = event_config.control_block_capacity != 0
+                                     ? event_config.control_block_capacity
+                                     : event_config.payload_capacity;
   if (event_config.control_block_block_size == 0) {
     event_config.control_block_block_size =
         event_cb_capacity == 0 ? 1u : event_cb_capacity;
@@ -64,10 +63,9 @@ void MpsDeviceManager::configure(const Config &config) {
       fence_config.payload_block_size == 0) {
     fence_config.payload_block_size = fence_config.payload_capacity;
   }
-  const auto fence_cb_capacity =
-      fence_config.control_block_capacity != 0
-          ? fence_config.control_block_capacity
-          : fence_config.payload_capacity;
+  const auto fence_cb_capacity = fence_config.control_block_capacity != 0
+                                     ? fence_config.control_block_capacity
+                                     : fence_config.payload_capacity;
   if (fence_config.control_block_block_size == 0) {
     fence_config.control_block_block_size =
         fence_cb_capacity == 0 ? 1u : fence_cb_capacity;
@@ -79,8 +77,7 @@ void MpsDeviceManager::configure(const Config &config) {
   }
   if (graph_config.control_block_block_size == 0) {
     graph_config.control_block_block_size =
-        graph_config.payload_capacity == 0 ? 1u
-                                           : graph_config.payload_capacity;
+        graph_config.payload_capacity == 0 ? 1u : graph_config.payload_capacity;
   }
   if (device_count <= 0) {
     core_.payloadPool().configure(DevicePayloadPool::Config{0, 0});
@@ -93,13 +90,16 @@ void MpsDeviceManager::configure(const Config &config) {
   }
 
   const auto capacity = device_count_size;
-  const auto payload_context = DevicePayloadPoolTraits::Context{
-      ops_, command_queue_config, event_config, fence_config,
-      config.heap_initial_capacity, config.library_initial_capacity,
-      graph_config};
+  const auto payload_context =
+      DevicePayloadPoolTraits::Context{ops_,
+                                       command_queue_config,
+                                       event_config,
+                                       fence_config,
+                                       config.heap_initial_capacity,
+                                       config.library_initial_capacity,
+                                       graph_config};
   const DevicePayloadPoolTraits::Request payload_request{};
-  core_.payloadPool().configure(
-      DevicePayloadPool::Config{capacity, capacity});
+  core_.payloadPool().configure(DevicePayloadPool::Config{capacity, capacity});
   core_.payloadPool().createAll(payload_request, payload_context);
 
   core_.configure(MpsDeviceManager::Core::Config{
@@ -117,9 +117,14 @@ void MpsDeviceManager::shutdown() {
   core_.checkCanShutdownOrThrow();
 
   const DevicePayloadPoolTraits::Request payload_request{};
-  const auto payload_context = DevicePayloadPoolTraits::Context{
-      ops_, MpsCommandQueueManager::Config{}, MpsEventManager::Config{},
-      MpsFenceManager::Config{}, 0, 0, MpsGraphManager::Config{}};
+  const auto payload_context =
+      DevicePayloadPoolTraits::Context{ops_,
+                                       MpsCommandQueueManager::Config{},
+                                       MpsEventManager::Config{},
+                                       MpsFenceManager::Config{},
+                                       0,
+                                       0,
+                                       MpsGraphManager::Config{}};
   core_.payloadPool().shutdown(payload_request, payload_context);
   core_.shutdownControlBlockPool();
   ops_ = nullptr;
@@ -145,6 +150,21 @@ MpsDeviceManager::DeviceLease MpsDeviceManager::acquire(DeviceHandle handle) {
         "MPS device payload is unavailable");
   }
 
+  // Check if this payload already has a bound control block
+  if (core_.payloadPool().hasBoundControlBlock(handle)) {
+    auto existing_cb_handle = core_.payloadPool().getBoundControlBlock(handle);
+    auto *cb_ptr = core_.getControlBlock(existing_cb_handle);
+    if (cb_ptr != nullptr) {
+      // Reuse existing CB by acquiring weak reference
+      cb_ptr->acquireWeak();
+      return DeviceLease{cb_ptr, core_.controlBlockPoolForLease(),
+                         existing_cb_handle};
+    }
+    // CB was released/invalid, unbind it
+    core_.payloadPool().unbindControlBlock(handle);
+  }
+
+  // Create new CB and bind to payload
   auto cb_ref = core_.acquireControlBlock();
   if (!cb_ref.payload_ptr->tryBindPayload(handle, payload_ptr,
                                           &core_.payloadPool())) {
@@ -153,6 +173,10 @@ MpsDeviceManager::DeviceLease MpsDeviceManager::acquire(DeviceHandle handle) {
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "MPS device control block binding failed");
   }
+
+  // Store CB handle in payload pool for future lookups
+  core_.payloadPool().bindControlBlock(handle, cb_ref.handle);
+
   return DeviceLease{cb_ref.payload_ptr, core_.controlBlockPoolForLease(),
                      cb_ref.handle};
 }

@@ -8,11 +8,12 @@
 
 #include "orteaf/internal/architecture/architecture.h"
 #include "orteaf/internal/base/handle.h"
-#include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/base/lease/control_block/weak.h"
 #include "orteaf/internal/base/lease/weak_lease.h"
 #include "orteaf/internal/base/manager/pool_manager.h"
 #include "orteaf/internal/base/pool/fixed_slot_store.h"
+#include "orteaf/internal/base/pool/with_control_block_binding.h"
+#include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/execution/mps/manager/mps_command_queue_manager.h"
 #include "orteaf/internal/execution/mps/manager/mps_event_manager.h"
 #include "orteaf/internal/execution/mps/manager/mps_fence_manager.h"
@@ -168,15 +169,31 @@ struct DevicePayloadPoolTraits {
   }
 };
 
+// Forward declare to get proper ordering
+struct MpsDeviceManagerTraits;
+
+// =============================================================================
+// Payload Pool with ControlBlock Binding
+// =============================================================================
+
+using DevicePayloadPoolBase =
+    ::orteaf::internal::base::pool::FixedSlotStore<DevicePayloadPoolTraits>;
+
+// Forward-declare CB tag to avoid circular dependency
+struct DeviceManagerCBTag {};
+
+// Use DeviceManagerCBTag for CB binding
+using DeviceCBHandle =
+    ::orteaf::internal::base::pool::ControlBlockHandle<DeviceManagerCBTag>;
+
+// Add CB binding capability
 using DevicePayloadPool =
-    ::orteaf::internal::base::pool::FixedSlotStore<
-        DevicePayloadPoolTraits>;
+    ::orteaf::internal::base::pool::WithControlBlockBinding<
+        DevicePayloadPoolBase, DeviceCBHandle>;
 
 // =============================================================================
 // ControlBlock (using default pool traits via PoolManager)
 // =============================================================================
-
-struct DeviceControlBlockTag {};
 
 using DeviceControlBlock = ::orteaf::internal::base::WeakControlBlock<
     ::orteaf::internal::base::DeviceHandle, MpsDeviceResource,
@@ -189,7 +206,7 @@ using DeviceControlBlock = ::orteaf::internal::base::WeakControlBlock<
 struct MpsDeviceManagerTraits {
   using PayloadPool = DevicePayloadPool;
   using ControlBlock = DeviceControlBlock;
-  struct ControlBlockTag {};
+  using ControlBlockTag = DeviceManagerCBTag; // Use the same tag
   using PayloadHandle = ::orteaf::internal::base::DeviceHandle;
   static constexpr const char *Name = "MPS device manager";
 };
@@ -205,14 +222,14 @@ public:
   using DeviceType =
       ::orteaf::internal::execution::mps::platform::wrapper::MpsDevice_t;
 
-  using Core = ::orteaf::internal::base::PoolManager<
-      MpsDeviceManagerTraits>;
+  using Core = ::orteaf::internal::base::PoolManager<MpsDeviceManagerTraits>;
   using ControlBlock = Core::ControlBlock;
   using ControlBlockHandle = Core::ControlBlockHandle;
   using ControlBlockPool = Core::ControlBlockPool;
 
-  using DeviceLease = ::orteaf::internal::base::WeakLease<
-      ControlBlockHandle, ControlBlock, ControlBlockPool, MpsDeviceManager>;
+  using DeviceLease =
+      ::orteaf::internal::base::WeakLease<ControlBlockHandle, ControlBlock,
+                                          ControlBlockPool, MpsDeviceManager>;
 
   struct Config {
     SlowOps *ops{nullptr};

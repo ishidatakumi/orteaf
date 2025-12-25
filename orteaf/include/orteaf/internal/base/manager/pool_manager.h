@@ -182,6 +182,27 @@ public:
   }
 
   /**
+   * @brief Get control block pointer from handle
+   *
+   * @param handle ControlBlock handle
+   * @return Pointer to ControlBlock, or nullptr if invalid
+   */
+  ControlBlock *getControlBlock(ControlBlockHandle handle) noexcept {
+    return control_block_pool_.get(handle);
+  }
+
+  /**
+   * @brief Get control block pointer from handle (const version)
+   *
+   * @param handle ControlBlock handle
+   * @return Const pointer to ControlBlock, or nullptr if invalid
+   */
+  const ControlBlock *
+  getControlBlock(ControlBlockHandle handle) const noexcept {
+    return control_block_pool_.get(handle);
+  }
+
+  /**
    * @brief ControlBlockをプールに返却
    *
    * @param handle 返却するCBのHandle
