@@ -3,7 +3,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "orteaf/internal/execution/execution.h"
 #include "orteaf/internal/execution/allocator/buffer_resource.h"
 #include "orteaf/internal/execution/allocator/policies/chunk_locator/direct_chunk_locator.h"
 #include "orteaf/internal/execution/allocator/policies/fast_free/fast_free_policies.h"
@@ -12,17 +11,19 @@
 #include "orteaf/internal/execution/allocator/policies/reuse/deferred_reuse_policy.h"
 #include "orteaf/internal/execution/allocator/policies/threading/threading_policies.h"
 #include "orteaf/internal/execution/cpu/resource/cpu_buffer_view.h"
+#include "orteaf/internal/execution/execution.h"
 #include "tests/internal/execution/allocator/testing/mock_resource.h"
 
 namespace {
 
 using ::orteaf::internal::execution::Execution;
-using ::orteaf::internal::execution::allocator::BufferBlock;
-using ::orteaf::internal::execution::allocator::BufferResource;
+using ::orteaf::internal::execution::allocator::ExecutionBuffer;
+using ::orteaf::internal::execution::allocator::ExecutionBufferBlock;
 using ::orteaf::internal::execution::allocator::testing::MockCpuResource;
 using ::orteaf::internal::execution::allocator::testing::MockCpuResourceImpl;
 namespace policies = ::orteaf::internal::execution::allocator::policies;
-using CpuBufferView = ::orteaf::internal::execution::cpu::resource::CpuBufferView;
+using CpuBufferView =
+    ::orteaf::internal::execution::cpu::resource::CpuBufferView;
 using ::testing::NiceMock;
 using ::testing::Return;
 
@@ -32,9 +33,10 @@ using ::testing::Return;
 struct MockResource {
   using BufferView = CpuBufferView;
   using BufferResource =
-      ::orteaf::internal::execution::allocator::BufferResource<Execution::Cpu>;
+      ::orteaf::internal::execution::allocator::ExecutionBuffer<Execution::Cpu>;
   using BufferBlock =
-      ::orteaf::internal::execution::allocator::BufferBlock<Execution::Cpu>;
+      ::orteaf::internal::execution::allocator::ExecutionBufferBlock<
+          Execution::Cpu>;
   using FenceToken = typename BufferResource::FenceToken;
   struct ReuseToken {
     ReuseToken() = default;
@@ -91,7 +93,7 @@ using Pool = ::orteaf::internal::execution::allocator::pool::SegregatePool<
     policies::DeferredReusePolicy<MockResource>,
     policies::HostStackFreelistPolicy<MockResource>>;
 
-using BufferResourceType = BufferResource<Execution::Cpu>;
+using CpuBufferType = ExecutionBuffer<Execution::Cpu>;
 
 TEST(SegregatePool, InitializePropagatesToAllPolicies) {
   NiceMock<MockCpuResourceImpl> impl;
@@ -148,7 +150,7 @@ TEST(SegregatePool, AllocatesFromChunkWhenBelowMaxSize) {
       .WillOnce(Return(CpuBufferView{base, 0, 256}));
 
   Pool::LaunchParams params{};
-  BufferResourceType block = pool.allocate(80, 64, params);
+  CpuBufferType block = pool.allocate(80, 64, params);
 
   EXPECT_TRUE(block.valid());
   EXPECT_EQ(block.view.size(), block_size);
@@ -183,7 +185,7 @@ TEST(SegregatePool, UsesLargeAllocWhenOverMaxSize) {
       .WillOnce(Return(CpuBufferView{base, 0, 300}));
 
   Pool::LaunchParams params{};
-  BufferResourceType block = pool.allocate(300, 16, params);
+  CpuBufferType block = pool.allocate(300, 16, params);
 
   EXPECT_TRUE(block.valid());
   EXPECT_EQ(block.view.size(), 300u);
@@ -218,14 +220,14 @@ TEST(SegregatePool, DeallocateReturnsBlockToFreelist) {
       .WillOnce(Return(CpuBufferView{base, 0, 256}));
 
   Pool::LaunchParams params{};
-  BufferResourceType block = pool.allocate(80, 64, params);
+  CpuBufferType block = pool.allocate(80, 64, params);
   ASSERT_TRUE(block.valid());
   testing::Mock::VerifyAndClearExpectations(&impl);
 
   pool.deallocate(block, 80, 64, params);
 
   EXPECT_CALL(impl, allocate).Times(0);
-  BufferResourceType reused = pool.allocate(80, 64, params);
+  CpuBufferType reused = pool.allocate(80, 64, params);
   EXPECT_TRUE(reused.valid());
   EXPECT_EQ(reused.view.size(), block.view.size());
 }
@@ -254,7 +256,7 @@ TEST(SegregatePool, DeallocateLargeAllocUsesLargePolicy) {
   EXPECT_CALL(impl, deallocate(testing::_, 300, 16)).Times(1);
 
   Pool::LaunchParams params{};
-  BufferResourceType block = pool.allocate(300, 16, params);
+  CpuBufferType block = pool.allocate(300, 16, params);
   ASSERT_TRUE(block.valid());
 
   pool.deallocate(block, 300, 16, params);
@@ -291,13 +293,13 @@ TEST(SegregatePool, ReleaseChunkFreesBackingAndForcesNewChunkOnNextAlloc) {
   EXPECT_CALL(impl, deallocate(testing::_, 256, 0)).Times(1);
 
   Pool::LaunchParams params{};
-  BufferResourceType block = pool.allocate(80, 64, params);
+  CpuBufferType block = pool.allocate(80, 64, params);
   ASSERT_TRUE(block.valid());
 
   pool.deallocate(block, 80, 64, params);
   pool.releaseChunk(params);
 
-  BufferResourceType new_block = pool.allocate(80, 64, params);
+  CpuBufferType new_block = pool.allocate(80, 64, params);
   EXPECT_TRUE(new_block.valid());
   EXPECT_EQ(new_block.view.raw(), base2);
 }
@@ -338,7 +340,7 @@ TEST(SegregatePool, StatsTracking) {
 
   Pool::LaunchParams params{};
   // Allocation triggers expansion
-  BufferResourceType block = pool.allocate(64, 64, params);
+  CpuBufferType block = pool.allocate(64, 64, params);
   ASSERT_TRUE(block.valid());
 
   std::string stats_str = stats.toString();

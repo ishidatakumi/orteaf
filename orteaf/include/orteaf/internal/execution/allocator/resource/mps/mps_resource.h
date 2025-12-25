@@ -25,12 +25,18 @@ namespace orteaf::internal::execution::allocator::resource::mps {
 // buffers at offset 0.
 class MpsResource {
 public:
-  static constexpr auto ExecutionType = ::orteaf::internal::execution::Execution::Mps;
-  using BufferView = ::orteaf::internal::execution::mps::resource::MpsBufferView;
-  using BufferBlock =
-      ::orteaf::internal::execution::allocator::BufferBlock<ExecutionType>;
-  using BufferResource =
-      ::orteaf::internal::execution::allocator::BufferResource<ExecutionType>;
+  static constexpr auto ExecutionType =
+      ::orteaf::internal::execution::Execution::Mps;
+  using BufferView =
+      ::orteaf::internal::execution::mps::resource::MpsBufferView;
+  using MpsBufferBlock =
+      ::orteaf::internal::execution::allocator::ExecutionBufferBlock<
+          ExecutionType>;
+  using MpsBuffer =
+      ::orteaf::internal::execution::allocator::ExecutionBuffer<ExecutionType>;
+  // Legacy aliases for backward compatibility
+  using BufferBlock = MpsBufferBlock;
+  using BufferResource = MpsBuffer;
 
   using FenceToken = ::orteaf::internal::execution::mps::resource::MpsFenceToken;
   using ReuseToken = ::orteaf::internal::execution::mps::resource::MpsReuseToken;
@@ -58,7 +64,7 @@ public:
         nullptr};
     ::orteaf::internal::execution::mps::platform::wrapper::MpsBufferUsage_t usage{
         ::orteaf::internal::execution::mps::platform::wrapper::
-            kMPSDefaultBufferUsage};
+                  kMPSDefaultBufferUsage};
     ::orteaf::internal::execution::mps::manager::MpsLibraryManager
         *library_manager{nullptr};
     std::size_t chunk_table_capacity{16};
@@ -118,7 +124,7 @@ private:
   ::orteaf::internal::execution::mps::platform::wrapper::MpsHeap_t heap_{nullptr};
   ::orteaf::internal::execution::mps::platform::wrapper::MpsBufferUsage_t usage_{
       ::orteaf::internal::execution::mps::platform::wrapper::
-          kMPSDefaultBufferUsage};
+                 kMPSDefaultBufferUsage};
   bool initialized_{false};
 };
 

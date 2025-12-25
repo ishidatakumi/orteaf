@@ -3,12 +3,12 @@
 #include <cstddef>
 #include <unordered_map>
 
-#include <orteaf/internal/execution/execution.h>
 #include <orteaf/internal/base/heap_vector.h>
 #include <orteaf/internal/diagnostics/error/error_macros.h>
 #include <orteaf/internal/execution/allocator/buffer_resource.h>
 #include <orteaf/internal/execution/allocator/policies/policy_config.h>
 #include <orteaf/internal/execution/base/execution_traits.h>
+#include <orteaf/internal/execution/execution.h>
 
 namespace orteaf::internal::execution::allocator::policies {
 
@@ -26,7 +26,7 @@ template <typename Resource, ::orteaf::internal::execution::Execution B>
 class DeviceLinkedFreelistPolicy {
 public:
   using BufferResource =
-      ::orteaf::internal::execution::allocator::BufferResource<B>;
+      ::orteaf::internal::execution::allocator::ExecutionBuffer<B>;
   using LaunchParams =
       typename ::orteaf::internal::execution::base::ExecutionTraits<B>::KernelLaunchParams;
 

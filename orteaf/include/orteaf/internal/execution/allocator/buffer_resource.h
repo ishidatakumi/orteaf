@@ -2,9 +2,9 @@
 
 #include <utility>
 
-#include <orteaf/internal/execution/execution.h>
 #include <orteaf/internal/base/handle.h>
 #include <orteaf/internal/execution/cpu/resource/cpu_buffer_view.h>
+#include <orteaf/internal/execution/execution.h>
 
 #if ORTEAF_ENABLE_CUDA
 #include <orteaf/internal/execution/cuda/resource/cuda_buffer_view.h>
@@ -32,27 +32,28 @@ template <> struct ResourceBufferType<execution::Execution::Cuda> {
 #if ORTEAF_ENABLE_MPS
 template <> struct ResourceBufferType<execution::Execution::Mps> {
   using view = ::orteaf::internal::execution::mps::resource::MpsBufferView;
-  using fence_token = ::orteaf::internal::execution::mps::resource::MpsFenceToken;
+  using fence_token =
+      ::orteaf::internal::execution::mps::resource::MpsFenceToken;
 };
 #endif // ORTEAF_ENABLE_MPS
 
 // Lightweight pair of buffer view and handle (no fence tracking).
-template <execution::Execution B> struct BufferBlock {
+template <execution::Execution B> struct ExecutionBufferBlock {
   using BufferView = typename ResourceBufferType<B>::view;
   using BufferViewHandle = ::orteaf::internal::base::BufferViewHandle;
 
   BufferViewHandle handle{};
   BufferView view{};
 
-  BufferBlock() = default;
-  BufferBlock(BufferViewHandle h, BufferView v)
+  ExecutionBufferBlock() = default;
+  ExecutionBufferBlock(BufferViewHandle h, BufferView v)
       : handle(h), view(std::move(v)) {}
 
   bool valid() const { return handle.isValid() && static_cast<bool>(view); }
 };
 
 // Non-owning view of a buffer with an associated strong ID.
-template <execution::Execution B> struct BufferResource {
+template <execution::Execution B> struct ExecutionBuffer {
   using BufferView = typename ResourceBufferType<B>::view;
   using BufferViewHandle = ::orteaf::internal::base::BufferViewHandle;
   using FenceToken = typename ResourceBufferType<B>::fence_token;
@@ -61,16 +62,18 @@ template <execution::Execution B> struct BufferResource {
   BufferView view{};
   FenceToken fence_token{};
 
-  BufferResource() = default;
-  BufferResource(BufferViewHandle handle, BufferView view)
+  ExecutionBuffer() = default;
+  ExecutionBuffer(BufferViewHandle handle, BufferView view)
       : handle(handle), view(std::move(view)) {}
 
-  // Convert to BufferBlock (discards fence_token)
-  BufferBlock<B> toBlock() const { return BufferBlock<B>{handle, view}; }
+  // Convert to ExecutionBufferBlock (discards fence_token)
+  ExecutionBufferBlock<B> toBlock() const {
+    return ExecutionBufferBlock<B>{handle, view};
+  }
 
-  // Construct from BufferBlock (fence_token is default-initialized)
-  static BufferResource fromBlock(const BufferBlock<B> &block) {
-    return BufferResource{block.handle, block.view};
+  // Construct from ExecutionBufferBlock (fence_token is default-initialized)
+  static ExecutionBuffer fromBlock(const ExecutionBufferBlock<B> &block) {
+    return ExecutionBuffer{block.handle, block.view};
   }
 
   bool valid() const { return handle.isValid() && static_cast<bool>(view); }

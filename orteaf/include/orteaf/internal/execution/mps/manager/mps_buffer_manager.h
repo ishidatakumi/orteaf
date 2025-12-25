@@ -6,10 +6,14 @@
 #include <string>
 #include <utility>
 
-#include "orteaf/internal/execution/execution.h"
 #include "orteaf/internal/base/handle.h"
+#include "orteaf/internal/base/lease/control_block/shared.h"
+#include "orteaf/internal/base/lease/strong_lease.h"
+#include "orteaf/internal/base/lease/weak_lease.h"
+#include "orteaf/internal/base/manager/pool_manager.h"
+#include "orteaf/internal/base/pool/slot_pool.h"
 #include "orteaf/internal/diagnostics/error/error.h"
-#include "orteaf/internal/execution/allocator/buffer.h"
+#include "orteaf/internal/execution/allocator/buffer_resource.h"
 #include "orteaf/internal/execution/allocator/policies/chunk_locator/direct_chunk_locator.h"
 #include "orteaf/internal/execution/allocator/policies/fast_free/fast_free_policies.h"
 #include "orteaf/internal/execution/allocator/policies/freelist/host_stack_freelist_policy.h"
@@ -17,11 +21,7 @@
 #include "orteaf/internal/execution/allocator/policies/reuse/deferred_reuse_policy.h"
 #include "orteaf/internal/execution/allocator/policies/threading/threading_policies.h"
 #include "orteaf/internal/execution/allocator/pool/segregate_pool.h"
-#include "orteaf/internal/base/lease/control_block/shared.h"
-#include "orteaf/internal/base/lease/strong_lease.h"
-#include "orteaf/internal/base/lease/weak_lease.h"
-#include "orteaf/internal/base/manager/pool_manager.h"
-#include "orteaf/internal/base/pool/slot_pool.h"
+#include "orteaf/internal/execution/execution.h"
 #include "orteaf/internal/execution/mps/manager/mps_library_manager.h"
 #include "orteaf/internal/execution/mps/platform/wrapper/mps_device.h"
 #include "orteaf/internal/execution/mps/resource/mps_buffer_view.h"
@@ -55,7 +55,9 @@ template <typename ResourceT> class MpsBufferManagerT;
 // BufferPayloadPoolTraits - Defines Payload/Handle/Request/Context for SlotPool
 // ============================================================================
 template <typename ResourceT> struct BufferPayloadPoolTraitsT {
-  using Payload = ::orteaf::internal::execution::allocator::Buffer;
+  using MpsBuffer =
+      ::orteaf::internal::execution::allocator::ExecutionBuffer<Execution::Mps>;
+  using Payload = MpsBuffer;
   using Handle = ::orteaf::internal::base::BufferHandle;
   using SegregatePool = MpsBufferPoolT<ResourceT>;
   using LaunchParams = typename SegregatePool::LaunchParams;
@@ -85,11 +87,11 @@ template <typename ResourceT> struct BufferPayloadPoolTraitsT {
     if (!res.valid()) {
       return false;
     }
-    payload = Payload{std::move(res), request.size, request.alignment};
+    payload = std::move(res);
     return true;
   }
 
-  static void destroy(Payload &payload, const Request &,
+  static void destroy(Payload &payload, const Request &request,
                       const Context &context) {
     if (!payload.valid()) {
       return;
@@ -98,12 +100,10 @@ template <typename ResourceT> struct BufferPayloadPoolTraitsT {
       payload = Payload{};
       return;
     }
-    auto &res = payload.template asResource<Execution::Mps>();
-    if (res.valid()) {
-      context.segregate_pool->deallocate(std::move(res), payload.size(),
-                                         payload.alignment(),
-                                         *context.launch_params);
-    }
+    // MpsBuffer does not store size/alignment, use 0 for deallocation
+    // (SegregatePool uses handle for lookup, not size/alignment)
+    context.segregate_pool->deallocate(std::move(payload), 0, 0,
+                                       *context.launch_params);
     payload = Payload{};
   }
 };
@@ -119,11 +119,13 @@ using BufferPayloadPoolT = ::orteaf::internal::base::pool::SlotPool<
 // ControlBlock type using SharedControlBlock
 // ============================================================================
 template <typename ResourceT>
-using BufferControlBlockT =
-    ::orteaf::internal::base::SharedControlBlock<
-        ::orteaf::internal::base::BufferHandle,
-        ::orteaf::internal::execution::allocator::Buffer,
-        BufferPayloadPoolT<ResourceT>>;
+using MpsBuffer =
+    ::orteaf::internal::execution::allocator::ExecutionBuffer<Execution::Mps>;
+
+template <typename ResourceT>
+using BufferControlBlockT = ::orteaf::internal::base::SharedControlBlock<
+    ::orteaf::internal::base::BufferHandle, MpsBuffer<ResourceT>,
+    BufferPayloadPoolT<ResourceT>>;
 
 // ============================================================================
 // Traits for PoolManager
@@ -143,7 +145,7 @@ template <typename ResourceT> class MpsBufferManagerT {
 public:
   using Traits = MpsBufferManagerTraitsT<ResourceT>;
   using Core = ::orteaf::internal::base::PoolManager<Traits>;
-  using Buffer = ::orteaf::internal::execution::allocator::Buffer;
+  using MpsBuffer = MpsBuffer<ResourceT>;
   using BufferHandle = ::orteaf::internal::base::BufferHandle;
   using SegregatePool = MpsBufferPoolT<ResourceT>;
   using LaunchParams = typename SegregatePool::LaunchParams;
@@ -159,8 +161,9 @@ public:
   // Lease types
   using StrongBufferLease = ::orteaf::internal::base::StrongLease<
       ControlBlockHandle, ControlBlock, ControlBlockPool, MpsBufferManagerT>;
-  using WeakBufferLease = ::orteaf::internal::base::WeakLease<
-      ControlBlockHandle, ControlBlock, ControlBlockPool, MpsBufferManagerT>;
+  using WeakBufferLease =
+      ::orteaf::internal::base::WeakLease<ControlBlockHandle, ControlBlock,
+                                          ControlBlockPool, MpsBufferManagerT>;
   // Legacy alias for compatibility
   using BufferLease = StrongBufferLease;
 
@@ -185,9 +188,9 @@ public:
     std::size_t chunk_size{16 * 1024 * 1024};
     std::size_t min_block_size{64};
     std::size_t max_block_size{16 * 1024 * 1024};
-    ::orteaf::internal::execution::mps::platform::wrapper::MpsBufferUsage_t usage{
-        ::orteaf::internal::execution::mps::platform::wrapper::
-            kMPSDefaultBufferUsage};
+    ::orteaf::internal::execution::mps::platform::wrapper::MpsBufferUsage_t
+        usage{::orteaf::internal::execution::mps::platform::wrapper::
+                  kMPSDefaultBufferUsage};
     // PoolManager config
     std::size_t payload_capacity{0};
     std::size_t control_block_capacity{0};

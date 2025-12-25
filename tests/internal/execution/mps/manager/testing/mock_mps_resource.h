@@ -5,11 +5,11 @@
 #include <cstddef>
 #include <gmock/gmock.h>
 
-#include <orteaf/internal/execution/execution.h>
 #include <orteaf/internal/base/handle.h>
 #include <orteaf/internal/base/heap_vector.h>
 #include <orteaf/internal/execution/allocator/buffer_resource.h>
 #include <orteaf/internal/execution/base/execution_traits.h>
+#include <orteaf/internal/execution/execution.h>
 #include <orteaf/internal/execution/mps/platform/wrapper/mps_buffer.h>
 #include <orteaf/internal/execution/mps/resource/mps_buffer_view.h>
 #include <orteaf/internal/execution/mps/resource/mps_reuse_token.h>
@@ -24,13 +24,20 @@ namespace orteaf::tests::execution::mps {
  */
 class StubMpsResource {
 public:
-  using BufferView = ::orteaf::internal::execution::mps::resource::MpsBufferView;
-  using BufferResource = ::orteaf::internal::execution::allocator::BufferResource<
+  using BufferView =
+      ::orteaf::internal::execution::mps::resource::MpsBufferView;
+  using MpsBuffer = ::orteaf::internal::execution::allocator::ExecutionBuffer<
       ::orteaf::internal::execution::Execution::Mps>;
-  using BufferBlock = ::orteaf::internal::execution::allocator::BufferBlock<
-      ::orteaf::internal::execution::Execution::Mps>;
-  using FenceToken = ::orteaf::internal::execution::mps::resource::MpsFenceToken;
-  using ReuseToken = ::orteaf::internal::execution::mps::resource::MpsReuseToken;
+  using MpsBufferBlock =
+      ::orteaf::internal::execution::allocator::ExecutionBufferBlock<
+          ::orteaf::internal::execution::Execution::Mps>;
+  // Legacy aliases for backward compatibility
+  using BufferResource = MpsBuffer;
+  using BufferBlock = MpsBufferBlock;
+  using FenceToken =
+      ::orteaf::internal::execution::mps::resource::MpsFenceToken;
+  using ReuseToken =
+      ::orteaf::internal::execution::mps::resource::MpsReuseToken;
   using LaunchParams = ::orteaf::internal::execution::base::ExecutionTraits<
       ::orteaf::internal::execution::Execution::Mps>::KernelLaunchParams;
   using MpsBuffer_t =

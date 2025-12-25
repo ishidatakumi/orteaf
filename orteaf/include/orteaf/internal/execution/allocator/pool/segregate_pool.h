@@ -2,10 +2,10 @@
 
 #include <algorithm>
 #include <limits>
-#include <orteaf/internal/execution/execution.h>
 #include <orteaf/internal/execution/allocator/buffer_resource.h>
 #include <orteaf/internal/execution/allocator/pool/segregate_pool_stats.h>
 #include <orteaf/internal/execution/allocator/size_class_utils.h>
+#include <orteaf/internal/execution/execution.h>
 
 namespace orteaf::internal::execution::allocator::pool {
 template <typename ExecutionResource, typename FastFreePolicy,
@@ -16,8 +16,7 @@ class SegregatePool {
 public:
   static constexpr auto ExecutionType = ExecutionResource::execution_type_static();
   using BufferResource = typename ExecutionResource::BufferResource;
-  using BufferBlock =
-      ::orteaf::internal::execution::allocator::BufferBlock<ExecutionType>;
+  using BufferBlock = ::orteaf::internal::execution::allocator::ExecutionBufferBlock<ExecutionType>;
   using LaunchParams = typename ExecutionResource::LaunchParams;
   using Stats = SegregatePoolStats<ExecutionType>;
 

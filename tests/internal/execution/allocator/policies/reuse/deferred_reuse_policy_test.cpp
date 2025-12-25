@@ -6,10 +6,10 @@
 
 #include <gtest/gtest.h>
 
-#include "orteaf/internal/execution/execution.h"
 #include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/execution/allocator/buffer_resource.h"
 #include "orteaf/internal/execution/cpu/resource/cpu_buffer_view.h"
+#include "orteaf/internal/execution/execution.h"
 #include "tests/internal/testing/error_assert.h"
 
 namespace allocator = ::orteaf::internal::execution::allocator;
@@ -18,18 +18,18 @@ using Execution = ::orteaf::internal::execution::Execution;
 using BufferViewHandle = ::orteaf::internal::base::BufferViewHandle;
 using CpuView = ::orteaf::internal::execution::cpu::resource::CpuBufferView;
 namespace {
-using BufferResource = allocator::BufferResource<Execution::Cpu>;
-using BufferBlock = allocator::BufferBlock<Execution::Cpu>;
-using FenceToken = typename BufferResource::FenceToken;
+using CpuBuffer = allocator::ExecutionBuffer<Execution::Cpu>;
+using CpuBufferBlock = allocator::ExecutionBufferBlock<Execution::Cpu>;
+using CpuFenceToken = typename CpuBuffer::FenceToken;
 
 struct FakeResource;
 using Policy = policies::DeferredReusePolicy<FakeResource>;
 
 struct FakeResource {
-  using BufferResource = allocator::BufferResource<Execution::Cpu>;
+  using BufferResource = allocator::ExecutionBuffer<Execution::Cpu>;
   struct ReuseToken {
     ReuseToken() = default;
-    explicit ReuseToken(FenceToken &&) {}
+    explicit ReuseToken(CpuFenceToken &&) {}
   };
 
   static constexpr Execution execution_type_static() noexcept {
@@ -45,10 +45,10 @@ struct FakeResource {
   }
 };
 
-BufferResource makeBlock(BufferViewHandle id,
-                         void *ptr = reinterpret_cast<void *>(0x10),
-                         std::size_t size = 64) {
-  return BufferResource{id, CpuView{ptr, 0, size}};
+CpuBuffer makeBlock(BufferViewHandle id,
+                    void *ptr = reinterpret_cast<void *>(0x10),
+                    std::size_t size = 64) {
+  return CpuBuffer{id, CpuView{ptr, 0, size}};
 }
 
 TEST(DeferredReusePolicy, InitializeFailsWithNullResource) {
@@ -67,13 +67,13 @@ TEST(DeferredReusePolicy, MovesCompletedToReady) {
   cfg.resource = &resource;
   policy.initialize(cfg);
 
-  BufferResource block = makeBlock(BufferViewHandle{1});
+  CpuBuffer block = makeBlock(BufferViewHandle{1});
   std::size_t freelist_index = 3;
 
   policy.scheduleForReuse(std::move(block), freelist_index);
   EXPECT_EQ(policy.processPending(), 1u);
 
-  BufferBlock out_block{};
+  CpuBufferBlock out_block{};
   std::size_t out_index = 0;
   EXPECT_TRUE(policy.getReadyItem(out_index, out_block));
   EXPECT_EQ(out_block.handle, BufferViewHandle{1});
@@ -88,7 +88,7 @@ TEST(DeferredReusePolicy, KeepsPendingWhenNotCompleted) {
   cfg.resource = &resource;
   policy.initialize(cfg);
 
-  BufferResource block = makeBlock(BufferViewHandle{2});
+  CpuBuffer block = makeBlock(BufferViewHandle{2});
   policy.scheduleForReuse(std::move(block), 1);
 
   EXPECT_EQ(policy.processPending(), 0u);
@@ -107,8 +107,8 @@ TEST(DeferredReusePolicy, RemoveBlocksInChunkFiltersPendingAndReady) {
   cfg.resource = &resource;
   policy.initialize(cfg);
 
-  BufferResource block1 = makeBlock(BufferViewHandle{10});
-  BufferResource block2 =
+  CpuBuffer block1 = makeBlock(BufferViewHandle{10});
+  CpuBuffer block2 =
       makeBlock(BufferViewHandle{20}, reinterpret_cast<void *>(0x20));
 
   policy.scheduleForReuse(std::move(block1), 0);
@@ -122,7 +122,7 @@ TEST(DeferredReusePolicy, RemoveBlocksInChunkFiltersPendingAndReady) {
   policy.removeBlocksInChunk(BufferViewHandle{10});
   policy.removeBlocksInChunk(BufferViewHandle{20});
 
-  BufferBlock out_block{};
+  CpuBufferBlock out_block{};
   std::size_t out_index = 0;
   EXPECT_FALSE(policy.getReadyItem(out_index, out_block));
   EXPECT_EQ(policy.getPendingReuseCount(), 0u);
@@ -149,7 +149,7 @@ TEST(DeferredReusePolicy, FlushPendingWaitsUntilComplete) {
   policy.flushPending();
   toggler.join();
 
-  BufferBlock out_block{};
+  CpuBufferBlock out_block{};
   std::size_t out_index = 0;
   EXPECT_TRUE(policy.getReadyItem(out_index, out_block));
   EXPECT_FALSE(policy.hasPending());
