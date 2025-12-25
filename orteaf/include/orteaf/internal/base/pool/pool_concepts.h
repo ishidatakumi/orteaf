@@ -143,11 +143,50 @@ concept BasePoolConcept =
     PoolSizeQueryConcept<Pool> && HandleValidationConcept<Pool> &&
     PayloadAccessConcept<Pool>;
 
-/// @brief 完全なPool (すべての機能を持つ)
+/// @brief すべての機能を持つPool
 template <typename Pool>
 concept FullPoolConcept =
     BasePoolConcept<Pool> && CreatedSlotAcquirableConcept<Pool> &&
     UncreatedSlotReservableConcept<Pool> && SlotReleasableConcept<Pool> &&
     PayloadCreatableConcept<Pool>;
+
+// =============================================================================
+// ControlBlockバインディング Concept
+// =============================================================================
+
+/// @brief ControlBlockHandle型を定義しているか
+template <typename Pool>
+concept HasControlBlockHandleConcept =
+    requires { typename Pool::ControlBlockHandle; };
+
+/// @brief Payload-ControlBlock間のバインディング追跡をサポート
+///
+/// Payload HandleからバインドされたControlBlock Handleへの逆引きを可能にする。
+/// Library, PipelineState, Heap等のキャッシュされたペイロードを持つPoolで使用。
+template <typename Pool>
+concept ControlBlockBindableConcept =
+    PoolTypeConcept<Pool> && HasControlBlockHandleConcept<Pool> &&
+    requires(Pool &pool, const Pool &const_pool, typename Pool::Handle h,
+             typename Pool::ControlBlockHandle cbh) {
+      // バインドされたCBが存在するか
+      { const_pool.hasBoundControlBlock(h) } -> std::convertible_to<bool>;
+      // バインドされたCB Handleを取得
+      {
+        const_pool.getBoundControlBlock(h)
+      } -> std::same_as<typename Pool::ControlBlockHandle>;
+      // CBをPayloadにバインド
+      { pool.bindControlBlock(h, cbh) };
+      // CBをアンバインド
+      { pool.unbindControlBlock(h) };
+    };
+
+// =============================================================================
+// バインディング付きPool 組み合わせ Concept
+// =============================================================================
+
+/// @brief CB追跡機能付きの完全なPool
+template <typename Pool>
+concept BoundPoolConcept =
+    FullPoolConcept<Pool> && ControlBlockBindableConcept<Pool>;
 
 } // namespace orteaf::internal::base::pool
