@@ -9,7 +9,7 @@
 #include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/diagnostics/error/error_macros.h"
 #include "orteaf/internal/diagnostics/log/log.h"
-#include "orteaf/internal/execution/allocator/buffer_resource.h"
+#include "orteaf/internal/execution/allocator/buffer.h"
 #include "orteaf/internal/execution/allocator/policies/policy_config.h"
 
 namespace orteaf::internal::execution::allocator::policies {

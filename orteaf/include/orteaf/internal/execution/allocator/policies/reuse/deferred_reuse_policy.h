@@ -8,7 +8,7 @@
 #include <orteaf/internal/base/handle.h>
 #include <orteaf/internal/base/heap_vector.h>
 #include <orteaf/internal/diagnostics/error/error_macros.h>
-#include <orteaf/internal/execution/allocator/buffer_resource.h>
+#include <orteaf/internal/execution/allocator/buffer.h>
 #include <orteaf/internal/execution/allocator/policies/policy_config.h>
 #include <orteaf/internal/execution/execution.h>
 

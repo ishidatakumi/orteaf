@@ -3,7 +3,7 @@
 #include <cstddef>
 
 #include "orteaf/internal/execution/execution.h"
-#include "orteaf/internal/execution/allocator/buffer_resource.h"
+#include "orteaf/internal/execution/allocator/buffer.h"
 #include "orteaf/internal/execution/cpu/resource/cpu_buffer_view.h"
 #include "orteaf/internal/execution/cpu/resource/cpu_heap_region.h"
 #include <gmock/gmock.h>

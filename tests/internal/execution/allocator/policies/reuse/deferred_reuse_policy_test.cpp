@@ -7,7 +7,7 @@
 #include <gtest/gtest.h>
 
 #include "orteaf/internal/base/handle.h"
-#include "orteaf/internal/execution/allocator/buffer_resource.h"
+#include "orteaf/internal/execution/allocator/buffer.h"
 #include "orteaf/internal/execution/cpu/resource/cpu_buffer_view.h"
 #include "orteaf/internal/execution/execution.h"
 #include "tests/internal/testing/error_assert.h"

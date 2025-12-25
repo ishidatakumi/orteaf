@@ -3,7 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "orteaf/internal/execution/allocator/buffer_resource.h"
+#include "orteaf/internal/execution/allocator/buffer.h"
 #include "orteaf/internal/execution/allocator/policies/chunk_locator/direct_chunk_locator.h"
 #include "orteaf/internal/execution/allocator/policies/fast_free/fast_free_policies.h"
 #include "orteaf/internal/execution/allocator/policies/freelist/host_stack_freelist_policy.h"

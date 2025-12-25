@@ -7,7 +7,7 @@
 
 #include <orteaf/internal/base/handle.h>
 #include <orteaf/internal/base/heap_vector.h>
-#include <orteaf/internal/execution/allocator/buffer_resource.h>
+#include <orteaf/internal/execution/allocator/buffer.h>
 #include <orteaf/internal/execution/mps/manager/mps_command_queue_manager.h>
 #include <orteaf/internal/execution/mps/manager/mps_library_manager.h>
 #include <orteaf/internal/execution/mps/platform/wrapper/mps_buffer.h>
