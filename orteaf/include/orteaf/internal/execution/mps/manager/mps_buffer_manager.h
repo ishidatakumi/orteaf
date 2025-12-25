@@ -316,33 +316,6 @@ public:
     return core_.acquireStrongLease(payload_handle);
   }
 
-  // =========================================================================
-  // Acquire (share existing buffer by handle)
-  // =========================================================================
-  StrongBufferLease acquire(BufferHandle handle) {
-    core_.ensureConfigured();
-    if (!core_.isAlive(handle)) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
-          std::string(Traits::Name) + " handle is not alive");
-    }
-
-    return core_.acquireStrongLease(handle);
-  }
-
-  // =========================================================================
-  // Release
-  // =========================================================================
-  void release(StrongBufferLease &lease) noexcept { lease.release(); }
-
-  void release(WeakBufferLease &lease) noexcept { lease.release(); }
-
-  // =========================================================================
-  // Accessors
-  // =========================================================================
-  SegregatePool *pool() { return &segregate_pool_; }
-  const SegregatePool *pool() const { return &segregate_pool_; }
-
 #if ORTEAF_ENABLE_TEST
   bool isConfiguredForTest() const noexcept { return core_.isConfigured(); }
   std::size_t payloadPoolSizeForTest() const noexcept {

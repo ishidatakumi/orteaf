@@ -70,15 +70,6 @@ TEST_F(MpsBufferManagerSimpleTest, AcquireBeforeInitializationThrows) {
               [&] { (void)manager().acquire(1024, 16, params_); });
 }
 
-TEST_F(MpsBufferManagerSimpleTest, AcquireByHandleBeforeInitializationThrows) {
-  // Arrange
-  base::BufferHandle handle{0, 1};
-
-  // Act & Assert: Acquire by handle before initialization throws InvalidState
-  ExpectError(diag_error::OrteafErrc::InvalidState,
-              [&] { (void)manager().acquire(handle); });
-}
-
 // -----------------------------------------------------------------------------
 // GrowthChunkSize Tests
 // -----------------------------------------------------------------------------
@@ -268,7 +259,7 @@ TEST_F(MpsBufferManagerIntegrationTest, AcquireReturnsValidLease) {
   EXPECT_TRUE(lease.handle().isValid());
 
   // Cleanup
-  manager().release(lease);
+  lease.release();
 }
 
 TEST_F(MpsBufferManagerIntegrationTest,
@@ -309,9 +300,9 @@ TEST_F(MpsBufferManagerIntegrationTest, MultipleAllocationsWork) {
   EXPECT_NE(lease1.handle().index, lease3.handle().index);
 
   // Cleanup
-  manager().release(lease1);
-  manager().release(lease2);
-  manager().release(lease3);
+  lease1.release();
+  lease2.release();
+  lease3.release();
 }
 
 TEST_F(MpsBufferManagerIntegrationTest, BufferRecyclingReusesSlots) {
@@ -325,14 +316,14 @@ TEST_F(MpsBufferManagerIntegrationTest, BufferRecyclingReusesSlots) {
   const auto first_index = first.handle().index;
 
   // Act: Release and acquire again
-  manager().release(first);
+  first.release();
   auto second = manager().acquire(2048, 16, params_);
 
   // Assert: Same slot is reused
   EXPECT_EQ(second.handle().index, first_index);
 
   // Cleanup
-  manager().release(second);
+  second.release();
 }
 
 } // namespace
@@ -423,7 +414,7 @@ TEST_F(MpsBufferManagerMockTest, AcquireReturnsValidLease) {
   EXPECT_TRUE(lease.handle().isValid());
 
   // Cleanup
-  manager_.release(lease);
+  lease.release();
 }
 
 TEST_F(MpsBufferManagerMockTest, MultipleAcquisitionsWork) {
@@ -443,9 +434,9 @@ TEST_F(MpsBufferManagerMockTest, MultipleAcquisitionsWork) {
   EXPECT_NE(lease2.handle().index, lease3.handle().index);
 
   // Cleanup
-  manager_.release(lease1);
-  manager_.release(lease2);
-  manager_.release(lease3);
+  lease1.release();
+  lease2.release();
+  lease3.release();
 }
 
 TEST_F(MpsBufferManagerMockTest, ReleaseRecyclesSlot) {
@@ -455,14 +446,14 @@ TEST_F(MpsBufferManagerMockTest, ReleaseRecyclesSlot) {
   const auto first_index = first.handle().index;
 
   // Act: Release and acquire
-  manager_.release(first);
+  first.release();
   auto second = manager_.acquire(512, 16, params_);
 
   // Assert: Same slot reused
   EXPECT_EQ(second.handle().index, first_index);
 
   // Cleanup
-  manager_.release(second);
+  second.release();
 }
 
 TEST_F(MpsBufferManagerMockTest, AcquireByHandleIncreasesRefCount) {
@@ -501,8 +492,8 @@ TEST_F(MpsBufferManagerMockTest, CapacityGrowsOnAcquire) {
   EXPECT_GE(manager_.payloadPoolCapacityForTest(), 2u);
 
   // Cleanup
-  manager_.release(lease1);
-  manager_.release(lease2);
+  lease1.release();
+  lease2.release();
 }
 
 #endif // ORTEAF_ENABLE_MPS
