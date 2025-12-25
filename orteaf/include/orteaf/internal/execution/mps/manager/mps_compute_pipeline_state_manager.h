@@ -177,10 +177,10 @@ public:
   bool isConfiguredForTest() const noexcept { return core_.isConfigured(); }
 
   std::size_t payloadPoolSizeForTest() const noexcept {
-    return core_.payloadPool().size();
+    return core_.payloadPoolSizeForTest();
   }
   std::size_t payloadPoolCapacityForTest() const noexcept {
-    return core_.payloadPool().capacity();
+    return core_.payloadPoolCapacityForTest();
   }
   std::size_t controlBlockPoolSizeForTest() const noexcept {
     return core_.controlBlockPoolSizeForTest();
@@ -199,12 +199,12 @@ public:
   }
 
   bool payloadCreatedForTest(FunctionHandle handle) const noexcept {
-    return core_.payloadPool().isCreated(handle);
+    return core_.payloadCreatedForTest(handle);
   }
 
   const MpsPipelineResource *
   payloadForTest(FunctionHandle handle) const noexcept {
-    return core_.payloadPool().get(handle);
+    return core_.payloadForTest(handle);
   }
 #endif
 

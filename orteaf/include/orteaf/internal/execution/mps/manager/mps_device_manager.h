@@ -267,14 +267,14 @@ public:
 
 #if ORTEAF_ENABLE_TEST
   std::size_t getDeviceCountForTest() const noexcept {
-    return core_.payloadPool().size();
+    return core_.payloadPoolSizeForTest();
   }
   bool isConfiguredForTest() const noexcept { return core_.isConfigured(); }
   std::size_t payloadPoolSizeForTest() const noexcept {
-    return core_.payloadPool().size();
+    return core_.payloadPoolSizeForTest();
   }
   std::size_t payloadPoolCapacityForTest() const noexcept {
-    return core_.payloadPool().capacity();
+    return core_.payloadPoolCapacityForTest();
   }
   bool isAliveForTest(DeviceHandle handle) const noexcept {
     return core_.isAlive(handle);

@@ -80,7 +80,7 @@ void MpsDeviceManager::configure(const Config &config) {
         graph_config.payload_capacity == 0 ? 1u : graph_config.payload_capacity;
   }
   if (device_count <= 0) {
-    core_.payloadPool().configure(DevicePayloadPool::Config{0, 0});
+    core_.configurePayloadPool(DevicePayloadPool::Config{0, 0});
     core_.configure(MpsDeviceManager::Core::Config{
         /*control_block_capacity=*/0,
         /*control_block_block_size=*/control_block_block_size,
@@ -99,8 +99,8 @@ void MpsDeviceManager::configure(const Config &config) {
                                        config.library_initial_capacity,
                                        graph_config};
   const DevicePayloadPoolTraits::Request payload_request{};
-  core_.payloadPool().configure(DevicePayloadPool::Config{capacity, capacity});
-  core_.payloadPool().createAll(payload_request, payload_context);
+  core_.configurePayloadPool(DevicePayloadPool::Config{capacity, capacity});
+  core_.createAllPayloads(payload_request, payload_context);
 
   core_.configure(MpsDeviceManager::Core::Config{
       /*control_block_capacity=*/control_block_size,
@@ -125,7 +125,7 @@ void MpsDeviceManager::shutdown() {
                                        0,
                                        0,
                                        MpsGraphManager::Config{}};
-  core_.payloadPool().shutdown(payload_request, payload_context);
+  core_.shutdownPayloadPool(payload_request, payload_context);
   core_.shutdownControlBlockPool();
   ops_ = nullptr;
   core_.setConfigured(false);
@@ -142,17 +142,8 @@ MpsDeviceManager::getArch(DeviceHandle handle) const {
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "MPS devices not initialized");
   }
-  if (!core_.payloadPool().isValid(handle)) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
-        "MPS device handle is invalid");
-  }
-  if (!core_.payloadPool().isCreated(handle)) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-        "MPS device is unavailable");
-  }
-  return core_.payloadPool().get(handle)->arch;
+  auto lease = core_.acquireWeakLease(handle);
+  return lease.payloadPtr()->arch;
 }
 
 } // namespace orteaf::internal::execution::mps::manager

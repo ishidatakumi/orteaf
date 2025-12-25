@@ -149,10 +149,10 @@ public:
   bool isConfiguredForTest() const noexcept { return core_.isConfigured(); }
 
   std::size_t payloadPoolSizeForTest() const noexcept {
-    return core_.payloadPool().size();
+    return core_.payloadPoolSizeForTest();
   }
   std::size_t payloadPoolCapacityForTest() const noexcept {
-    return core_.payloadPool().capacity();
+    return core_.payloadPoolCapacityForTest();
   }
   std::size_t controlBlockPoolSizeForTest() const noexcept {
     return core_.controlBlockPoolSizeForTest();

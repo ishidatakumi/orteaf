@@ -114,7 +114,7 @@ void MpsHeapManager::configure(const Config &config) {
   typename HeapPayloadPool::Config payload_cfg{};
   payload_cfg.size = config.payload_capacity;
   payload_cfg.block_size = config.payload_block_size;
-  core_.payloadPool().configure(payload_cfg);
+  core_.configurePayloadPool(payload_cfg);
 
   core_.setConfigured(true);
 }
@@ -129,7 +129,7 @@ void MpsHeapManager::shutdown() {
   // Destroy all payloads
   auto context = makePayloadContext();
   HeapPayloadPoolTraits::Request request{};
-  core_.payloadPool().shutdown(request, context);
+  core_.shutdownPayloadPool(request, context);
 
   // Shutdown control block pool
   core_.shutdownControlBlockPool();
@@ -152,8 +152,7 @@ MpsHeapManager::acquire(const HeapDescriptorKey &key) {
     const auto index = it->second;
     const HeapHandle handle{
         static_cast<typename HeapHandle::index_type>(index)};
-    auto *payload_ptr = core_.payloadPool().get(handle);
-    if (payload_ptr == nullptr || !core_.payloadPool().isCreated(handle)) {
+    if (!core_.isAlive(handle)) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
           "Cached heap index is invalid");
@@ -170,19 +169,13 @@ MpsHeapManager::acquire(const HeapDescriptorKey &key) {
         ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
         "Heap manager has no available slots");
   }
-  if (!core_.payloadPool().emplace(handle, request, context)) {
+  if (!core_.emplacePayload(handle, request, context)) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "Failed to create heap");
   }
 
   key_to_index_.emplace(key, static_cast<std::size_t>(handle.index));
-  auto *payload_ptr = core_.payloadPool().get(handle);
-  if (payload_ptr == nullptr) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-        "Heap payload is unavailable");
-  }
   return core_.acquireWeakLease(handle);
 }
 
@@ -191,8 +184,7 @@ MpsHeapManager::bufferManager(const HeapLease &lease) {
   if (!lease) {
     return nullptr;
   }
-  auto handle = lease.payloadHandle();
-  auto *payload = core_.payloadPool().get(handle);
+  auto *payload = lease.payloadPtr();
   return payload ? &payload->buffer_manager : nullptr;
 }
 
@@ -206,7 +198,8 @@ MpsHeapManager::bufferManager(const HeapDescriptorKey &key) {
     const auto index = it->second;
     const HeapHandle handle{
         static_cast<typename HeapHandle::index_type>(index)};
-    auto *payload = core_.payloadPool().get(handle);
+    auto lease = core_.acquireWeakLease(handle);
+    auto *payload = lease.payloadPtr();
     return payload ? &payload->buffer_manager : nullptr;
   }
 
@@ -215,8 +208,7 @@ MpsHeapManager::bufferManager(const HeapDescriptorKey &key) {
   if (!lease) {
     return nullptr;
   }
-  auto handle = lease.payloadHandle();
-  auto *payload = core_.payloadPool().get(handle);
+  auto *payload = lease.payloadPtr();
   return payload ? &payload->buffer_manager : nullptr;
 }
 

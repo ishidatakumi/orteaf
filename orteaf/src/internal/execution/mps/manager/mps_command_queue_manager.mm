@@ -60,11 +60,11 @@ void MpsCommandQueueManager::configure(const Config &config) {
   payload_block_size_ = config.payload_block_size;
   payload_growth_chunk_size_ = config.payload_growth_chunk_size;
 
-  core_.payloadPool().configure(CommandQueuePayloadPool::Config{
+  core_.configurePayloadPool(CommandQueuePayloadPool::Config{
       payload_capacity, config.payload_block_size});
   const CommandQueuePayloadPoolTraits::Request payload_request{};
   const CommandQueuePayloadPoolTraits::Context payload_context{device_, ops_};
-  if (!core_.payloadPool().createAll(payload_request, payload_context)) {
+  if (!core_.createAllPayloads(payload_request, payload_context)) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "Failed to create MPS command queues");
@@ -85,7 +85,7 @@ void MpsCommandQueueManager::shutdown() {
 
   const CommandQueuePayloadPoolTraits::Request payload_request{};
   const CommandQueuePayloadPoolTraits::Context payload_context{device_, ops_};
-  core_.payloadPool().shutdown(payload_request, payload_context);
+  core_.shutdownPayloadPool(payload_request, payload_context);
   core_.shutdownControlBlockPool();
 
   device_ = nullptr;
@@ -118,13 +118,14 @@ MpsCommandQueueManager::acquire(CommandQueueHandle handle) {
         "Invalid command queue handle");
   }
 
-  auto *payload_ptr = core_.payloadPool().get(handle);
+  auto lease = core_.acquireWeakLease(handle);
+  const auto *payload_ptr = lease.payloadPtr();
   if (payload_ptr == nullptr || *payload_ptr == nullptr) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
         "Command queue handle does not exist");
   }
-  return core_.acquireWeakLease(handle);
+  return lease;
 }
 
 } // namespace orteaf::internal::execution::mps::manager

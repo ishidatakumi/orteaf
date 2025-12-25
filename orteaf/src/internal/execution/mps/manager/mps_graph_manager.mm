@@ -61,9 +61,7 @@ void MpsGraphManager::configure(const Config &config) {
   payload_block_size_ = payload_block_size;
   payload_growth_chunk_size_ = config.payload_growth_chunk_size;
   key_to_index_.clear();
-  next_index_ = 0;
-
-  core_.payloadPool().configure(
+  core_.configurePayloadPool(
       GraphPayloadPool::Config{payload_capacity, payload_block_size_});
   core_.configure(MpsGraphManager::Core::Config{
       /*control_block_capacity=*/control_block_capacity,
@@ -79,10 +77,9 @@ void MpsGraphManager::shutdown() {
   core_.checkCanShutdownOrThrow();
   const GraphPayloadPoolTraits::Request payload_request{};
   const auto payload_context = makePayloadContext();
-  core_.payloadPool().shutdown(payload_request, payload_context);
+  core_.shutdownPayloadPool(payload_request, payload_context);
   core_.shutdownControlBlockPool();
   key_to_index_.clear();
-  next_index_ = 0;
   device_ = nullptr;
   ops_ = nullptr;
 }
@@ -101,8 +98,7 @@ MpsGraphManager::acquire(const GraphKey &key, const CompileFn &compile_fn) {
   if (auto it = key_to_index_.find(key); it != key_to_index_.end()) {
     const auto handle =
         GraphHandle{static_cast<typename GraphHandle::index_type>(it->second)};
-    auto *payload_ptr = core_.payloadPool().get(handle);
-    if (payload_ptr == nullptr || !core_.payloadPool().isCreated(handle)) {
+    if (!core_.isAlive(handle)) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
           "MPS graph cache is invalid");
@@ -110,33 +106,22 @@ MpsGraphManager::acquire(const GraphKey &key, const CompileFn &compile_fn) {
     return core_.acquireStrongLease(handle);
   }
 
-  if (next_index_ >= core_.payloadPool().size()) {
-    core_.growPayloadPoolBy(payload_growth_chunk_size_);
-  }
-  if (next_index_ >= core_.payloadPool().size()) {
+  auto handle = core_.reserveUncreatedPayloadOrGrow(payload_growth_chunk_size_);
+  if (!handle.isValid()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
         "MPS graph manager has no available slots");
   }
 
-  const auto handle =
-      GraphHandle{static_cast<typename GraphHandle::index_type>(next_index_)};
-  ++next_index_;
   GraphPayloadPoolTraits::Request request{&compile_fn};
   const auto context = makePayloadContext();
-  if (!core_.payloadPool().emplace(handle, request, context)) {
+  if (!core_.emplacePayload(handle, request, context)) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
         "Failed to create MPS graph executable");
   }
 
   key_to_index_.emplace(key, static_cast<std::size_t>(handle.index));
-  auto *payload_ptr = core_.payloadPool().get(handle);
-  if (payload_ptr == nullptr) {
-    ::orteaf::internal::diagnostics::error::throwError(
-        ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-        "MPS graph payload is unavailable");
-  }
   return core_.acquireStrongLease(handle);
 }
 

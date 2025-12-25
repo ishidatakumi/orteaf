@@ -216,10 +216,10 @@ public:
 #if ORTEAF_ENABLE_TEST
   bool isConfiguredForTest() const noexcept { return core_.isConfigured(); }
   std::size_t payloadPoolSizeForTest() const noexcept {
-    return core_.payloadPool().size();
+    return core_.payloadPoolSizeForTest();
   }
   std::size_t payloadPoolCapacityForTest() const noexcept {
-    return core_.payloadPool().capacity();
+    return core_.payloadPoolCapacityForTest();
   }
   std::size_t controlBlockPoolSizeForTest() const noexcept {
     return core_.controlBlockPoolSizeForTest();
@@ -247,7 +247,6 @@ private:
   SlowOps *ops_{nullptr};
   std::size_t payload_block_size_{0};
   std::size_t payload_growth_chunk_size_{1};
-  std::size_t next_index_{0};
   Core core_{};
 };
 

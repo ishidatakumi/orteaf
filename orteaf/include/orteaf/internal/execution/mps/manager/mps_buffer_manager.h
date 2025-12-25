@@ -160,17 +160,10 @@ public:
   using PayloadPool = typename Core::PayloadPool;
 
   // Lease types
-  using StrongBufferLease = ::orteaf::internal::base::StrongLease<
-      ControlBlockHandle, ControlBlock, ControlBlockPool, MpsBufferManagerT>;
-  using WeakBufferLease =
-      ::orteaf::internal::base::WeakLease<ControlBlockHandle, ControlBlock,
-                                          ControlBlockPool, MpsBufferManagerT>;
+  using StrongBufferLease = typename Core::StrongLeaseType;
+  using WeakBufferLease = typename Core::WeakLeaseType;
   // Legacy alias for compatibility
   using BufferLease = StrongBufferLease;
-
-private:
-  friend StrongBufferLease;
-  friend WeakBufferLease;
 
 public:
   // HeapType deduced from Resource::Config
@@ -265,7 +258,7 @@ public:
     typename PayloadPool::Config payload_cfg{};
     payload_cfg.size = config.payload_capacity;
     payload_cfg.block_size = config.payload_block_size;
-    core_.payloadPool().configure(payload_cfg);
+    core_.configurePayloadPool(payload_cfg);
 
     payload_growth_chunk_size_ = config.payload_growth_chunk_size;
     core_.setConfigured(true);
@@ -281,7 +274,7 @@ public:
     // Destroy all payloads
     auto context = makePayloadContext();
     typename BufferPayloadPoolTraitsT<ResourceT>::Request request{};
-    core_.payloadPool().shutdown(request, context);
+    core_.shutdownPayloadPool(request, context);
 
     // Shutdown ControlBlock pool
     core_.shutdownControlBlockPool();
@@ -321,16 +314,7 @@ public:
           ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
           "MPS buffer manager has no available slots");
     }
-    auto cb_handle = core_.acquireControlBlock();
-    auto *cb = core_.getControlBlock(cb_handle);
-    auto *payload_ptr = core_.payloadPool().get(payload_handle);
-    if (!cb->tryBindPayload(payload_handle, payload_ptr,
-                            &core_.payloadPool())) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
-          "MPS buffer control block binding failed");
-    }
-    return BufferLease{cb, core_.controlBlockPoolForLease(), cb_handle};
+    return core_.acquireStrongLease(payload_handle);
   }
 
   // =========================================================================
@@ -344,20 +328,7 @@ public:
           std::string(Traits::Name) + " handle is not alive");
     }
 
-    // Find ControlBlock for this payload handle
-    // For now, create a new ControlBlock for the same payload
-    auto *payload_ptr = core_.payloadPool().get(handle);
-    if (payload_ptr == nullptr) {
-      return {};
-    }
-
-    auto cb_handle = core_.acquireControlBlock();
-    auto *cb = core_.getControlBlock(cb_handle);
-    if (!cb->tryBindPayload(handle, payload_ptr, &core_.payloadPool())) {
-      core_.releaseControlBlock(cb_handle);
-      return {};
-    }
-    return StrongBufferLease{cb, core_.controlBlockPoolForLease(), cb_handle};
+    return core_.acquireStrongLease(handle);
   }
 
   // =========================================================================
@@ -376,13 +347,13 @@ public:
 #if ORTEAF_ENABLE_TEST
   bool isConfiguredForTest() const noexcept { return core_.isConfigured(); }
   std::size_t payloadPoolSizeForTest() const noexcept {
-    return core_.payloadPool().size();
+    return core_.payloadPoolSizeForTest();
   }
   std::size_t payloadPoolCapacityForTest() const noexcept {
-    return core_.payloadPool().capacity();
+    return core_.payloadPoolCapacityForTest();
   }
   std::size_t payloadPoolAvailableForTest() const noexcept {
-    return core_.payloadPool().available();
+    return core_.payloadPoolAvailableForTest();
   }
   std::size_t controlBlockPoolSizeForTest() const noexcept {
     return core_.controlBlockPoolSizeForTest();
@@ -400,7 +371,7 @@ public:
     return core_.growthChunkSize();
   }
   const ControlBlock *controlBlockForTest(ControlBlockHandle handle) const {
-    return core_.controlBlockPoolForLease()->get(handle);
+    return core_.controlBlockForTest(handle);
   }
 #endif
 
