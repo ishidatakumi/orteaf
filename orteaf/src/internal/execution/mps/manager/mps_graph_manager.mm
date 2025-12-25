@@ -59,14 +59,15 @@ void MpsGraphManager::configure(const Config &config) {
   device_ = config.device;
   ops_ = config.ops;
   payload_block_size_ = payload_block_size;
-  payload_growth_chunk_size_ = config.payload_growth_chunk_size;
+  // payload growth chunk size configured via core_
   key_to_index_.clear();
   core_.configurePayloadPool(
       GraphPayloadPool::Config{payload_capacity, payload_block_size_});
   core_.configure(MpsGraphManager::Core::Config{
       /*control_block_capacity=*/control_block_capacity,
       /*control_block_block_size=*/control_block_block_size,
-      /*growth_chunk_size=*/config.control_block_growth_chunk_size});
+      /*growth_chunk_size=*/config.control_block_growth_chunk_size,
+      /*payload_growth_chunk_size=*/config.payload_growth_chunk_size});
   core_.setConfigured(true);
 }
 
@@ -106,7 +107,7 @@ MpsGraphManager::acquire(const GraphKey &key, const CompileFn &compile_fn) {
     return core_.acquireStrongLease(handle);
   }
 
-  auto handle = core_.reserveUncreatedPayloadOrGrow(payload_growth_chunk_size_);
+  auto handle = core_.reserveUncreatedPayloadOrGrow();
   if (!handle.isValid()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,

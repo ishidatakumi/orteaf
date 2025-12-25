@@ -60,7 +60,7 @@ void MpsLibraryManager::configure(const Config &config) {
   ops_ = config.ops;
   pipeline_config_ = config.pipeline_config;
   payload_block_size_ = payload_block_size;
-  payload_growth_chunk_size_ = config.payload_growth_chunk_size;
+  // payload growth chunk size configured via core_
   key_to_index_.clear();
 
   core_.configurePayloadPool(
@@ -68,7 +68,8 @@ void MpsLibraryManager::configure(const Config &config) {
   core_.configure(MpsLibraryManager::Core::Config{
       /*control_block_capacity=*/control_block_capacity,
       /*control_block_block_size=*/control_block_block_size,
-      /*growth_chunk_size=*/config.control_block_growth_chunk_size});
+      /*growth_chunk_size=*/config.control_block_growth_chunk_size,
+      /*payload_growth_chunk_size=*/config.payload_growth_chunk_size});
   core_.setConfigured(true);
 }
 
@@ -108,7 +109,7 @@ MpsLibraryManager::acquire(const LibraryKey &key) {
   // Reserve an uncreated slot and create the library
   LibraryPayloadPoolTraits::Request request{key};
   const auto context = makePayloadContext();
-  auto handle = core_.reserveUncreatedPayloadOrGrow(payload_growth_chunk_size_);
+  auto handle = core_.reserveUncreatedPayloadOrGrow();
   if (!handle.isValid()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,

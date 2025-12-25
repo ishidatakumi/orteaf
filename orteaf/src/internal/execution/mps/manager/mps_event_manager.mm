@@ -58,7 +58,7 @@ void MpsEventManager::configure(const Config &config) {
   device_ = config.device;
   ops_ = config.ops;
   payload_block_size_ = config.payload_block_size;
-  payload_growth_chunk_size_ = config.payload_growth_chunk_size;
+  // payload growth chunk size configured via core_
 
   core_.configurePayloadPool(
       EventPayloadPool::Config{payload_capacity, config.payload_block_size});
@@ -72,7 +72,8 @@ void MpsEventManager::configure(const Config &config) {
   core_.configure(MpsEventManager::Core::Config{
       /*control_block_capacity=*/control_block_capacity,
       /*control_block_block_size=*/config.control_block_block_size,
-      /*growth_chunk_size=*/config.control_block_growth_chunk_size});
+      /*growth_chunk_size=*/config.control_block_growth_chunk_size,
+      /*payload_growth_chunk_size=*/config.payload_growth_chunk_size});
   core_.setConfigured(true);
 }
 
@@ -97,8 +98,7 @@ MpsEventManager::EventLease MpsEventManager::acquire() {
   core_.ensureConfigured();
   const EventPayloadPoolTraits::Request request{};
   const auto context = makePayloadContext();
-  auto handle = core_.acquirePayloadOrGrowAndCreate(payload_growth_chunk_size_,
-                                                    request, context);
+  auto handle = core_.acquirePayloadOrGrowAndCreate(request, context);
   if (!handle.isValid()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,

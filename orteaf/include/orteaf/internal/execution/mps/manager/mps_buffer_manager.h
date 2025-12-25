@@ -252,6 +252,7 @@ public:
     core_cfg.control_block_capacity = config.control_block_capacity;
     core_cfg.control_block_block_size = config.control_block_block_size;
     core_cfg.growth_chunk_size = config.control_block_growth_chunk_size;
+    core_cfg.payload_growth_chunk_size = config.payload_growth_chunk_size;
     core_.configure(core_cfg);
 
     // Configure PayloadPool
@@ -260,7 +261,6 @@ public:
     payload_cfg.block_size = config.payload_block_size;
     core_.configurePayloadPool(payload_cfg);
 
-    payload_growth_chunk_size_ = config.payload_growth_chunk_size;
     core_.setConfigured(true);
   }
 
@@ -307,8 +307,7 @@ public:
                                                                   alignment};
     auto context =
         makePayloadContext(&params); // Build lease for the buffer payload
-    auto payload_handle = core_.acquirePayloadOrGrowAndCreate(
-        payload_growth_chunk_size_, request, context);
+    auto payload_handle = core_.acquirePayloadOrGrowAndCreate(request, context);
     if (!payload_handle.isValid()) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
@@ -365,7 +364,7 @@ public:
     return core_.isAlive(handle);
   }
   std::size_t payloadGrowthChunkSizeForTest() const noexcept {
-    return payload_growth_chunk_size_;
+    return core_.payloadGrowthChunkSize();
   }
   std::size_t controlBlockGrowthChunkSizeForTest() const noexcept {
     return core_.growthChunkSize();
@@ -390,7 +389,6 @@ private:
   ::orteaf::internal::base::DeviceHandle device_handle_{};
   HeapType heap_{nullptr};
   LaunchParams default_params_{};
-  std::size_t payload_growth_chunk_size_{1};
   Core core_{};
 };
 

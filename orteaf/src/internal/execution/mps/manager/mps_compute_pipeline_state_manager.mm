@@ -61,7 +61,7 @@ void MpsComputePipelineStateManager::configure(const Config &config) {
   library_ = config.library;
   ops_ = config.ops;
   payload_block_size_ = payload_block_size;
-  payload_growth_chunk_size_ = config.payload_growth_chunk_size;
+  // payload growth chunk size configured via core_
   key_to_index_.clear();
 
   core_.configurePayloadPool(
@@ -69,7 +69,8 @@ void MpsComputePipelineStateManager::configure(const Config &config) {
   core_.configure(MpsComputePipelineStateManager::Core::Config{
       /*control_block_capacity=*/control_block_capacity,
       /*control_block_block_size=*/control_block_block_size,
-      /*growth_chunk_size=*/config.control_block_growth_chunk_size});
+      /*growth_chunk_size=*/config.control_block_growth_chunk_size,
+      /*payload_growth_chunk_size=*/config.payload_growth_chunk_size});
   core_.setConfigured(true);
 }
 
@@ -109,7 +110,7 @@ MpsComputePipelineStateManager::acquire(const FunctionKey &key) {
   // Reserve an uncreated slot and create the pipeline state
   PipelinePayloadPoolTraits::Request request{key};
   const auto context = makePayloadContext();
-  auto handle = core_.reserveUncreatedPayloadOrGrow(payload_growth_chunk_size_);
+  auto handle = core_.reserveUncreatedPayloadOrGrow();
   if (!handle.isValid()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,

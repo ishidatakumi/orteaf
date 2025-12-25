@@ -100,7 +100,7 @@ void MpsHeapManager::configure(const Config &config) {
   ops_ = config.ops;
   buffer_config_ = config.buffer_config;
   payload_block_size_ = config.payload_block_size;
-  payload_growth_chunk_size_ = config.payload_growth_chunk_size;
+  // payload growth chunk size configured via core_
   key_to_index_.clear();
 
   // Configure core
@@ -108,6 +108,7 @@ void MpsHeapManager::configure(const Config &config) {
   core_cfg.control_block_capacity = config.control_block_capacity;
   core_cfg.control_block_block_size = config.control_block_block_size;
   core_cfg.growth_chunk_size = config.control_block_growth_chunk_size;
+  core_cfg.payload_growth_chunk_size = config.payload_growth_chunk_size;
   core_.configure(core_cfg);
 
   // Configure payload pool
@@ -163,7 +164,7 @@ MpsHeapManager::acquire(const HeapDescriptorKey &key) {
   // Reserve an uncreated slot and create the heap
   HeapPayloadPoolTraits::Request request{key};
   auto context = makePayloadContext();
-  auto handle = core_.reserveUncreatedPayloadOrGrow(payload_growth_chunk_size_);
+  auto handle = core_.reserveUncreatedPayloadOrGrow();
   if (!handle.isValid()) {
     ::orteaf::internal::diagnostics::error::throwError(
         ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
