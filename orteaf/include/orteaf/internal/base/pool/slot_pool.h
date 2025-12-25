@@ -45,25 +45,6 @@ public:
     std::size_t block_size{0};
   };
 
-  /**
-   * @brief Lightweight handle+pointer pair returned by acquisition calls.
-   *
-   * SlotRef is a non-owning view. It does not guarantee that the payload is
-   * created; callers should call emplace (or use a manager that does) before
-   * accessing the payload contents.
-   */
-  struct SlotRef {
-    Handle handle{Handle::invalid()};
-    Payload *payload_ptr{nullptr};
-
-    /**
-     * @brief Returns true if the handle is valid and the pointer is non-null.
-     */
-    bool valid() const noexcept {
-      return handle.isValid() && payload_ptr != nullptr;
-    }
-  };
-
   SlotPool() = default;
   SlotPool(const SlotPool &) = delete;
   SlotPool &operator=(const SlotPool &) = delete;
@@ -186,38 +167,38 @@ public:
    * tryAcquireCreated returns only slots with isCreated=true. It does not
    * create payloads itself.
    *
-   * @return SlotRef with a valid handle and payload pointer.
+   * @return Handle of an available created slot.
    * @throws OrteafErrc::OutOfRange if the freelist is empty.
    */
-  SlotRef acquireCreated() {
-    SlotRef ref = tryAcquireCreated();
-    if (!ref.valid()) {
+  Handle acquireCreated() {
+    Handle handle = tryAcquireCreated();
+    if (!handle.isValid()) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
           "SlotPool is empty");
     }
-    return ref;
+    return handle;
   }
 
   /**
    * @brief Attempts to acquire a created slot without throwing.
    *
-   * @return SlotRef with invalid handle and null pointer if no slots available.
+   * @return Valid Handle if successful, invalid Handle otherwise.
    */
-  SlotRef tryAcquireCreated() noexcept {
+  Handle tryAcquireCreated() noexcept {
     if (freelist_.empty()) {
-      return SlotRef{Handle::invalid(), nullptr};
+      return Handle::invalid();
     }
     const std::size_t scan_count = freelist_.size();
     for (std::size_t i = 0; i < scan_count; ++i) {
       const index_type idx = freelist_.back();
       freelist_.resize(freelist_.size() - 1);
       if (created_[static_cast<std::size_t>(idx)] != 0) {
-        return SlotRef{makeHandle(idx), &payloads_[idx]};
+        return makeHandle(idx);
       }
       freelist_.pushBack(idx);
     }
-    return SlotRef{Handle::invalid(), nullptr};
+    return Handle::invalid();
   }
 
   /**
@@ -226,38 +207,38 @@ public:
    * tryReserveUncreated returns only slots with isCreated=false. It does not
    * create payloads itself. Use emplace to initialize the payload.
    *
-   * @return SlotRef with a valid handle and payload pointer.
+   * @return Handle of an available uncreated slot.
    * @throws OrteafErrc::OutOfRange if no uncreated slots are available.
    */
-  SlotRef reserveUncreated() {
-    SlotRef ref = tryReserveUncreated();
-    if (!ref.valid()) {
+  Handle reserveUncreated() {
+    Handle handle = tryReserveUncreated();
+    if (!handle.isValid()) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
           "SlotPool is empty");
     }
-    return ref;
+    return handle;
   }
 
   /**
    * @brief Attempts to reserve an uncreated slot without throwing.
    *
-   * @return SlotRef with invalid handle and null pointer if none available.
+   * @return Valid Handle if successful, invalid Handle otherwise.
    */
-  SlotRef tryReserveUncreated() noexcept {
+  Handle tryReserveUncreated() noexcept {
     if (freelist_.empty()) {
-      return SlotRef{Handle::invalid(), nullptr};
+      return Handle::invalid();
     }
     const std::size_t scan_count = freelist_.size();
     for (std::size_t i = 0; i < scan_count; ++i) {
       const index_type idx = freelist_.back();
       freelist_.resize(freelist_.size() - 1);
       if (created_[static_cast<std::size_t>(idx)] == 0) {
-        return SlotRef{makeHandle(idx), &payloads_[idx]};
+        return makeHandle(idx);
       }
       freelist_.pushBack(idx);
     }
-    return SlotRef{Handle::invalid(), nullptr};
+    return Handle::invalid();
   }
 
   /**

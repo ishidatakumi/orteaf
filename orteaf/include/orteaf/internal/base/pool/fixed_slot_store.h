@@ -41,23 +41,7 @@ public:
     std::size_t block_size{0};
   };
 
-  /**
-   * @brief Lightweight handle+pointer pair returned by acquisition calls.
-   *
-   * SlotRef is a non-owning view. It is only valid if the underlying handle is
-   * valid and the payload is created.
-   */
-  struct SlotRef {
-    Handle handle{Handle::invalid()};
-    Payload *payload_ptr{nullptr};
-
-    /**
-     * @brief Returns true if the handle is valid and the pointer is non-null.
-     */
-    bool valid() const noexcept {
-      return handle.isValid() && payload_ptr != nullptr;
-    }
-  };
+  // SlotRef removed - use Handle and get(handle) instead
 
   FixedSlotStore() = default;
   FixedSlotStore(const FixedSlotStore &) = delete;
@@ -177,17 +161,17 @@ public:
    * This method searches for the first slot that is created and returns a
    * reference to it.
    *
-   * @return SlotRef with a valid handle and payload pointer.
+   * @return Handle of an available created slot.
    * @throws OrteafErrc::OutOfRange if no created slots are available.
    */
-  SlotRef acquireCreated() {
-    SlotRef ref = tryAcquireCreated();
-    if (!ref.valid()) {
+  Handle acquireCreated() {
+    Handle handle = tryAcquireCreated();
+    if (!handle.isValid()) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
           "FixedSlotStore slot is not available");
     }
-    return ref;
+    return handle;
   }
 
   /**
@@ -196,34 +180,32 @@ public:
    * Returns the first created slot (index 0) if any slots have been created.
    * O(1) complexity.
    *
-   * @return SlotRef with invalid handle and null pointer if not available.
+   * @return Valid Handle if successful, invalid Handle otherwise.
    */
-  SlotRef tryAcquireCreated() noexcept {
+  Handle tryAcquireCreated() noexcept {
     if (next_uncreated_index_ == 0) {
-      return SlotRef{Handle::invalid(), nullptr};
+      return Handle::invalid();
     }
-    // Verify the first slot is actually created (safety check)
     if (created_[0] == 0) {
-      return SlotRef{Handle::invalid(), nullptr};
+      return Handle::invalid();
     }
-    Handle handle = makeHandle(0);
-    return SlotRef{handle, &payloads_[0]};
+    return makeHandle(0);
   }
 
   /**
    * @brief Reserves an uncreated slot by scanning the store.
    *
-   * @return SlotRef with a valid handle and payload pointer.
+   * @return Handle of an available uncreated slot.
    * @throws OrteafErrc::OutOfRange if no uncreated slots are available.
    */
-  SlotRef reserveUncreated() {
-    SlotRef ref = tryReserveUncreated();
-    if (!ref.valid()) {
+  Handle reserveUncreated() {
+    Handle handle = tryReserveUncreated();
+    if (!handle.isValid()) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::OutOfRange,
           "FixedSlotStore slot is not available");
     }
-    return ref;
+    return handle;
   }
 
   /**
@@ -232,18 +214,16 @@ public:
    * Returns the next uncreated slot at next_uncreated_index_.
    * O(1) complexity.
    *
-   * @return SlotRef with invalid handle and null pointer if none available.
+   * @return Valid Handle if successful, invalid Handle otherwise.
    */
-  SlotRef tryReserveUncreated() noexcept {
+  Handle tryReserveUncreated() noexcept {
     if (next_uncreated_index_ >= size()) {
-      return SlotRef{Handle::invalid(), nullptr};
+      return Handle::invalid();
     }
-    // Verify the slot is actually uncreated (safety check)
     if (created_[next_uncreated_index_] != 0) {
-      return SlotRef{Handle::invalid(), nullptr};
+      return Handle::invalid();
     }
-    Handle handle = makeHandle(static_cast<index_type>(next_uncreated_index_));
-    return SlotRef{handle, &payloads_[next_uncreated_index_]};
+    return makeHandle(static_cast<index_type>(next_uncreated_index_));
   }
 
   /**
