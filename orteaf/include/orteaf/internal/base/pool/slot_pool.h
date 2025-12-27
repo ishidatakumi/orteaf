@@ -74,6 +74,10 @@ public:
    * @brief Returns the number of slots currently available in the freelist.
    */
   std::size_t available() const noexcept { return freelist_.size(); }
+  /**
+   * @brief Returns true if the pool has no slots.
+   */
+  bool empty() const noexcept { return payloads_.empty(); }
 
   /**
    * @brief Reserves storage for at least new_capacity slots.

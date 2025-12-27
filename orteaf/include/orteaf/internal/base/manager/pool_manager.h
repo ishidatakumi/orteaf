@@ -134,26 +134,21 @@ public:
   /**
    * @brief Manager が設定済みかを返す
    */
-  bool isConfigured() const noexcept { return configured_; }
+  bool isConfigured() const noexcept { return !control_block_pool_.empty(); }
 
   /**
    * @brief 設定済みでなければ例外をスロー
    */
   void ensureConfigured() const {
-    if (!configured_) {
+    if (!isConfigured()) {
       ::orteaf::internal::diagnostics::error::throwError(
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
           std::string(managerName()) + " has not been configured");
     }
   }
 
-  /**
-   * @brief 設定済みフラグをセット
-   */
-  void setConfigured(bool value) noexcept { configured_ = value; }
-
   // ===========================================================================
-  // ControlBlock Pool Operations
+  // Configuration
   // ===========================================================================
 
   template <typename Request, typename Context>
@@ -168,17 +163,22 @@ public:
     }
   {
     validateConfig(config);
-    const std::size_t new_block_size = config.payload_block_size;
-    if (configured_ && payload_block_size_ != new_block_size) {
-      checkCanShutdownOrThrow();
+
+    // Payload block size 変更時は shutdown が必要
+    if (isConfigured() && payload_block_size_ != config.payload_block_size &&
+        config.payload_block_size != 0) {
+      checkCanTeardownOrThrow();
       shutdownPayloadPool(request, context);
     }
-    payload_block_size_ = new_block_size;
-    if (new_block_size != 0) {
-      payload_pool_.setBlockSize(new_block_size);
-    }
-    payload_pool_.resize(config.payload_capacity);
+
+    // Payload の設定
+    setPayloadBlockSize(config.payload_block_size);
+    resizePayloadPool(config.payload_capacity);
+
+    // ControlBlock の設定
     applyControlBlockConfig(config);
+
+    // Growth chunk sizes
     setControlBlockGrowthChunkSize(config.control_block_growth_chunk_size);
     setPayloadGrowthChunkSize(config.payload_growth_chunk_size);
   }
@@ -191,16 +191,15 @@ public:
     }
   {
     validateConfig(config);
-    const std::size_t new_block_size = config.payload_block_size;
-    if (configured_ && payload_block_size_ != new_block_size) {
-      checkCanShutdownOrThrow();
-    }
-    payload_block_size_ = new_block_size;
-    if (new_block_size != 0) {
-      payload_pool_.setBlockSize(new_block_size);
-    }
-    payload_pool_.resize(config.payload_capacity);
+
+    // Payload の設定 (setPayloadBlockSize 内で canTeardown チェック)
+    setPayloadBlockSize(config.payload_block_size);
+    resizePayloadPool(config.payload_capacity);
+
+    // ControlBlock の設定
     applyControlBlockConfig(config);
+
+    // Growth chunk sizes
     setControlBlockGrowthChunkSize(config.control_block_growth_chunk_size);
     setPayloadGrowthChunkSize(config.payload_growth_chunk_size);
   }
@@ -223,23 +222,129 @@ public:
   }
 
   /**
+   * @brief 全ControlBlockに対してcanTeardownチェック
+   *
+   * Payload を破棄可能かどうかをチェック。
+   * 一つでもcanTeardown() == falseのCBがあれば例外をスロー
+   */
+  void checkCanTeardownOrThrow() const {
+    control_block_pool_.forEachCreated([&](std::size_t,
+                                           const ControlBlock &cb) {
+      if (!cb.canTeardown()) {
+        ::orteaf::internal::diagnostics::error::throwError(
+            ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+            std::string(managerName()) +
+                " teardown aborted due to active strong references");
+      }
+    });
+  }
+
+  /**
+   * @brief Manager全体をshutdown
+   *
+   * Payload PoolとControlBlock Poolをshutdownし、configured_をfalseに設定。
+   * shutdown前にcheckCanShutdownOrThrow()を呼び出す必要がある。
+   *
+   * @param request Payload shutdown用のリクエスト
+   * @param context Payload shutdown用のコンテキスト
+   */
+  template <typename Request, typename Context>
+  void shutdown(const Request &request, const Context &context)
+    requires requires(PayloadPool &pool, const Request &req,
+                      const Context &ctx) { pool.shutdown(req, ctx); }
+  {
+    if (!isConfigured()) {
+      return;
+    }
+    payload_pool_.shutdown(request, context);
+    control_block_pool_.shutdown();
+  }
+
+  /**
    * @brief ControlBlock Poolをshutdown
    */
   void shutdownControlBlockPool() { control_block_pool_.shutdown(); }
 
   // ===========================================================================
-  // ControlBlock Growth Chunk Size Configuration
+  // Block Size Setters
   // ===========================================================================
 
   /**
-   * @brief Pool拡張時のチャンクサイズを取得
+   * @brief ControlBlock Pool の block size を設定
+   *
+   * block size の変更が必要な場合、canShutdown チェックを行い
+   * 既存の ControlBlock を shutdown してから設定する。
+   *
+   * @param size ブロックサイズ（0より大きい必要がある）
+   */
+  void setControlBlockBlockSize(std::size_t size) {
+    if (size == 0) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+          std::string(managerName()) + " control block size must be > 0");
+    }
+    if (control_block_block_size_ != 0 && control_block_block_size_ != size) {
+      checkCanShutdownOrThrow();
+    }
+    control_block_block_size_ = size;
+    control_block_pool_.setBlockSize(size);
+  }
+
+  /**
+   * @brief Payload Pool の block size を設定
+   *
+   * block size の変更が必要な場合、canTeardown チェックを行う。
+   * 実際の shutdown は呼び出し側で行う必要がある。
+   *
+   * @param size ブロックサイズ（0の場合、サイズ変更のみ許可）
+   */
+  void setPayloadBlockSize(std::size_t size) {
+    if (payload_block_size_ != 0 && payload_block_size_ != size && size != 0) {
+      checkCanTeardownOrThrow();
+    }
+    payload_block_size_ = size;
+    if (size != 0) {
+      payload_pool_.setBlockSize(size);
+    }
+  }
+
+  // ===========================================================================
+  // Resize Setters
+  // ===========================================================================
+
+  /**
+   * @brief ControlBlock Pool の容量をリサイズ
+   *
+   * @param capacity 新しい容量
+   * @return リサイズ前の容量
+   */
+  std::size_t resizeControlBlockPool(std::size_t capacity) {
+    return control_block_pool_.resize(capacity);
+  }
+
+  /**
+   * @brief Payload Pool の容量をリサイズ
+   *
+   * @param capacity 新しい容量
+   * @return リサイズ前の容量
+   */
+  std::size_t resizePayloadPool(std::size_t capacity) {
+    return payload_pool_.resize(capacity);
+  }
+
+  // ===========================================================================
+  // Growth Chunk Size Setters
+  // ===========================================================================
+
+  /**
+   * @brief ControlBlock Pool拡張時のチャンクサイズを取得
    */
   std::size_t controlBlockGrowthChunkSize() const noexcept {
     return control_block_growth_chunk_size_;
   }
 
   /**
-   * @brief Pool拡張時のチャンクサイズを設定
+   * @brief ControlBlock Pool拡張時のチャンクサイズを設定
    *
    * @param size チャンクサイズ（0より大きい必要がある）
    */
@@ -415,7 +520,7 @@ public:
    * @return 初期化済み && valid && created であればtrue
    */
   bool isAlive(PayloadHandle handle) const noexcept {
-    return configured_ && payload_pool_.isValid(handle) &&
+    return isConfigured() && payload_pool_.isValid(handle) &&
            payload_pool_.isCreated(handle);
   }
 
@@ -502,8 +607,8 @@ public:
     return control_block_pool_.available();
   }
 
-  const ControlBlock *controlBlockForTest(ControlBlockHandle handle) const
-    noexcept {
+  const ControlBlock *
+  controlBlockForTest(ControlBlockHandle handle) const noexcept {
     return control_block_pool_.get(handle);
   }
 #endif
@@ -645,23 +750,14 @@ private:
   }
 
   void applyControlBlockConfig(const Config &config) {
-    const std::size_t capacity = config.control_block_capacity;
-    const std::size_t block_size = config.control_block_block_size;
-    if (block_size == 0) {
-      ::orteaf::internal::diagnostics::error::throwError(
-          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
-          std::string(managerName()) + " control block size must be > 0");
-    }
-    if (control_block_block_size_ != 0 &&
-        control_block_block_size_ != block_size) {
-      checkCanShutdownOrThrow();
-      control_block_pool_.shutdown();
-    }
-    control_block_block_size_ = block_size;
+    // block size 設定 (内部で canShutdown チェックと shutdown 実行)
+    setControlBlockBlockSize(config.control_block_block_size);
+
+    // resize してから createRange
+    const std::size_t old_capacity =
+        resizeControlBlockPool(config.control_block_capacity);
     typename ControlBlockPoolTraits::Request request{};
     typename ControlBlockPoolTraits::Context context{};
-    control_block_pool_.setBlockSize(block_size);
-    const std::size_t old_capacity = control_block_pool_.resize(capacity);
     if (!control_block_pool_.createRange(
             old_capacity, control_block_pool_.size(), request, context)) {
       ::orteaf::internal::diagnostics::error::throwError(
@@ -669,8 +765,6 @@ private:
           std::string(managerName()) + " failed to initialize control blocks");
     }
   }
-
-  bool configured_{false};
   std::size_t control_block_growth_chunk_size_{1};
   std::size_t payload_growth_chunk_size_{1};
   std::size_t control_block_block_size_{0};

@@ -68,6 +68,10 @@ public:
    * @brief Returns the payload block size in use.
    */
   std::size_t blockSize() const noexcept { return payloads_.blockSize(); }
+  /**
+   * @brief Returns true if the store has no slots.
+   */
+  bool empty() const noexcept { return payloads_.empty(); }
 
   /**
    * @brief Reserves storage for at least new_capacity slots.
