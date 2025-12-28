@@ -235,30 +235,6 @@ public:
   }
 
   // ===========================================================================
-  // Resize Setters
-  // ===========================================================================
-
-  /**
-   * @brief ControlBlock Pool の容量をリサイズ
-   *
-   * @param capacity 新しい容量
-   * @return リサイズ前の容量
-   */
-  std::size_t resizeControlBlockPool(std::size_t capacity) {
-    return control_block_pool_.resize(capacity);
-  }
-
-  /**
-   * @brief Payload Pool の容量をリサイズ
-   *
-   * @param capacity 新しい容量
-   * @return リサイズ前の容量
-   */
-  std::size_t resizePayloadPool(std::size_t capacity) {
-    return payload_pool_.resize(capacity);
-  }
-
-  // ===========================================================================
   // Growth Chunk Size Setters
   // ===========================================================================
 
@@ -551,6 +527,30 @@ private:
           ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
           std::string(managerName()) + " failed to initialize control blocks");
     }
+  }
+
+  // ===========================================================================
+  // Resize Helpers
+  // ===========================================================================
+
+  /**
+   * @brief ControlBlock Pool の容量をリサイズ
+   *
+   * @param capacity 新しい容量
+   * @return リサイズ前の容量
+   */
+  std::size_t resizeControlBlockPool(std::size_t capacity) {
+    return control_block_pool_.resize(capacity);
+  }
+
+  /**
+   * @brief Payload Pool の容量をリサイズ
+   *
+   * @param capacity 新しい容量
+   * @return リサイズ前の容量
+   */
+  std::size_t resizePayloadPool(std::size_t capacity) {
+    return payload_pool_.resize(capacity);
   }
 
   // ===========================================================================
