@@ -168,18 +168,6 @@ public:
   const HandleT &handle() const noexcept { return handle_; }
 
   /**
-   * @brief Get mutable pointer to control block.
-   * @return Pointer to control block, or nullptr if invalid.
-   */
-  ControlBlockT *controlBlock() noexcept { return control_block_; }
-
-  /**
-   * @brief Get const pointer to control block.
-   * @return Const pointer to control block, or nullptr if invalid.
-   */
-  const ControlBlockT *controlBlock() const noexcept { return control_block_; }
-
-  /**
    * @brief Get the payload handle from control block.
    * @return Payload handle if valid, invalid handle otherwise.
    *

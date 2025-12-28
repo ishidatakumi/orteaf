@@ -657,8 +657,7 @@ TEST(PoolManager, AcquireStrongLeaseReturnsValidLease) {
 
   auto lease = manager.acquireStrongLease(handle);
   EXPECT_TRUE(lease);
-  ASSERT_NE(lease.controlBlock(), nullptr);
-  EXPECT_EQ(lease.controlBlock()->strongCount(), 1u);
+  EXPECT_EQ(lease.strongCount(), 1u);
   EXPECT_NE(lease.payloadPtr(), nullptr);
   EXPECT_EQ(lease.payloadPtr()->value, 1);
 }
@@ -676,8 +675,7 @@ TEST(PoolManager, AcquireWeakLeaseReturnsValidLease) {
 
   auto lease = manager.acquireWeakLease(handle);
   EXPECT_TRUE(lease);
-  ASSERT_NE(lease.controlBlock(), nullptr);
-  EXPECT_EQ(lease.controlBlock()->weakCount(), 1u);
+  EXPECT_EQ(lease.weakCount(), 1u);
   EXPECT_NE(lease.payloadPtr(), nullptr);
   EXPECT_EQ(lease.payloadPtr()->value, 1);
 }
@@ -717,8 +715,7 @@ TEST(PoolManager, AcquireStrongLeaseRebindsControlBlockAfterRelease) {
   auto rebound = manager.boundControlBlockForTest(reacquired_handle);
   EXPECT_TRUE(rebound.isValid());
   EXPECT_EQ(rebound, reused.handle());
-  ASSERT_NE(reused.controlBlock(), nullptr);
-  EXPECT_EQ(reused.controlBlock()->strongCount(), 1u);
+  EXPECT_EQ(reused.strongCount(), 1u);
 }
 
 TEST(PoolManager, AcquireStrongLeaseTwiceReusesSameControlBlockAndHandle) {

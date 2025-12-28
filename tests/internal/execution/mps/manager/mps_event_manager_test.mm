@@ -432,19 +432,19 @@ TYPED_TEST(MpsEventManagerTypedTest, LeaseCopyIncrementsCount) {
   // Arrange
   // Act
   auto lease1 = manager.acquire();
-  EXPECT_EQ(lease1.count(), 1u);
+  EXPECT_EQ(lease1.strongCount(), 1u);
 
   auto lease2 = lease1; // Copy
 
   // Assert: Both valid, count incremented
   EXPECT_TRUE(lease1);
   EXPECT_TRUE(lease2);
-  EXPECT_EQ(lease1.count(), 2u);
-  EXPECT_EQ(lease2.count(), 2u);
+  EXPECT_EQ(lease1.strongCount(), 2u);
+  EXPECT_EQ(lease2.strongCount(), 2u);
 
   // Cleanup
   lease1.release();
-  EXPECT_EQ(lease2.count(), 1u);
+  EXPECT_EQ(lease2.strongCount(), 1u);
   lease2.release();
 
   if constexpr (TypeParam::is_mock) {
@@ -470,8 +470,8 @@ TYPED_TEST(MpsEventManagerTypedTest, LeaseCopyAssignmentIncrementsCount) {
   lease2 = lease1; // Copy assignment
 
   // Assert
-  EXPECT_EQ(lease1.count(), 2u);
-  EXPECT_EQ(lease2.count(), 2u);
+  EXPECT_EQ(lease1.strongCount(), 2u);
+  EXPECT_EQ(lease2.strongCount(), 2u);
 
   // Cleanup
   lease1.release();
@@ -494,7 +494,7 @@ TYPED_TEST(MpsEventManagerTypedTest, LeaseMoveDoesNotChangeCount) {
 
   // Arrange
   auto lease1 = manager.acquire();
-  EXPECT_EQ(lease1.count(), 1u);
+  EXPECT_EQ(lease1.strongCount(), 1u);
 
   // Act
   auto lease2 = std::move(lease1); // Move
@@ -502,7 +502,7 @@ TYPED_TEST(MpsEventManagerTypedTest, LeaseMoveDoesNotChangeCount) {
   // Assert: Source invalid, target valid, count unchanged
   EXPECT_FALSE(lease1);
   EXPECT_TRUE(lease2);
-  EXPECT_EQ(lease2.count(), 1u);
+  EXPECT_EQ(lease2.strongCount(), 1u);
 
   // Cleanup
   lease2.release();
@@ -532,7 +532,7 @@ TYPED_TEST(MpsEventManagerTypedTest, LeaseMoveAssignmentDoesNotChangeCount) {
   // Assert
   EXPECT_FALSE(lease1);
   EXPECT_TRUE(lease2);
-  EXPECT_EQ(lease2.count(), 1u);
+  EXPECT_EQ(lease2.strongCount(), 1u);
 
   // Cleanup
   lease2.release();

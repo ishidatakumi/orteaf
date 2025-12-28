@@ -144,6 +144,8 @@ public:
 
   /**
    * @brief Release a payload slot and unbind its control block.
+   *
+   * Release always clears the bound control block for the payload slot.
    */
   bool release(Handle payload_handle) noexcept {
     unbindControlBlock(payload_handle);
@@ -152,6 +154,8 @@ public:
 
   /**
    * @brief Release a payload slot with request/context and unbind its control block.
+   *
+   * Release always clears the bound control block for the payload slot.
    */
   bool release(Handle payload_handle, const typename Base::Request &request,
                const typename Base::Context &context) noexcept {

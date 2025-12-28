@@ -147,18 +147,6 @@ public:
   const HandleT &handle() const noexcept { return handle_; }
 
   /**
-   * @brief Get mutable pointer to control block.
-   * @return Pointer to control block, or nullptr if invalid.
-   */
-  ControlBlockT *controlBlock() noexcept { return control_block_; }
-
-  /**
-   * @brief Get const pointer to control block.
-   * @return Const pointer to control block, or nullptr if invalid.
-   */
-  const ControlBlockT *controlBlock() const noexcept { return control_block_; }
-
-  /**
    * @brief Get the payload handle from control block.
    * @return Payload handle if valid, invalid handle otherwise.
    *
@@ -215,7 +203,7 @@ public:
    * Only available if ControlBlockT has a `strongCount()` method.
    * Useful for testing and debugging reference counting behavior.
    */
-  std::uint32_t count() const noexcept
+  std::uint32_t strongCount() const noexcept
     requires requires(const ControlBlockT *cb) {
       { cb->strongCount() } -> std::convertible_to<std::uint32_t>;
     }
