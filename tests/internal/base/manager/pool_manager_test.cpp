@@ -748,4 +748,31 @@ TEST(PoolManager, AcquireStrongLeaseTwiceReusesSameControlBlockAndHandle) {
   EXPECT_EQ(second.payloadHandle(), handle);
 }
 
+TEST(PoolManager, AcquireWeakLeaseTwiceReusesSameControlBlockAndHandle) {
+  BoundPoolManager manager;
+  BoundPoolManager::Config config{};
+  config.control_block_capacity = 1;
+  config.control_block_block_size = 1;
+  config.control_block_growth_chunk_size = 1;
+  config.payload_growth_chunk_size = 1;
+  config.payload_capacity = 1;
+  config.payload_block_size = 1;
+  DummyPayloadTraits::Request req{};
+  DummyPayloadTraits::Context ctx{};
+
+  manager.configure(config, req, ctx);
+  auto handle = manager.reserveUncreatedPayloadOrGrow();
+  EXPECT_TRUE(handle.isValid());
+  EXPECT_TRUE(manager.emplacePayload(handle, req, ctx));
+
+  auto first = manager.acquireWeakLease(handle);
+  auto second = manager.acquireWeakLease(handle);
+
+  EXPECT_TRUE(first);
+  EXPECT_TRUE(second);
+  EXPECT_EQ(first.handle(), second.handle());
+  EXPECT_EQ(first.payloadHandle(), handle);
+  EXPECT_EQ(second.payloadHandle(), handle);
+}
+
 } // namespace
