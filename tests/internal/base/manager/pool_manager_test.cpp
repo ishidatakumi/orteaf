@@ -137,4 +137,20 @@ TEST(PoolManager, ConfigureMarksManagerConfigured) {
   EXPECT_TRUE(manager.isConfigured());
 }
 
+TEST(PoolManager, SetControlBlockBlockSizeRejectsZero) {
+  PoolManager manager;
+  ::orteaf::tests::ExpectErrorMessage(
+      ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+      {"DummyManager", "control block size must be > 0"},
+      [&manager] { manager.setControlBlockBlockSize(0); });
+}
+
+TEST(PoolManager, SetPayloadBlockSizeRejectsZero) {
+  PoolManager manager;
+  ::orteaf::tests::ExpectErrorMessage(
+      ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+      {"DummyManager", "payload block size must be > 0"},
+      [&manager] { manager.setPayloadBlockSize(0); });
+}
+
 } // namespace
