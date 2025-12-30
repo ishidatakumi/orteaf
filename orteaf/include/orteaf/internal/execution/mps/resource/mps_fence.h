@@ -3,8 +3,10 @@
 #if ORTEAF_ENABLE_MPS
 
 #include <orteaf/internal/base/handle.h>
-#include <orteaf/internal/execution/mps/platform/wrapper/mps_command_buffer.h>
 #include <orteaf/internal/execution/mps/platform/wrapper/mps_fence.h>
+
+#include <orteaf/internal/execution/mps/platform/mps_fast_ops.h>
+#include <orteaf/internal/execution/mps/platform/wrapper/mps_command_buffer.h>
 
 namespace orteaf::internal::execution::mps::manager {
 struct FencePayloadPoolTraits;
@@ -55,12 +57,13 @@ public:
     return true;
   }
 
+  template <typename MpsOps =
+                ::orteaf::internal::execution::mps::platform::MpsFastOps>
   bool isReady() {
     if (command_buffer_ == nullptr) {
       return true;
     }
-    if (::orteaf::internal::execution::mps::platform::wrapper::isCompleted(
-            command_buffer_)) {
+    if (MpsOps::isCompleted(command_buffer_)) {
       command_buffer_ = nullptr;
       return true;
     }
