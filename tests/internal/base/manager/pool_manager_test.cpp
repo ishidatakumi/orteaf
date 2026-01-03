@@ -157,6 +157,31 @@ TEST(PoolManager, ConfigureMarksManagerConfigured) {
   EXPECT_TRUE(manager.isConfigured());
 }
 
+TEST(PoolManager, ConfigureWithZeroCapacityMarksConfiguredAndAllowsGrowth) {
+  PoolManager manager;
+  auto config = makeBaseConfig();
+  config.payload_capacity = 0;
+  config.control_block_capacity = 0;
+  DummyPayloadTraits::Request req{};
+  DummyPayloadTraits::Context ctx{};
+
+  manager.configure(config, req, ctx);
+  EXPECT_TRUE(manager.isConfigured());
+
+  auto handle = manager.acquirePayloadOrGrowAndCreate(req, ctx);
+  EXPECT_TRUE(handle.isValid());
+  EXPECT_TRUE(manager.isAlive(handle));
+
+  auto lease = manager.acquireStrongLease(handle);
+  ASSERT_TRUE(lease);
+  ASSERT_NE(lease.payloadPtr(), nullptr);
+  EXPECT_EQ(lease.payloadPtr()->value, 1);
+
+  lease.release();
+  manager.shutdown(req, ctx);
+  EXPECT_FALSE(manager.isConfigured());
+}
+
 TEST(PoolManager, SetControlBlockBlockSizeRejectsZero) {
   PoolManager manager;
   ::orteaf::tests::ExpectErrorMessage(

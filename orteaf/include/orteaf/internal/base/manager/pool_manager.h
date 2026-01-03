@@ -110,7 +110,7 @@ public:
    * @brief Manager が設定済みかを返す
    */
   bool isConfigured() const noexcept {
-    return !control_block_pool_.empty() || !payload_pool_.empty();
+    return configured_;
   }
 
   /**
@@ -157,6 +157,8 @@ public:
     // Growth chunk sizes
     setControlBlockGrowthChunkSize(config.control_block_growth_chunk_size);
     setPayloadGrowthChunkSize(config.payload_growth_chunk_size);
+
+    configured_ = true;
   }
 
   // ===========================================================================
@@ -186,6 +188,8 @@ public:
 
     shutdownPayloadPool(request, context);
     shutdownControlBlockPool();
+
+    configured_ = false;
   }
 
   // ===========================================================================
@@ -819,6 +823,7 @@ private:
   std::size_t payload_growth_chunk_size_{1};
   std::size_t control_block_block_size_{0};
   std::size_t payload_block_size_{0};
+  bool configured_{false};
   PayloadPool payload_pool_{};
   ControlBlockPool control_block_pool_{};
 };
