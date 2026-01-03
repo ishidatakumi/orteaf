@@ -28,10 +28,8 @@ public:
   bool empty() const noexcept { return leases_.empty(); }
   std::size_t size() const noexcept { return leases_.size(); }
 
-  void addLease(FenceLease &&lease) { leases_.pushBack(std::move(lease)); }
-
   // Add a lease, replacing any existing lease with the same command queue id.
-  FenceLease &addOrReplaceLease(FenceLease &&lease) {
+  void addOrReplaceLease(FenceLease &&lease) {
     auto *payload = lease.payloadPtr();
     if (payload != nullptr) {
       const auto queue_handle = payload->commandQueueHandle();
@@ -40,12 +38,11 @@ public:
         if (existing_payload != nullptr &&
             existing_payload->commandQueueHandle() == queue_handle) {
           leases_[i] = std::move(lease);
-          return leases_[i];
+          return;
         }
       }
     }
     leases_.pushBack(std::move(lease));
-    return leases_.back();
   }
 
   void clear() noexcept { leases_.clear(); }
