@@ -10,6 +10,7 @@
 
 namespace orteaf::internal::execution::mps::manager {
 struct FencePayloadPoolTraits;
+class MpsFenceLifetimeManager;
 }
 
 namespace orteaf::internal::execution::mps::resource {
@@ -73,6 +74,8 @@ public:
   bool isCompleted() const noexcept { return command_buffer_ == nullptr; }
 
 private:
+  void markCompletedUnsafe() noexcept { command_buffer_ = nullptr; }
+
   void reset() noexcept {
     fence_ = nullptr;
     command_buffer_ = nullptr;
@@ -81,6 +84,8 @@ private:
 
   friend struct ::orteaf::internal::execution::mps::manager::
       FencePayloadPoolTraits;
+  friend class ::orteaf::internal::execution::mps::manager::
+      MpsFenceLifetimeManager;
 
   FenceType fence_{nullptr};
   CommandBufferType command_buffer_{nullptr};

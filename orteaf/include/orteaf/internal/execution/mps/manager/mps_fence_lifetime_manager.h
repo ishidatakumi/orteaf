@@ -116,6 +116,18 @@ public:
 
     const std::size_t released = ready_end - head_;
     for (std::size_t i = head_; i < ready_end; ++i) {
+      auto *payload = hazards_[i].payloadPtr();
+      if (payload != nullptr) {
+#if ORTEAF_ENABLE_TEST
+        if (!payload->isReady<FastOps>()) {
+          ::orteaf::internal::diagnostics::error::throwError(
+              ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+              "MPS fence lifetime manager release ready aborted due to active fences");
+        }
+#else
+        payload->markCompletedUnsafe();
+#endif
+      }
       hazards_[i].release();
     }
     head_ = ready_end;
