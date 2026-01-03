@@ -89,6 +89,16 @@ public:
   template <typename FastOps =
                 ::orteaf::internal::execution::mps::platform::MpsFastOps>
   std::size_t releaseReady() {
+    if (fence_manager_ == nullptr) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          "MPS fence lifetime manager requires a fence manager");
+    }
+    if (!queue_handle_.isValid()) {
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidArgument,
+          "MPS fence lifetime manager requires a valid command queue handle");
+    }
     if (head_ >= hazards_.size()) {
       hazards_.clear();
       head_ = 0;
@@ -136,6 +146,11 @@ public:
 
   bool empty() const noexcept { return size() == 0; }
 
+#if ORTEAF_ENABLE_TEST
+  std::size_t storageSizeForTest() const noexcept { return hazards_.size(); }
+  std::size_t headIndexForTest() const noexcept { return head_; }
+#endif
+
 private:
   void compactIfNeeded() {
     if (head_ == 0) {
@@ -159,7 +174,7 @@ private:
   }
 
   FenceManager *fence_manager_{nullptr};
-  CommandQueueHandle queue_handle_{};
+  CommandQueueHandle queue_handle_{CommandQueueHandle::invalid()};
   ::orteaf::internal::base::HeapVector<FenceLease> hazards_{};
   std::size_t head_{0};
 };
