@@ -125,10 +125,10 @@ TEST(MpsKernelLauncherImplTest, InitializeAcquiresPipelinesInOrder) {
 namespace {
 
 struct MockFastOps {
-  static ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandBuffer_t
-  createCommandBuffer(
-      ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandQueue_t
-          command_queue) {
+  static ::orteaf::internal::execution::mps::platform::wrapper::
+      MpsCommandBuffer_t
+      createCommandBuffer(::orteaf::internal::execution::mps::platform::
+                              wrapper::MpsCommandQueue_t command_queue) {
     last_queue = command_queue;
     return fake_buffer;
   }
@@ -137,15 +137,15 @@ struct MockFastOps {
       MpsCommandQueue_t last_queue{nullptr};
   static inline ::orteaf::internal::execution::mps::platform::wrapper::
       MpsCommandBuffer_t fake_buffer{
-          reinterpret_cast<::orteaf::internal::execution::mps::platform::wrapper::
-                               MpsCommandBuffer_t>(0x1)};
+          reinterpret_cast<::orteaf::internal::execution::mps::platform::
+                               wrapper::MpsCommandBuffer_t>(0x1)};
 };
 
 struct MockComputeFastOps {
-  static ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandBuffer_t
-  createCommandBuffer(
-      ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandQueue_t
-          command_queue) {
+  static ::orteaf::internal::execution::mps::platform::wrapper::
+      MpsCommandBuffer_t
+      createCommandBuffer(::orteaf::internal::execution::mps::platform::
+                              wrapper::MpsCommandQueue_t command_queue) {
     last_queue = command_queue;
     return fake_buffer;
   }
@@ -189,26 +189,26 @@ struct MockComputeFastOps {
     last_bytes_index = index;
   }
 
-  static void
-  setThreadgroups(::orteaf::internal::execution::mps::platform::wrapper::
-                      MpsComputeCommandEncoder_t encoder,
-                  ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t
-                      threadgroups,
-                  ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t
-                      threads_per_threadgroup) {
+  static void setThreadgroups(
+      ::orteaf::internal::execution::mps::platform::wrapper::
+          MpsComputeCommandEncoder_t encoder,
+      ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t
+          threadgroups,
+      ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t
+          threads_per_threadgroup) {
     last_encoder = encoder;
     last_threadgroups = threadgroups;
     last_threads_per_threadgroup = threads_per_threadgroup;
   }
 
-  static void endEncoding(::orteaf::internal::execution::mps::platform::wrapper::
-                              MpsComputeCommandEncoder_t encoder) {
+  static void endEncoding(::orteaf::internal::execution::mps::platform::
+                              wrapper::MpsComputeCommandEncoder_t encoder) {
     last_encoder = encoder;
   }
 
-  static void
-  commit(::orteaf::internal::execution::mps::platform::wrapper::MpsCommandBuffer_t
-             command_buffer) {
+  static void commit(
+      ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandBuffer_t
+          command_buffer) {
     last_committed_buffer = command_buffer;
   }
 
@@ -224,22 +224,22 @@ struct MockComputeFastOps {
       MpsCommandQueue_t last_queue{nullptr};
   static inline ::orteaf::internal::execution::mps::platform::wrapper::
       MpsCommandBuffer_t fake_buffer{
-          reinterpret_cast<::orteaf::internal::execution::mps::platform::wrapper::
-                               MpsCommandBuffer_t>(0x10)};
+          reinterpret_cast<::orteaf::internal::execution::mps::platform::
+                               wrapper::MpsCommandBuffer_t>(0x10)};
   static inline ::orteaf::internal::execution::mps::platform::wrapper::
       MpsCommandBuffer_t last_command_buffer{nullptr};
   static inline ::orteaf::internal::execution::mps::platform::wrapper::
       MpsComputeCommandEncoder_t fake_encoder{
-          reinterpret_cast<::orteaf::internal::execution::mps::platform::wrapper::
-                               MpsComputeCommandEncoder_t>(0x20)};
+          reinterpret_cast<::orteaf::internal::execution::mps::platform::
+                               wrapper::MpsComputeCommandEncoder_t>(0x20)};
   static inline ::orteaf::internal::execution::mps::platform::wrapper::
       MpsComputeCommandEncoder_t last_encoder{nullptr};
   static inline ::orteaf::internal::execution::mps::platform::wrapper::
       MpsComputePipelineState_t last_pipeline{nullptr};
   static inline ::orteaf::internal::execution::mps::platform::wrapper::
       MpsComputeCommandEncoder_t last_encoder_for_buffer{nullptr};
-  static inline ::orteaf::internal::execution::mps::platform::wrapper::MpsBuffer_t
-      last_buffer{nullptr};
+  static inline ::orteaf::internal::execution::mps::platform::wrapper::
+      MpsBuffer_t last_buffer{nullptr};
   static inline std::size_t last_buffer_offset{0};
   static inline std::size_t last_buffer_index{0};
   static inline ::orteaf::internal::execution::mps::platform::wrapper::
@@ -255,8 +255,8 @@ struct MockComputeFastOps {
       MpsCommandBuffer_t last_committed_buffer{nullptr};
   static inline ::orteaf::internal::execution::mps::platform::wrapper::
       MpsComputeCommandEncoder_t last_encoder_for_fence_update{nullptr};
-  static inline ::orteaf::internal::execution::mps::platform::wrapper::MpsFence_t
-      last_fence_updated{nullptr};
+  static inline ::orteaf::internal::execution::mps::platform::wrapper::
+      MpsFence_t last_fence_updated{nullptr};
 };
 
 } // namespace
@@ -269,8 +269,8 @@ TEST(MpsKernelLauncherImplTest, CreateCommandBufferUsesFastOps) {
   MockFastOps::last_queue = nullptr;
   ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandQueue_t
       dummy_queue =
-          reinterpret_cast<::orteaf::internal::execution::mps::platform::wrapper::
-                               MpsCommandQueue_t>(0x2);
+          reinterpret_cast<::orteaf::internal::execution::mps::platform::
+                               wrapper::MpsCommandQueue_t>(0x2);
 
   auto *buffer = impl.createCommandBuffer<MockFastOps>(dummy_queue);
 
@@ -410,7 +410,8 @@ TEST(MpsKernelLauncherImplTest, DispatchEndCommitForwarded) {
   MockComputeFastOps::last_committed_buffer = nullptr;
 
   ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t tg{1, 2, 3};
-  ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t tptg{4, 5, 6};
+  ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t tptg{4, 5,
+                                                                        6};
 
   auto *encoder = MockComputeFastOps::fake_encoder;
   auto *command_buffer = MockComputeFastOps::fake_buffer;
@@ -438,13 +439,14 @@ TEST(MpsKernelLauncherImplTest, DispatchOneShotByIndex) {
   const base::DeviceHandle device{0};
   impl.initialize<DummyPrivateOps>(device);
 
-  ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandQueue_t queue =
-      reinterpret_cast<::orteaf::internal::execution::mps::platform::wrapper::
-                           MpsCommandQueue_t>(0x40);
+  ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandQueue_t
+      queue = reinterpret_cast<::orteaf::internal::execution::mps::platform::
+                                   wrapper::MpsCommandQueue_t>(0x40);
   TestCommandQueueLease queue_helper(queue);
   auto &queue_lease = queue_helper.lease;
   ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t tg{7, 8, 9};
-  ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t tptg{1, 2, 3};
+  ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t tptg{1, 2,
+                                                                        3};
 
   MockComputeFastOps::last_queue = nullptr;
   MockComputeFastOps::last_command_buffer = nullptr;
@@ -485,13 +487,14 @@ TEST(MpsKernelLauncherImplTest, DispatchOneShotByNameMissingReturnsNullptr) {
   const base::DeviceHandle device{0};
   impl.initialize<DummyPrivateOps>(device);
 
-  ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandQueue_t queue =
-      reinterpret_cast<::orteaf::internal::execution::mps::platform::wrapper::
-                           MpsCommandQueue_t>(0x40);
+  ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandQueue_t
+      queue = reinterpret_cast<::orteaf::internal::execution::mps::platform::
+                                   wrapper::MpsCommandQueue_t>(0x40);
   TestCommandQueueLease queue_helper(queue);
   auto &queue_lease = queue_helper.lease;
   ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t tg{1, 1, 1};
-  ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t tptg{1, 1, 1};
+  ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t tptg{1, 1,
+                                                                        1};
 
   auto *command_buffer =
       impl.dispatchOneShot<MockComputeFastOps, DummyPrivateOps>(
@@ -513,12 +516,10 @@ TEST(MpsKernelLauncherImplTest, UpdateFenceReplacesTicketForSameQueue) {
   ::orteaf::internal::execution::mps::resource::MpsFenceToken token{};
 
   auto *encoder = MockComputeFastOps::fake_encoder;
-  auto *cb1 = reinterpret_cast<
-      ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandBuffer_t>(
-      0xAA);
-  auto *cb2 = reinterpret_cast<
-      ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandBuffer_t>(
-      0xBB);
+  auto *cb1 = reinterpret_cast<::orteaf::internal::execution::mps::platform::
+                                   wrapper::MpsCommandBuffer_t>(0xAA);
+  auto *cb2 = reinterpret_cast<::orteaf::internal::execution::mps::platform::
+                                   wrapper::MpsCommandBuffer_t>(0xBB);
 
   // First ticket
   impl.updateFenceAndTrack<MockComputeFastOps, DummyPrivateOps>(
@@ -540,11 +541,12 @@ TEST(MpsKernelLauncherImplTest, DispatchOneShotAddsFenceTicketWhenProvided) {
   const base::DeviceHandle device{0};
   impl.initialize<DummyPrivateOps>(device);
 
-  ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandQueue_t queue =
-      reinterpret_cast<::orteaf::internal::execution::mps::platform::wrapper::
-                           MpsCommandQueue_t>(0x40);
+  ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandQueue_t
+      queue = reinterpret_cast<::orteaf::internal::execution::mps::platform::
+                                   wrapper::MpsCommandQueue_t>(0x40);
   ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t tg{1, 1, 1};
-  ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t tptg{1, 1, 1};
+  ::orteaf::internal::execution::mps::platform::wrapper::MPSSize_t tptg{1, 1,
+                                                                        1};
 
   TestCommandQueueLease queue_helper(queue);
   auto &queue_lease = queue_helper.lease;
@@ -552,7 +554,8 @@ TEST(MpsKernelLauncherImplTest, DispatchOneShotAddsFenceTicketWhenProvided) {
 
   MockComputeFastOps::last_encoder_for_fence_update = nullptr;
   MockComputeFastOps::last_fence_updated = reinterpret_cast<
-      ::orteaf::internal::execution::mps::platform::wrapper::MpsFence_t>(0xdead);
+      ::orteaf::internal::execution::mps::platform::wrapper::MpsFence_t>(
+      0xdead);
 
   auto *command_buffer =
       impl.dispatchOneShot<MockComputeFastOps, DummyPrivateOps>(
@@ -579,7 +582,8 @@ TEST(MpsKernelLauncherImplTest, UpdateFenceReturnsTicketAndEncodesUpdate) {
 
   MockComputeFastOps::last_encoder_for_fence_update = nullptr;
   MockComputeFastOps::last_fence_updated = reinterpret_cast<
-      ::orteaf::internal::execution::mps::platform::wrapper::MpsFence_t>(0xdead);
+      ::orteaf::internal::execution::mps::platform::wrapper::MpsFence_t>(
+      0xdead);
 
   TestCommandQueueLease queue_helper(
       reinterpret_cast<::orteaf::internal::execution::mps::platform::wrapper::
@@ -595,5 +599,5 @@ TEST(MpsKernelLauncherImplTest, UpdateFenceReturnsTicketAndEncodesUpdate) {
   EXPECT_EQ(ticket.commandQueueHandle(), queue_lease.payloadHandle());
   EXPECT_EQ(ticket.commandBuffer(), command_buffer);
   EXPECT_TRUE(ticket.hasFence());
-  EXPECT_EQ(*ticket.fenceHandle().payloadPtr(), nullptr);
+  EXPECT_EQ(ticket.fenceHandle().payloadPtr()->fence(), nullptr);
 }

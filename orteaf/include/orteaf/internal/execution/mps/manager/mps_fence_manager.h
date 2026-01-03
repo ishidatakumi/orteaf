@@ -12,6 +12,7 @@
 #include "orteaf/internal/base/pool/slot_pool.h"
 #include "orteaf/internal/execution/mps/platform/mps_slow_ops.h"
 #include "orteaf/internal/execution/mps/platform/wrapper/mps_fence.h"
+#include "orteaf/internal/execution/mps/resource/mps_fence.h"
 
 namespace orteaf::internal::execution::mps::manager {
 
@@ -20,8 +21,7 @@ namespace orteaf::internal::execution::mps::manager {
 // =============================================================================
 
 struct FencePayloadPoolTraits {
-  using Payload =
-      ::orteaf::internal::execution::mps::platform::wrapper::MpsFence_t;
+  using Payload = ::orteaf::internal::execution::mps::resource::MpsFence;
   using Handle = ::orteaf::internal::base::FenceHandle;
   using DeviceType =
       ::orteaf::internal::execution::mps::platform::wrapper::MpsDevice_t;
@@ -45,15 +45,16 @@ struct FencePayloadPoolTraits {
     if (fence == nullptr) {
       return false;
     }
-    payload = fence;
+    payload.setFence(fence);
     return true;
   }
 
   static void destroy(Payload &payload, const Request &,
                       const Context &context) {
-    if (payload != nullptr && context.ops != nullptr) {
-      context.ops->destroyFence(payload);
-      payload = nullptr;
+    auto fence = payload.fence();
+    if (fence != nullptr && context.ops != nullptr) {
+      context.ops->destroyFence(fence);
+      payload.reset();
     }
   }
 };
@@ -69,8 +70,7 @@ struct FenceControlBlockTag {};
 
 using FenceControlBlock = ::orteaf::internal::base::StrongControlBlock<
     ::orteaf::internal::base::FenceHandle,
-    ::orteaf::internal::execution::mps::platform::wrapper::MpsFence_t,
-    FencePayloadPool>;
+    ::orteaf::internal::execution::mps::resource::MpsFence, FencePayloadPool>;
 
 // =============================================================================
 // Manager Traits for PoolManager

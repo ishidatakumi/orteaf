@@ -167,8 +167,11 @@ TYPED_TEST(MpsFenceManagerTypedTest, AcquireReturnsValidLease) {
 
   // Assert
   EXPECT_TRUE(lease);
-  EXPECT_NE(lease.payloadPtr(), nullptr);
+  ASSERT_NE(lease.payloadPtr(), nullptr);
   EXPECT_TRUE(lease.handle().isValid());
+  EXPECT_TRUE(lease.payloadPtr()->hasFence());
+  EXPECT_FALSE(lease.payloadPtr()->hasCommandBuffer());
+  EXPECT_TRUE(lease.payloadPtr()->isCompleted());
 
   // Cleanup
   lease.release();

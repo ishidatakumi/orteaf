@@ -90,7 +90,7 @@ TEST_F(MpsFenceTicketTest, ValueConstructorStoresMembers) {
   EXPECT_EQ(ticket.commandQueueHandle(), queue_id_);
   EXPECT_EQ(ticket.commandBuffer(), command_buffer_);
   id<MTLFence> objc_fence =
-      (__bridge id<MTLFence>)(*ticket.fenceHandle().payloadPtr());
+      (__bridge id<MTLFence>)(ticket.fenceHandle().payloadPtr()->fence());
   EXPECT_NE(objc_fence, nil);
   id<MTLCommandBuffer> objc_cb =
       (__bridge id<MTLCommandBuffer>)ticket.commandBuffer();
