@@ -5,14 +5,17 @@
 #include <cstddef>
 #include <utility>
 
+#include <orteaf/internal/base/handle.h>
 #include <orteaf/internal/base/small_vector.h>
-#include <orteaf/internal/execution/mps/resource/mps_fence_ticket.h>
+#include <orteaf/internal/execution/mps/manager/mps_fence_manager.h>
 
 namespace orteaf::internal::execution::mps::resource {
 
 class MpsFenceToken {
 public:
-  using Ticket = MpsFenceTicket;
+  using FenceLease =
+      ::orteaf::internal::execution::mps::manager::MpsFenceManager::FenceLease;
+
   static constexpr std::size_t kInlineCapacity = 4;
 
   MpsFenceToken() = default;
@@ -22,38 +25,43 @@ public:
   MpsFenceToken &operator=(MpsFenceToken &&) noexcept = default;
   ~MpsFenceToken() = default;
 
-  bool empty() const noexcept { return tickets_.empty(); }
-  std::size_t size() const noexcept { return tickets_.size(); }
+  bool empty() const noexcept { return leases_.empty(); }
+  std::size_t size() const noexcept { return leases_.size(); }
 
-  void addTicket(Ticket &&ticket) { tickets_.pushBack(std::move(ticket)); }
+  void addLease(FenceLease &&lease) { leases_.pushBack(std::move(lease)); }
 
-  // Add a ticket, replacing any existing entry with the same command queue id.
-  Ticket &addOrReplaceTicket(Ticket &&ticket) {
-    const auto queue_handle = ticket.commandQueueHandle();
-    for (std::size_t i = 0; i < tickets_.size(); ++i) {
-      if (tickets_[i].commandQueueHandle() == queue_handle) {
-        tickets_[i] = std::move(ticket);
-        return tickets_[i];
+  // Add a lease, replacing any existing lease with the same command queue id.
+  FenceLease &addOrReplaceLease(FenceLease &&lease) {
+    auto *payload = lease.payloadPtr();
+    if (payload != nullptr) {
+      const auto queue_handle = payload->commandQueueHandle();
+      for (std::size_t i = 0; i < leases_.size(); ++i) {
+        auto *existing_payload = leases_[i].payloadPtr();
+        if (existing_payload != nullptr &&
+            existing_payload->commandQueueHandle() == queue_handle) {
+          leases_[i] = std::move(lease);
+          return leases_[i];
+        }
       }
     }
-    tickets_.pushBack(std::move(ticket));
-    return tickets_.back();
+    leases_.pushBack(std::move(lease));
+    return leases_.back();
   }
 
-  void clear() noexcept { tickets_.clear(); }
+  void clear() noexcept { leases_.clear(); }
 
-  const Ticket &operator[](std::size_t index) const noexcept {
-    return tickets_[index];
+  const FenceLease &operator[](std::size_t index) const noexcept {
+    return leases_[index];
   }
-  Ticket &operator[](std::size_t index) noexcept { return tickets_[index]; }
+  FenceLease &operator[](std::size_t index) noexcept { return leases_[index]; }
 
-  const Ticket *begin() const noexcept { return tickets_.begin(); }
-  const Ticket *end() const noexcept { return tickets_.end(); }
-  Ticket *begin() noexcept { return tickets_.begin(); }
-  Ticket *end() noexcept { return tickets_.end(); }
+  const FenceLease *begin() const noexcept { return leases_.begin(); }
+  const FenceLease *end() const noexcept { return leases_.end(); }
+  FenceLease *begin() noexcept { return leases_.begin(); }
+  FenceLease *end() noexcept { return leases_.end(); }
 
 private:
-  ::orteaf::internal::base::SmallVector<Ticket, kInlineCapacity> tickets_{};
+  ::orteaf::internal::base::SmallVector<FenceLease, kInlineCapacity> leases_{};
 };
 
 } // namespace orteaf::internal::execution::mps::resource

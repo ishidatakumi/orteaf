@@ -58,6 +58,12 @@ MpsFenceManager::FenceLease MpsFenceManager::acquire() {
   return core_.acquireStrongLease(handle);
 }
 
+MpsFenceManager::FenceWeakLease
+MpsFenceManager::acquireWeak(FenceHandle handle) {
+  core_.ensureConfigured();
+  return core_.acquireWeakLease(handle);
+}
+
 FencePayloadPoolTraits::Context
 MpsFenceManager::makePayloadContext() const noexcept {
   return FencePayloadPoolTraits::Context{device_, ops_};

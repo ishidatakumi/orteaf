@@ -4,10 +4,10 @@
 
 #include "orteaf/internal/base/handle.h"
 #include "orteaf/internal/base/heap_vector.h"
+#include "orteaf/internal/diagnostics/error/error.h"
 #include "orteaf/internal/execution/mps/api/mps_runtime_api.h"
 #include "orteaf/internal/execution/mps/platform/mps_fast_ops.h"
 #include "orteaf/internal/execution/mps/platform/wrapper/mps_compute_command_encoder.h"
-#include "orteaf/internal/execution/mps/resource/mps_fence_ticket.h"
 #include "orteaf/internal/execution/mps/resource/mps_fence_token.h"
 #include <array>
 #include <initializer_list>
@@ -33,7 +33,7 @@ namespace orteaf::internal::execution::mps::resource {
  * - Convenience helpers wrap command buffer / encoder creation, pipeline
  * binding, argument binding (buffers/bytes), threadgroup dispatch, end/commit,
  * and optional fence tracking.
- * - Fence helpers can encode an update on an encoder, return a ticket, and
+ * - Fence helpers can encode an update on an encoder, return a lease, and
  * optionally track it in a `MpsFenceToken` keyed by command queue handle.
  */
 template <std::size_t N> class MpsKernelLauncherImpl {
@@ -251,21 +251,22 @@ public:
                    MpsComputeCommandEncoder_t encoder,
                const ::orteaf::internal::execution::mps::resource::MpsFenceToken
                    &token) const {
-    for (const auto &ticket : token) {
-      if (ticket.hasFence()) {
-        FastOps::waitForFence(encoder,
-                              ticket.fenceHandle().payloadPtr()->fence());
+    for (const auto &lease : token) {
+      auto *payload = lease.payloadPtr();
+      if (payload != nullptr && payload->hasFence()) {
+        FastOps::waitForFence(encoder, payload->fence());
       }
     }
   }
 
   /** @brief Acquire a fence from the pool, encode an update, and return a
-   * ticket. */
+   * lease. */
   template <typename FastOps =
                 ::orteaf::internal::execution::mps::platform::MpsFastOps,
             typename RuntimeApi =
                 ::orteaf::internal::execution::mps::api::MpsRuntimeApi>
-  ::orteaf::internal::execution::mps::resource::MpsFenceTicket updateFence(
+  ::orteaf::internal::execution::mps::manager::MpsFenceManager::FenceLease
+  updateFence(
       ::orteaf::internal::base::DeviceHandle device,
       const ::orteaf::internal::execution::mps::manager::
           MpsCommandQueueManager::CommandQueueLease &queue_lease,
@@ -274,12 +275,30 @@ public:
       ::orteaf::internal::execution::mps::platform::wrapper::MpsCommandBuffer_t
           command_buffer) const {
     auto fence_lease = RuntimeApi::acquireFence(device);
-    FastOps::updateFence(encoder, fence_lease.payloadPtr()->fence());
-    return ::orteaf::internal::execution::mps::resource::MpsFenceTicket(
-        queue_lease.payloadHandle(), command_buffer, std::move(fence_lease));
+    auto *payload = fence_lease.payloadPtr();
+    if (payload == nullptr) {
+      fence_lease.release();
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          "MPS fence lease has no payload");
+    }
+    if (!payload->setCommandQueueHandle(queue_lease.payloadHandle())) {
+      fence_lease.release();
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          "MPS fence hazard failed to bind command queue handle");
+    }
+    if (!payload->setCommandBuffer(command_buffer)) {
+      fence_lease.release();
+      ::orteaf::internal::diagnostics::error::throwError(
+          ::orteaf::internal::diagnostics::error::OrteafErrc::InvalidState,
+          "MPS fence hazard failed to bind command buffer");
+    }
+    FastOps::updateFence(encoder, payload->fence());
+    return fence_lease;
   }
 
-  /** @brief Acquire/update a fence and track/replace the ticket in a fence
+  /** @brief Acquire/update a fence and track/replace the lease in a fence
    * token. */
   template <typename FastOps =
                 ::orteaf::internal::execution::mps::platform::MpsFastOps,
@@ -295,9 +314,9 @@ public:
           command_buffer,
       ::orteaf::internal::execution::mps::resource::MpsFenceToken &token)
       const {
-    auto ticket = updateFence<FastOps, RuntimeApi>(device, queue_lease, encoder,
-                                                   command_buffer);
-    token.addOrReplaceTicket(std::move(ticket));
+    auto lease = updateFence<FastOps, RuntimeApi>(device, queue_lease, encoder,
+                                                  command_buffer);
+    token.addOrReplaceLease(std::move(lease));
   }
 
   /**

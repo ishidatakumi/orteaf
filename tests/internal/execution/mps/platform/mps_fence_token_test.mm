@@ -1,6 +1,6 @@
 /**
  * @file mps_fence_token_test.mm
- * @brief Tests for MpsFenceToken bundling MpsFenceTicket.
+ * @brief Tests for MpsFenceToken storing fence leases.
  */
 
 #import <Metal/Metal.h>
@@ -12,7 +12,6 @@
 #include "orteaf/internal/execution/mps/platform/wrapper/mps_command_buffer.h"
 #include "orteaf/internal/execution/mps/platform/wrapper/mps_command_queue.h"
 #include "orteaf/internal/execution/mps/platform/wrapper/mps_device.h"
-#include "orteaf/internal/execution/mps/resource/mps_fence_ticket.h"
 #include "orteaf/internal/execution/mps/resource/mps_fence_token.h"
 
 namespace mps_wrapper = orteaf::internal::execution::mps::platform::wrapper;
@@ -85,34 +84,45 @@ TEST_F(MpsFenceTokenTest, DefaultConstructedIsEmpty) {
   EXPECT_EQ(token.size(), 0u);
 }
 
-TEST_F(MpsFenceTokenTest, AddTicketsStoresAndOrders) {
+TEST_F(MpsFenceTokenTest, AddLeasesStoresAndOrders) {
   mps_res::MpsFenceToken token;
   auto handle_a = fence_pool_.acquire();
   auto handle_b = fence_pool_.acquire();
 
-  mps_res::MpsFenceTicket ticket_a(queue_id_, command_buffer_a_,
-                                   std::move(handle_a));
-  mps_res::MpsFenceTicket ticket_b(queue_id_, command_buffer_b_,
-                                   std::move(handle_b));
+  auto *payload_a = handle_a.payloadPtr();
+  auto *payload_b = handle_b.payloadPtr();
+  ASSERT_NE(payload_a, nullptr);
+  ASSERT_NE(payload_b, nullptr);
+  EXPECT_TRUE(payload_a->setCommandQueueHandle(queue_id_));
+  EXPECT_TRUE(payload_a->setCommandBuffer(command_buffer_a_));
+  EXPECT_TRUE(payload_b->setCommandQueueHandle(queue_id_));
+  EXPECT_TRUE(payload_b->setCommandBuffer(command_buffer_b_));
 
-  token.addTicket(std::move(ticket_a));
-  token.addTicket(std::move(ticket_b));
+  token.addLease(std::move(handle_a));
+  token.addLease(std::move(handle_b));
 
   ASSERT_EQ(token.size(), 2u);
-  EXPECT_EQ(token[0].commandQueueHandle(), queue_id_);
-  EXPECT_EQ(token[0].commandBuffer(), command_buffer_a_);
-  EXPECT_TRUE(token[0].hasFence());
+  auto *lease_a_payload = token[0].payloadPtr();
+  ASSERT_NE(lease_a_payload, nullptr);
+  EXPECT_EQ(lease_a_payload->commandQueueHandle(), queue_id_);
+  EXPECT_EQ(lease_a_payload->commandBuffer(), command_buffer_a_);
+  EXPECT_TRUE(lease_a_payload->hasFence());
 
-  EXPECT_EQ(token[1].commandQueueHandle(), queue_id_);
-  EXPECT_EQ(token[1].commandBuffer(), command_buffer_b_);
-  EXPECT_TRUE(token[1].hasFence());
+  auto *lease_b_payload = token[1].payloadPtr();
+  ASSERT_NE(lease_b_payload, nullptr);
+  EXPECT_EQ(lease_b_payload->commandQueueHandle(), queue_id_);
+  EXPECT_EQ(lease_b_payload->commandBuffer(), command_buffer_b_);
+  EXPECT_TRUE(lease_b_payload->hasFence());
 }
 
 TEST_F(MpsFenceTokenTest, MoveTransfersOwnership) {
   mps_res::MpsFenceToken token;
   auto handle = fence_pool_.acquire();
-  token.addTicket(
-      mps_res::MpsFenceTicket(queue_id_, command_buffer_a_, std::move(handle)));
+  auto *payload = handle.payloadPtr();
+  ASSERT_NE(payload, nullptr);
+  EXPECT_TRUE(payload->setCommandQueueHandle(queue_id_));
+  EXPECT_TRUE(payload->setCommandBuffer(command_buffer_a_));
+  token.addLease(std::move(handle));
 
   mps_res::MpsFenceToken moved(std::move(token));
   EXPECT_EQ(moved.size(), 1u);
@@ -122,11 +132,14 @@ TEST_F(MpsFenceTokenTest, MoveTransfersOwnership) {
   EXPECT_EQ(token.size(), 0u);
 }
 
-TEST_F(MpsFenceTokenTest, ClearRemovesAllTickets) {
+TEST_F(MpsFenceTokenTest, ClearRemovesAllLeases) {
   mps_res::MpsFenceToken token;
   auto handle = fence_pool_.acquire();
-  token.addTicket(
-      mps_res::MpsFenceTicket(queue_id_, command_buffer_a_, std::move(handle)));
+  auto *payload = handle.payloadPtr();
+  ASSERT_NE(payload, nullptr);
+  EXPECT_TRUE(payload->setCommandQueueHandle(queue_id_));
+  EXPECT_TRUE(payload->setCommandBuffer(command_buffer_a_));
+  token.addLease(std::move(handle));
 
   token.clear();
   EXPECT_TRUE(token.empty());

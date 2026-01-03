@@ -18,8 +18,14 @@ public:
 
   static MpsReuseToken fromFenceToken(MpsFenceToken &&token) {
     MpsReuseToken reuse_token;
-    for (const auto &ticket : token) {
-      reuse_token.addTicket(Ticket(ticket));
+    for (const auto &lease : token) {
+      auto *payload = lease.payloadPtr();
+      if (payload == nullptr) {
+        reuse_token.addTicket(Ticket{});
+        continue;
+      }
+      reuse_token.addTicket(
+          Ticket(payload->commandQueueHandle(), payload->commandBuffer()));
     }
     token.clear();
     return reuse_token;

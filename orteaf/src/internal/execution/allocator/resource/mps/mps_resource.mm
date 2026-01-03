@@ -51,18 +51,19 @@ bool MpsResource::isCompleted(FenceToken &token) {
   ORTEAF_THROW_IF(!initialized_, InvalidState,
                   "MpsResource::isCompleted called before initialize");
   bool all_completed = true;
-  for (auto &ticket : token) {
-    if (!ticket.valid()) {
+  for (auto &lease : token) {
+    auto *payload = lease.payloadPtr();
+    if (payload == nullptr) {
+      lease.release();
       continue;
     }
-    if (::orteaf::internal::execution::mps::platform::MpsFastOps::isCompleted(
-            ticket.commandBuffer())) {
-      ticket.reset(); // mark as invalid so subsequent calls skip it
+    if (payload->isReady<
+            ::orteaf::internal::execution::mps::platform::MpsFastOps>()) {
+      lease.release();
       continue;
-    } else {
-      all_completed = false;
-      break;
     }
+    all_completed = false;
+    break;
   }
 
   return all_completed;
